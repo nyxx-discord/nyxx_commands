@@ -157,13 +157,19 @@ class Bot extends Nyxx with GroupMixin {
   }
 
   Future<void> _processMessage(Message message) async {
-    String prefix = _prefixFor(message);
-    StringView view = StringView(message.content);
-    if (view.skipString(prefix)) {
-      Context context = await _messageContext(message, view, prefix);
+    try {
+      String prefix = _prefixFor(message);
+      StringView view = StringView(message.content);
+      if (view.skipString(prefix)) {
+        Context context = await _messageContext(message, view, prefix);
 
-      _commandsLogger.fine('Invoking command ${context.command.name} from message $message');
-      await _tryInvoke(context);
+        _commandsLogger.fine('Invoking command ${context.command.name} from message $message');
+        await context.command.invoke(this, context);
+      }
+    } on CommandsException catch (e) {
+      _onCommandErrorController.add(e);
+    } on Exception catch (e) {
+      _onCommandErrorController.add(UncaughtException(e));
     }
   }
 
@@ -171,23 +177,20 @@ class Bot extends Nyxx with GroupMixin {
     SlashCommandInteractionEvent interactionEvent,
     Command command,
   ) async {
-    if (_options.autoAcknowledgeInteractions) {
-      await interactionEvent.acknowledge();
-    }
-
-    Context context = await _interactionContext(interactionEvent, command);
-
-    _commandsLogger.fine('Invoking command ${context.command.name} '
-        'from interaction ${interactionEvent.interaction.token}');
-    await _tryInvoke(context);
-  }
-
-  Future<void> _tryInvoke(Context context) async {
     try {
+      if (_options.autoAcknowledgeInteractions) {
+        await interactionEvent.acknowledge();
+      }
+
+      Context context = await _interactionContext(interactionEvent, command);
+
+      _commandsLogger.fine('Invoking command ${context.command.name} '
+          'from interaction ${interactionEvent.interaction.token}');
       await context.command.invoke(this, context);
     } on CommandsException catch (e) {
       _onCommandErrorController.add(e);
-      return;
+    } on Exception catch (e) {
+      _onCommandErrorController.add(UncaughtException(e));
     }
   }
 
