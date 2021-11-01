@@ -265,8 +265,10 @@ class Command with GroupMixin {
 
   @override
   void registerChild(GroupMixin child) {
-    if (type != CommandType.textOnly && child.hasSlashCommand) {
-      throw SlashException('Slash commands cannot have slash command children');
+    if (type != CommandType.textOnly) {
+      if (child.hasSlashCommand || (child is Command && child.type != CommandType.textOnly)) {
+        throw SlashException('Slash commands cannot have slash command decendants');
+      }
     }
 
     super.registerChild(child);
