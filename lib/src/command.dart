@@ -137,7 +137,7 @@ class Command with GroupMixin {
       throw InvalidFunctionException('execute function must have at least one argument');
     }
 
-    if (arguments[0].type.reflectedType != contextType) {
+    if (!reflectType(contextType).isAssignableTo(arguments[0].type)) {
       throw InvalidFunctionException(
           'The first parameter to the execute function must be of type $contextType');
     }
