@@ -8,6 +8,10 @@ class BotOptions extends ClientOptions {
   /// Whether to delete slash commands if they are not registered before [Nyxx.onReady] is emitted.
   bool syncDeleted;
 
+  /// Whether to automatically acknowledge slash command interactions upon receiving them. If you
+  /// set this to false, you *must* respond to the interaction yourself, or the command will fail.
+  bool autoAcknowledgeInteractions;
+
   /// Create a new [BotOptions] instance.
   BotOptions({
     AllowedMentions? allowedMentions,
@@ -22,6 +26,7 @@ class BotOptions extends ClientOptions {
     bool dispatchRawShardEvent = false,
     this.logErrors = true,
     this.syncDeleted = true,
+    this.autoAcknowledgeInteractions = true,
   }) : super(
           allowedMentions: allowedMentions,
           shardCount: shardCount,
@@ -166,7 +171,9 @@ class Bot extends Nyxx with GroupMixin {
     SlashCommandInteractionEvent interactionEvent,
     Command command,
   ) async {
-    await interactionEvent.acknowledge();
+    if (_options.autoAcknowledgeInteractions) {
+      await interactionEvent.acknowledge();
+    }
 
     Context context = await _interactionContext(interactionEvent, command);
 
