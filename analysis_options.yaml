@@ -46,8 +46,6 @@ linter:
     - sort_pub_dependencies
 
 analyzer:
-  exclude:
-    - tests/**
   strong-mode:
     implicit-casts: false
   
