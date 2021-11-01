@@ -86,12 +86,17 @@ class Command with GroupMixin {
     this.execute, {
     this.aliases = const [],
     this.type = CommandType.all,
+    List<GroupMixin> children = const [],
   }) {
     if (!commandNameRegexp.hasMatch(name)) {
       throw InvalidNameException(name);
     }
 
     _loadArguments(execute, Context);
+
+    for (final child in children) {
+      registerChild(child);
+    }
   }
 
   /// Create a new text-only [Command].
@@ -103,12 +108,17 @@ class Command with GroupMixin {
     this.description,
     this.execute, {
     this.aliases = const [],
+    List<GroupMixin> children = const [],
   }) : type = CommandType.textOnly {
     if (!commandNameRegexp.hasMatch(name)) {
       throw InvalidNameException(name);
     }
 
     _loadArguments(execute, MessageContext);
+
+    for (final child in children) {
+      registerChild(child);
+    }
   }
 
   /// Create a new slash-only [Command].
@@ -120,12 +130,17 @@ class Command with GroupMixin {
     this.description,
     this.execute, {
     this.aliases = const [],
+    List<GroupMixin> children = const [],
   }) : type = CommandType.slashOnly {
     if (!commandNameRegexp.hasMatch(name)) {
       throw InvalidNameException('Invalid name "$name" for command');
     }
 
     _loadArguments(execute, InteractionContext);
+
+    for (final child in children) {
+      registerChild(child);
+    }
   }
 
   void _loadArguments(Function fn, Type contextType) {

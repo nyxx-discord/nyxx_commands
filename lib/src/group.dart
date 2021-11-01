@@ -169,9 +169,18 @@ class Group with GroupMixin {
   List<String> aliases;
 
   /// Construct a new [Group]
-  Group(this.name, this.description, {this.aliases = const []}) {
+  Group(
+    this.name,
+    this.description, {
+    this.aliases = const [],
+    List<GroupMixin> children = const [],
+  }) {
     if (!commandNameRegexp.hasMatch(name)) {
       throw InvalidNameException(name);
+    }
+
+    for (final child in children) {
+      registerChild(child);
     }
   }
 
