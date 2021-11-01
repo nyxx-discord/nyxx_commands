@@ -1,0 +1,18 @@
+name: nyxx_commands
+version: 0.1.0
+description: A framework for easily creating slash commands and text commands for Discord using the nyxx library.
+
+homepage: https://github.com/abitofevrything/nyxx-commands/blob/master/README.md
+repository: https://github.com/abitofevrything/nyxx-commands
+issue_tracker: https://github.com/abitofevrything/nyxx-commands/issues
+
+environment:
+  sdk: '>=2.14.3 <3.0.0'
+
+dependencies:
+  logging: ^1.0.2
+  nyxx: ^2.0.5
+  nyxx_interactions: ^2.0.2
+
+dev_dependencies:
+  lints: ^1.0.0
