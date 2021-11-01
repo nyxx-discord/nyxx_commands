@@ -32,7 +32,7 @@ Command command = Command(
   },
 );
 
-bot.registerCommand(command);
+bot.registerChild(command);
 ```
 
 Use a custom type converter:
@@ -42,9 +42,9 @@ Command command = Command(
   'A command with a type converter',
   (Context context, bool hasCat  /* User input will automatically be converted */) async {
     if (hasCat) {
-        await context.channel.sendMessage('I have a cat.');
+        await context.channel.sendMessage(MessageBuilder.content('I have a cat.'));
     } else {
-        await context.channel.sendMessage('I do not have any pets.');
+        await context.channel.sendMessage(MessageBuilder.content('I do not have any pets.'));
     }
   },
 );
