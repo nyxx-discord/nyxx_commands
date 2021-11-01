@@ -166,7 +166,7 @@ class Bot extends Nyxx with GroupMixin {
     SlashCommandInteractionEvent interactionEvent,
     Command command,
   ) async {
-    interactionEvent.acknowledge();
+    await interactionEvent.acknowledge();
 
     Context context = await _interactionContext(interactionEvent, command);
 
