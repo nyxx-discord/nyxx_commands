@@ -100,8 +100,8 @@ class Command with GroupMixin {
   /// [execute] must be a function whose first parameter must be of type [MessageContext].
   Command.textOnly(
     this.name,
-    this.execute,
-    this.description, {
+    this.description,
+    this.execute, {
     this.aliases = const [],
   }) : type = CommandType.textOnly {
     if (!commandNameRegexp.hasMatch(name)) {
@@ -117,8 +117,8 @@ class Command with GroupMixin {
   /// [execute] must be a function whose first parameter must be of type [InteractionContext].
   Command.slashOnly(
     this.name,
-    this.execute,
-    this.description, {
+    this.description,
+    this.execute, {
     this.aliases = const [],
   }) : type = CommandType.slashOnly {
     if (!commandNameRegexp.hasMatch(name)) {
