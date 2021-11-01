@@ -241,6 +241,7 @@ class Bot extends Nyxx with GroupMixin {
       command: command,
       interaction: interaction,
       rawArguments: rawArguments,
+      interactionEvent: interactionEvent,
     );
   }
 

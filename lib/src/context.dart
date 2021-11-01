@@ -1,7 +1,7 @@
 part of nyxx_commands;
 
 /// Contains data about a command's execution context.
-class Context {
+abstract class Context {
   /// The list of arguments parsed from this context.
   late final List<dynamic> arguments;
 
@@ -35,6 +35,13 @@ class Context {
     required this.user,
     required this.command,
   });
+
+  /// Send a message to this context's [channel].
+  Future<Message> send(MessageBuilder builder) => channel.sendMessage(builder);
+
+  /// Send a response to the command. This is the same as [send] but it references the original
+  /// command.
+  Future<Message> respond(MessageBuilder builder);
 }
 
 /// Represents a [Context] triggered by a message sent in a text channel.
@@ -68,12 +75,24 @@ class MessageContext extends Context {
           user: user,
           command: command,
         );
+
+  @override
+  Future<Message> respond(MessageBuilder builder) async {
+    try {
+      return await channel.sendMessage(builder..replyBuilder = ReplyBuilder.fromMessage(message));
+    } on HttpResponseError {
+      return channel.sendMessage(builder..replyBuilder = null);
+    }
+  }
 }
 
 /// Represents a [Context] triggered by a slash command ([Interaction]).
 class InteractionContext extends Context {
   /// The [Interaction] that triggered this context's execution.
   final SlashCommandInteraction interaction;
+
+  /// The [InteractionEvent] that triggered this context's exeecution.
+  final SlashCommandInteractionEvent interactionEvent;
 
   /// The raw arguments received from the API, mapped by name to value.
   Map<String, dynamic> rawArguments;
@@ -88,6 +107,7 @@ class InteractionContext extends Context {
     required Command command,
     required this.interaction,
     required this.rawArguments,
+    required this.interactionEvent,
   }) : super(
           bot: bot,
           guild: guild,
@@ -96,4 +116,7 @@ class InteractionContext extends Context {
           user: user,
           command: command,
         );
+
+  @override
+  Future<Message> respond(MessageBuilder builder) => interactionEvent.sendFollowup(builder);
 }
