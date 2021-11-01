@@ -15,4 +15,5 @@ part 'src/context.dart';
 part 'src/converter.dart';
 part 'src/errors.dart';
 part 'src/group.dart';
+part 'src/util.dart';
 part 'src/view.dart';
