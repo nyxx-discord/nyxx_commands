@@ -53,6 +53,10 @@ class UncaughtException extends CommandInvokeException {
         );
 }
 
+class CheckFailedException extends CommandInvokeException {
+  CheckFailedException(Context context) : super('Check failed on context $context');
+}
+
 class ParsingException extends CommandsException {
   ParsingException([String? message]) : super(message);
 }

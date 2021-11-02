@@ -14,3 +14,6 @@ String convertToKebabCase(String camelCase) {
 
   return res;
 }
+
+/// A command check
+typedef CommandCheckType = bool Function(Context);

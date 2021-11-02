@@ -54,6 +54,9 @@ class Command with GroupMixin {
   /// bot's [Bot.onCommandError].
   final Function execute;
 
+  /// Similar to [checks] but only applies to this command.
+  final List<CommandCheckType> singleChecks = [];
+
   late final MethodMirror _mirror;
   late final List<ParameterMirror> _arguments;
   late final int _requiredArguments;
@@ -72,6 +75,8 @@ class Command with GroupMixin {
     this.aliases = const [],
     this.type = CommandType.all,
     List<GroupMixin> children = const [],
+    List<CommandCheckType> checks = const [],
+    List<CommandCheckType> singleChecks = const [],
   }) {
     if (!commandNameRegexp.hasMatch(name)) {
       throw InvalidNameException(name);
@@ -81,6 +86,14 @@ class Command with GroupMixin {
 
     for (final child in children) {
       registerChild(child);
+    }
+
+    for (final check in checks) {
+      super.check(check);
+    }
+
+    for (final singleCheck in singleChecks) {
+      this.singleCheck(singleCheck);
     }
   }
 
@@ -94,6 +107,8 @@ class Command with GroupMixin {
     this.execute, {
     this.aliases = const [],
     List<GroupMixin> children = const [],
+    List<CommandCheckType> checks = const [],
+    List<CommandCheckType> singleChecks = const [],
   }) : type = CommandType.textOnly {
     if (!commandNameRegexp.hasMatch(name)) {
       throw InvalidNameException(name);
@@ -103,6 +118,14 @@ class Command with GroupMixin {
 
     for (final child in children) {
       registerChild(child);
+    }
+
+    for (final check in checks) {
+      super.check(check);
+    }
+
+    for (final singleCheck in singleChecks) {
+      this.singleCheck(singleCheck);
     }
   }
 
@@ -116,6 +139,8 @@ class Command with GroupMixin {
     this.execute, {
     this.aliases = const [],
     List<GroupMixin> children = const [],
+    List<CommandCheckType> checks = const [],
+    List<CommandCheckType> singleChecks = const [],
   }) : type = CommandType.slashOnly {
     if (!commandNameRegexp.hasMatch(name)) {
       throw InvalidNameException('Invalid name "$name" for command');
@@ -125,6 +150,14 @@ class Command with GroupMixin {
 
     for (final child in children) {
       registerChild(child);
+    }
+
+    for (final check in checks) {
+      super.check(check);
+    }
+
+    for (final singleCheck in singleChecks) {
+      this.singleCheck(singleCheck);
     }
   }
 
@@ -231,6 +264,12 @@ class Command with GroupMixin {
 
     context.arguments = arguments;
 
+    for (final check in [...checks, ...singleChecks]) {
+      if (!check(context)) {
+        throw CheckFailedException(context);
+      }
+    }
+
     try {
       Function.apply(execute, [context, ...arguments]);
     } on Exception catch (e) {
@@ -273,6 +312,9 @@ class Command with GroupMixin {
 
     super.registerChild(child);
   }
+
+  /// Add a check to this commands [singleChecks].
+  void singleCheck(CommandCheckType check) => singleChecks.add(check);
 
   @override
   String toString() => 'Command[name="$name", fullName="$fullName"]';
