@@ -5,9 +5,6 @@ class BotOptions extends ClientOptions {
   /// Whether to log [CommandsException]s that occur when received from [Bot.onCommandError].
   bool logErrors;
 
-  /// Whether to delete slash commands if they are not registered before [Nyxx.onReady] is emitted.
-  bool syncDeleted;
-
   /// Whether to automatically acknowledge slash command interactions upon receiving them. If you
   /// set this to false, you *must* respond to the interaction yourself, or the command will fail.
   bool autoAcknowledgeInteractions;
@@ -25,7 +22,6 @@ class BotOptions extends ClientOptions {
     ShutdownShardHook? shutdownShardHook,
     bool dispatchRawShardEvent = false,
     this.logErrors = true,
-    this.syncDeleted = true,
     this.autoAcknowledgeInteractions = true,
   }) : super(
           allowedMentions: allowedMentions,
@@ -120,40 +116,12 @@ class Bot extends Nyxx with GroupMixin {
       for (final builder in _getSlashBuilders()) {
         interactions.registerSlashCommand(builder);
       }
-
-      if (_options.syncDeleted) {
-        await _syncDeletedCommands();
-      }
     });
 
     // We can't sync from directly in the onReady event because Interactions expects to be
     // instanciated before onReady is dispatched. Accessing it here ensures it is instanciated by
     // the time the client is ready.
     interactions.syncOnReady();
-  }
-
-  Future<void> _syncDeletedCommands() async {
-    List<SlashCommand> registeredCommands = await interactions.fetchGlobalCommands().toList();
-    if (guild != null) {
-      registeredCommands.addAll(await interactions.fetchGuildCommands(guild!).toList());
-    }
-
-    for (final registeredCommand in registeredCommands) {
-      if (!childrenMap.containsKey(registeredCommand.name) ||
-          registeredCommand.guild?.id != guild) {
-        _commandsLogger.info('Deleting slash command "${registeredCommand.name}" because it was not'
-            ' registered.');
-
-        if (registeredCommand.guild != null) {
-          await interactions.deleteGuildCommand(
-            registeredCommand.id,
-            registeredCommand.guild!.id,
-          );
-        } else {
-          await interactions.deleteGlobalCommand(registeredCommand.id);
-        }
-      }
-    }
   }
 
   Future<void> _processMessage(Message message) async {
