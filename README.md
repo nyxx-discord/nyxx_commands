@@ -14,7 +14,7 @@ Insipred by [discord.py](https://discordpy.readthedocs.io/en/stable/)'s [command
 
 Create a bot:
 ```dart
-Bot bot = new Bot(
+Bot bot = Bot(
   '<token>',
   GatewayIntents.allUnprivileged,
   prefix: '!',
@@ -28,7 +28,7 @@ Command command = Command(
   'hi', // Command name
   'A simple command', // Command description
   (Context context, String name) async { // Command syntax and callback
-    await context.channel.sendMessage(MessageBuilder.content('Hello, $name!');
+    await context.respond(MessageBuilder.content('Hello, $name!'));
   },
 );
 
@@ -42,9 +42,9 @@ Command command = Command(
   'A command with a type converter',
   (Context context, bool hasCat  /* User input will automatically be converted */) async {
     if (hasCat) {
-        await context.channel.sendMessage(MessageBuilder.content('I have a cat.'));
+        await context.respond(MessageBuilder.content('I have a cat.'));
     } else {
-        await context.channel.sendMessage(MessageBuilder.content('I do not have any pets.'));
+        await context.respond(MessageBuilder.content('I do not have any pets.'));
     }
   },
 );
@@ -56,7 +56,7 @@ Command command = Command(
   'sayhi',
   'A command with an optional argument',
   (Context context, String name, [String? familyName /* This parameter is optional. Notice that optional parameters are *not* named parameters! */]) async {
-      await context.channel.sendMessage(MessageBuilder.content('My name is $name ${familyName ?? ""}'));
+      await context.respond(MessageBuilder.content('My name is $name ${familyName ?? ""}'));
   },
 );
 
@@ -69,24 +69,23 @@ Use a command group:
 Group group = Group(
   'say',
   'An example group',
+  children: [
+    Command(
+      'hi',
+      'Say hi',
+      (Context context) async {
+        await context.respond(MessageBuilder.content('Hi!'));
+      },
+    ),
+    Command(
+      'goodbye',
+      'Say goodbye',
+      (Context context) async {
+        await context.respond(MessageBuilder.content('Goodbye :('));
+      },
+    )
+  ],
 );
-
-// Register commands to the group and not to the bot
-group.registerChild(Command(
-  'hi',
-  'Say hi',
-  (Context context) async {
-    await context.channel.sendMessage(MessageBuilder.content('Hi!'));
-  },
-));
-
-group.registerChild(Command(
-  'goodbye',
-  'Say goodbye',
-  (Context context) async {
-    await context.channel.sendMessage(MessageBuilder.content('Goodbye :('));
-  },
-));
 
 // Register the group to the bot
 bot.registerChild(group);
