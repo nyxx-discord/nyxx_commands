@@ -84,6 +84,10 @@ class InvalidFunctionException extends CommandRegistrationException {
   InvalidFunctionException(String message) : super(message);
 }
 
+class InvalidDescriptionException extends CommandRegistrationException {
+  InvalidDescriptionException(String description) : super('Invalid description "$description"');
+}
+
 class InvalidPrefixException extends CommandsException {
   InvalidPrefixException(String message) : super(message);
 }

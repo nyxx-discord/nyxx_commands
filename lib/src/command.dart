@@ -63,6 +63,7 @@ class Command with GroupMixin {
   final List<String> _orderedArgumentNames = [];
   final Map<String, Type> _mappedArgumentTypes = {};
   final Map<String, ParameterMirror> _mappedArgumentMirrors = {};
+  final Map<String, Description> _mappedDescriptions = {};
 
   /// Create a new [Command].
   ///
@@ -194,6 +195,10 @@ class Command with GroupMixin {
       if (parametrer.isNamed) {
         throw InvalidFunctionException('execute function cannot have named parameters');
       }
+      if (parametrer.metadata.where((element) => element.reflectee is Description).length > 1) {
+        throw InvalidFunctionException('execute function may not have more than one description '
+            'per argument');
+      }
     }
 
     for (final argument in _arguments) {
@@ -203,6 +208,23 @@ class Command with GroupMixin {
         throw InvalidNameException('Invalid converted name "$kebabCaseName" for argument');
       }
 
+      Iterable<Description> descriptions = argument.metadata
+          .where((element) => element.reflectee is Description)
+          .map((descriptionMirror) => descriptionMirror.reflectee)
+          .cast<Description>();
+
+      Description description;
+      if (descriptions.isNotEmpty) {
+        description = descriptions.first;
+      } else {
+        description = const Description('No description provided');
+      }
+
+      if (description.value.isEmpty || description.value.length > 100) {
+        throw InvalidDescriptionException(description.value);
+      }
+
+      _mappedDescriptions[kebabCaseName] = description;
       _mappedArgumentTypes[kebabCaseName] = argument.type.reflectedType;
       _mappedArgumentMirrors[kebabCaseName] = argument;
       _orderedArgumentNames.add(kebabCaseName);
@@ -287,10 +309,12 @@ class Command with GroupMixin {
       List<CommandOptionBuilder> options = [];
 
       for (final mirror in _arguments) {
+        String name = convertToKebabCase(MirrorSystem.getName(mirror.simpleName));
+
         options.add(CommandOptionBuilder(
           discordTypes[mirror.type.reflectedType] ?? CommandOptionType.string,
-          convertToKebabCase(MirrorSystem.getName(mirror.simpleName)),
-          'temp_description',
+          name,
+          _mappedDescriptions[name]!.value,
           required: !mirror.isOptional,
         ));
       }
