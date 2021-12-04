@@ -34,3 +34,33 @@ class Description {
   /// Descriptions must be between 1-100 characters in length.
   const Description(this.value);
 }
+
+/// A decorator used to specify choices for [Command] arguments.
+///
+/// This overrides the [Converter.choices] for the argument type.
+class Choices {
+  /// The choices for this argument.
+  ///
+  /// These are converted to [ArgChoiceBuilder]s at runtime.
+  /// Keys must be [int]s or [String]s.
+  final Map<String, dynamic> choices;
+
+  /// Create a new instance to specify choices for an argument, like so:
+  /// ```dart
+  /// Command(
+  ///   'test',
+  ///   'A test command',
+  ///   (
+  ///     Context context,
+  ///     @Choices({'One': 1, 'Two': 2, 'Three': 3}) int input
+  ///   ) async {
+  ///     await context.respond('You chose the number $input!');
+  ///   }
+  /// )
+  /// ```
+  const Choices(this.choices);
+
+  /// Converts the entries in [choices] to [ArgChoiceBuilder]s.
+  Iterable<ArgChoiceBuilder> get builders =>
+      choices.entries.map((entry) => ArgChoiceBuilder(entry.key, entry.value));
+}

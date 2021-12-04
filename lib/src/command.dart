@@ -64,6 +64,7 @@ class Command with GroupMixin {
   final Map<String, Type> _mappedArgumentTypes = {};
   final Map<String, ParameterMirror> _mappedArgumentMirrors = {};
   final Map<String, Description> _mappedDescriptions = {};
+  final Map<String, Choices> _mappedChoices = {};
 
   /// Create a new [Command].
   ///
@@ -224,6 +225,15 @@ class Command with GroupMixin {
         throw InvalidDescriptionException(description.value);
       }
 
+      Iterable<Choices> choices = argument.metadata
+          .where((element) => element.reflectee is Choices)
+          .map((choicesMirror) => choicesMirror.reflectee)
+          .cast<Choices>();
+
+      if (choices.isNotEmpty) {
+        _mappedChoices[kebabCaseName] = choices.first;
+      }
+
       _mappedDescriptions[kebabCaseName] = description;
       _mappedArgumentTypes[kebabCaseName] = argument.type.reflectedType;
       _mappedArgumentMirrors[kebabCaseName] = argument;
@@ -311,12 +321,16 @@ class Command with GroupMixin {
       for (final mirror in _arguments) {
         String name = convertToKebabCase(MirrorSystem.getName(mirror.simpleName));
 
+        Iterable<ArgChoiceBuilder>? choices = _mappedChoices[name]?.builders;
+
+        choices ??= bot.converterFor(mirror.type.reflectedType)?.choices;
+
         options.add(CommandOptionBuilder(
           discordTypes[mirror.type.reflectedType] ?? CommandOptionType.string,
           name,
           _mappedDescriptions[name]!.value,
           required: !mirror.isOptional,
-          choices: bot.converterFor(mirror.type.reflectedType)?.choices?.toList(),
+          choices: choices?.toList(),
         ));
       }
 
