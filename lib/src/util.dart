@@ -15,9 +15,6 @@ String convertToKebabCase(String camelCase) {
   return res;
 }
 
-/// A command check
-typedef CommandCheckType = bool Function(Context);
-
 /// A decorator used to specify descriptions of [Command] arguments.
 class Description {
   /// The value of this description

@@ -55,7 +55,7 @@ class Command with GroupMixin {
   final Function execute;
 
   /// Similar to [checks] but only applies to this command.
-  final List<CommandCheckType> singleChecks = [];
+  final List<Check> singleChecks = [];
 
   late final MethodMirror _mirror;
   late final List<ParameterMirror> _arguments;
@@ -76,8 +76,8 @@ class Command with GroupMixin {
     this.aliases = const [],
     this.type = CommandType.all,
     List<GroupMixin> children = const [],
-    List<CommandCheckType> checks = const [],
-    List<CommandCheckType> singleChecks = const [],
+    List<Check> checks = const [],
+    List<Check> singleChecks = const [],
   }) {
     if (!commandNameRegexp.hasMatch(name)) {
       throw InvalidNameException(name);
@@ -108,8 +108,8 @@ class Command with GroupMixin {
     this.execute, {
     this.aliases = const [],
     List<GroupMixin> children = const [],
-    List<CommandCheckType> checks = const [],
-    List<CommandCheckType> singleChecks = const [],
+    List<Check> checks = const [],
+    List<Check> singleChecks = const [],
   }) : type = CommandType.textOnly {
     if (!commandNameRegexp.hasMatch(name)) {
       throw InvalidNameException(name);
@@ -140,8 +140,8 @@ class Command with GroupMixin {
     this.execute, {
     this.aliases = const [],
     List<GroupMixin> children = const [],
-    List<CommandCheckType> checks = const [],
-    List<CommandCheckType> singleChecks = const [],
+    List<Check> checks = const [],
+    List<Check> singleChecks = const [],
   }) : type = CommandType.slashOnly {
     if (!commandNameRegexp.hasMatch(name)) {
       throw InvalidNameException('Invalid name "$name" for command');
@@ -287,7 +287,7 @@ class Command with GroupMixin {
     context.arguments = arguments;
 
     for (final check in [...checks, ...singleChecks]) {
-      if (!check(context)) {
+      if (!await check.check(context)) {
         throw CheckFailedException(context);
       }
     }
@@ -338,7 +338,7 @@ class Command with GroupMixin {
   }
 
   /// Add a check to this commands [singleChecks].
-  void singleCheck(CommandCheckType check) => singleChecks.add(check);
+  void singleCheck(Check check) => singleChecks.add(check);
 
   @override
   String toString() => 'Command[name="$name", fullName="$fullName"]';

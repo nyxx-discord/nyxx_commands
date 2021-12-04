@@ -10,6 +10,7 @@ import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_interactions/interactions.dart';
 
 part 'src/bot.dart';
+part 'src/checks.dart';
 part 'src/command.dart';
 part 'src/context.dart';
 part 'src/converter.dart';

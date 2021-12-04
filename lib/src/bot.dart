@@ -55,7 +55,7 @@ class Bot extends Nyxx with GroupMixin {
   final Map<Type, Converter> _converters = {};
 
   /// The [Interactions] instance that this bot uses for managing slash commands.
-  late final Interactions interactions = Interactions(this);
+  late final Interactions interactions;
 
   late final BotOptions _options = options as BotOptions;
 
@@ -113,15 +113,15 @@ class Bot extends Nyxx with GroupMixin {
     }
 
     onReady.listen((event) async {
-      for (final builder in _getSlashBuilders()) {
+      for (final builder in await _getSlashBuilders()) {
         interactions.registerSlashCommand(builder);
       }
+
+      interactions.sync();
     });
 
-    // We can't sync from directly in the onReady event because Interactions expects to be
-    // instanciated before onReady is dispatched. Accessing it here ensures it is instanciated by
-    // the time the client is ready.
-    interactions.syncOnReady();
+    // Interactions expects to be instanciated before onReady is dispatched.
+    interactions = Interactions(this);
   }
 
   Future<void> _processMessage(Message message) async {
@@ -223,28 +223,67 @@ class Bot extends Nyxx with GroupMixin {
     );
   }
 
-  List<SlashCommandBuilder> _getSlashBuilders() {
+  Future<List<SlashCommandBuilder>> _getSlashBuilders() async {
     List<SlashCommandBuilder> builders = [];
 
     for (final child in children) {
-      if (child.hasSlashCommand) {
-        builders.add(
-          SlashCommandBuilder(
+      if (child.hasSlashCommand || (child is Command && child.type != CommandType.textOnly)) {
+        Map<Snowflake, ICommandPermissionBuilder> uniquePermissions = {};
+
+        for (final check in child.checks) {
+          List<ICommandPermissionBuilder> checkPermissions = await check.permissions;
+
+          for (final permission in checkPermissions) {
+            if (uniquePermissions.containsKey(permission.id) &&
+                uniquePermissions[permission.id]!.hasPermission != permission.hasPermission) {
+              _commandsLogger.warning(
+                'Check "${check.name}" is in conflict with a previous check on '
+                'permissions for '
+                '${permission.id.id == 0 ? 'the default permission' : 'id ${permission.id}'}. '
+                'Permission has been set to false to prevent unintended usage.',
+              );
+
+              if (permission is RoleCommandPermissionBuilder) {
+                uniquePermissions[permission.id] =
+                    ICommandPermissionBuilder.role(permission.id, hasPermission: false);
+              } else {
+                uniquePermissions[permission.id] =
+                    ICommandPermissionBuilder.user(permission.id, hasPermission: false);
+              }
+
+              continue;
+            }
+
+            uniquePermissions[permission.id] = permission;
+          }
+        }
+
+        Iterable<GuildCheck> guilds = child.checks.whereType<GuildCheck>();
+
+        if (guilds.length > 1) {
+          throw Exception('Cannot have more than one Guild Check per Command');
+        }
+
+        Iterable<Snowflake?> guildIds = guilds.isNotEmpty ? guilds.first.guildIds : [null];
+
+        for (final guildId in guildIds) {
+          SlashCommandBuilder builder = SlashCommandBuilder(
             child.name,
             child.description,
             _processHandlerRegistration(child.getOptions(), child),
-            guild: guild,
-          ),
-        );
-      } else if (child is Command && child.type != CommandType.textOnly) {
-        SlashCommandBuilder builder = SlashCommandBuilder(
-          child.name,
-          child.description,
-          child.getOptions(),
-          guild: guild,
-        )..registerHandler((interaction) => _processInteraction(interaction, child));
+            defaultPermissions: uniquePermissions[Snowflake.zero()]?.hasPermission ?? true,
+            permissions: List.of(
+              uniquePermissions.values.where((permission) => permission.id != Snowflake.zero()),
+            ),
+            guild: guildId ?? guild,
+          );
 
-        builders.add(builder);
+          if (child is Command) {
+            builder.registerHandler((interaction) => _processInteraction(interaction, child));
+          }
+
+          builders.add(builder);
+        }
       }
     }
 
