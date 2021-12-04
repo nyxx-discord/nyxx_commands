@@ -1,3 +1,13 @@
+## 0.3.0
+__New features__:
+- Checks now integrate with Discord's slash command permissions
+- Checks can now be asynchronous
+- Added `RoleCheck`, `UserCheck` and `GuildCheck` that represent the basic Discord slash command permissions: role restricted, user restricted and guild restricted (guild command)
+- Slash command arguments can have descriptions set with the `@Description` decorator
+
+__Breaking changes__:
+- Checks are no longer a simple function
+
 ## 0.2.0
 __Breaking changes__:
 - Reorder `description` and `execute` parameters in `Command.textOnly` and `Command.slashOnly` constructors.
