@@ -300,7 +300,7 @@ class Command with GroupMixin {
   }
 
   @override
-  List<CommandOptionBuilder> getOptions() {
+  List<CommandOptionBuilder> getOptions(Bot bot) {
     if (type != CommandType.textOnly) {
       if (depth > 2) {
         throw SlashException('Slash commands may at most be two layers deep');
@@ -316,13 +316,14 @@ class Command with GroupMixin {
           name,
           _mappedDescriptions[name]!.value,
           required: !mirror.isOptional,
+          choices: bot.converterFor(mirror.type.reflectedType)?.choices?.toList(),
         ));
       }
 
       return options;
     } else {
       // Text-only commands might have children which are slash commands
-      return super.getOptions();
+      return super.getOptions(bot);
     }
   }
 

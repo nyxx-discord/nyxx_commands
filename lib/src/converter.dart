@@ -37,10 +37,15 @@ class Converter<T> {
   /// which the next argument should be parsed.
   final FutureOr<T?> Function(StringView, Context) convert;
 
+  /// A List of choices users can choose from.
+  ///
+  /// There is a maximum of 25 choices per option.
+  final Iterable<ArgChoiceBuilder>? choices;
+
   /// Construct a new [Converter].
   ///
   /// This must then be registered to a [Bot] instance with [Bot.addConverter].
-  Converter(this.convert);
+  Converter(this.convert, {this.choices});
 }
 
 /// Object used to combine converters.
@@ -69,6 +74,9 @@ class CombineConverter<R, T> extends Converter<T> {
           }
           return null;
         });
+
+  @override
+  Iterable<ArgChoiceBuilder>? get choices => converter.choices;
 }
 
 /// Object used to successivly try similar [Converter]s until a successful parsing is found.
@@ -101,6 +109,36 @@ class FallbackConverter<T> extends Converter<T> {
 
           return ret;
         });
+
+  @override
+  Iterable<ArgChoiceBuilder>? get choices {
+    List<ArgChoiceBuilder> allChoices = [];
+
+    for (final converter in converters) {
+      Iterable<ArgChoiceBuilder>? converterChoices = converter.choices;
+
+      if (converterChoices == null) {
+        return null;
+      }
+
+      for (final choice in converterChoices) {
+        ArgChoiceBuilder existing =
+            allChoices.singleWhere((element) => element.name == choice.name, orElse: () => choice);
+
+        if (existing.value != choice.value) {
+          return null;
+        } else if (identical(choice, existing)) {
+          allChoices.add(choice);
+        }
+      }
+    }
+
+    if (allChoices.isEmpty || allChoices.length > 25) {
+      return null;
+    }
+
+    return allChoices;
+  }
 }
 
 /// Converter to convert input to [String]s.

@@ -134,7 +134,7 @@ mixin GroupMixin {
   }
 
   /// Build the options for registering this group to the Discord API for slash commands.
-  List<CommandOptionBuilder> getOptions() {
+  List<CommandOptionBuilder> getOptions(Bot bot) {
     if (!hasSlashCommand) {
       throw SlashException(
         'Groups with no slash command children cannot be converted to slash command members',
@@ -149,14 +149,14 @@ mixin GroupMixin {
           CommandOptionType.subCommandGroup,
           child.name,
           child.description,
-          options: child.getOptions(),
+          options: child.getOptions(bot),
         ));
       } else if (child is Command && child.type != CommandType.textOnly) {
         options.add(CommandOptionBuilder(
           CommandOptionType.subCommand,
           child.name,
           child.description,
-          options: child.getOptions(),
+          options: child.getOptions(bot),
         ));
       }
     }

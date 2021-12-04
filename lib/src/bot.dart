@@ -270,7 +270,7 @@ class Bot extends Nyxx with GroupMixin {
           SlashCommandBuilder builder = SlashCommandBuilder(
             child.name,
             child.description,
-            _processHandlerRegistration(child.getOptions(), child),
+            _processHandlerRegistration(child.getOptions(this), child),
             defaultPermissions: uniquePermissions[Snowflake.zero()]?.hasPermission ?? true,
             permissions: List.of(
               uniquePermissions.values.where((permission) => permission.id != Snowflake.zero()),
