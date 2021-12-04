@@ -23,8 +23,8 @@ class Check {
   /// commands by default but deny it for cecrtain users.
   static Check deny(Check check, [String? name]) => _DenyCheck(check, name);
 
-  /// A List of permission overrides that will be used on slash commands using this check.
-  Future<List<ICommandPermissionBuilder>> get permissions => Future.value([]);
+  /// A Iterable of permission overrides that will be used on slash commands using this check.
+  Future<Iterable<ICommandPermissionBuilder>> get permissions => Future.value([]);
 }
 
 class _AnyCheck extends Check {
@@ -45,11 +45,11 @@ class _AnyCheck extends Check {
   }
 
   @override
-  Future<List<ICommandPermissionBuilder>> get permissions async {
+  Future<Iterable<ICommandPermissionBuilder>> get permissions async {
     Iterable<Iterable<ICommandPermissionBuilder>> permissions =
         await Future.wait(checks.map((check) => check.permissions));
 
-    return List.of(permissions.first.where(
+    return permissions.first.where(
       (permission) =>
           permission.hasPermission ||
           // If permission is not granted, we check that it is not allowed by any of the other
@@ -59,7 +59,7 @@ class _AnyCheck extends Check {
                 // ICommandPermissionBuilder does not override == so we manually check it
                 (p) => p.id == permission.id && !p.hasPermission,
               )),
-    ));
+    );
   }
 }
 
@@ -70,8 +70,8 @@ class _DenyCheck extends Check {
       : super((context) async => !(await source.check(context)), name ?? 'Denied ${source.name}');
 
   @override
-  Future<List<ICommandPermissionBuilder>> get permissions async {
-    List<ICommandPermissionBuilder> permissions = await source.permissions;
+  Future<Iterable<ICommandPermissionBuilder>> get permissions async {
+    Iterable<ICommandPermissionBuilder> permissions = await source.permissions;
 
     Iterable<RoleCommandPermissionBuilder> rolePermissions =
         permissions.whereType<RoleCommandPermissionBuilder>();
@@ -121,7 +121,7 @@ class RoleCheck extends Check {
         );
 
   @override
-  Future<List<ICommandPermissionBuilder>> get permissions => Future.value([
+  Future<Iterable<ICommandPermissionBuilder>> get permissions => Future.value([
         ICommandPermissionBuilder.role(Snowflake.zero(), hasPermission: false),
         ...roleIds.map((e) => ICommandPermissionBuilder.role(e, hasPermission: true)),
       ]);
@@ -157,7 +157,7 @@ class UserCheck extends Check {
         );
 
   @override
-  Future<List<ICommandPermissionBuilder>> get permissions => Future.value([
+  Future<Iterable<ICommandPermissionBuilder>> get permissions => Future.value([
         ICommandPermissionBuilder.user(Snowflake.zero(), hasPermission: false),
         ...userIds.map((e) => ICommandPermissionBuilder.user(e, hasPermission: true)),
       ]);

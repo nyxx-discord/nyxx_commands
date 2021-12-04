@@ -21,7 +21,7 @@ mixin GroupMixin {
   String get name;
 
   /// A list of aliases that can also be used to refer to this group.
-  List<String> get aliases;
+  Iterable<String> get aliases;
 
   /// A description of what this group represents.
   String get description;
@@ -33,7 +33,7 @@ mixin GroupMixin {
   ///
   /// If you only want to apply a check to a specific command and not all descendants, see
   /// [Command.singleChecks]
-  List<Check> get checks => [...?_parent?.checks, ..._checks];
+  Iterable<Check> get checks => [...?_parent?.checks, ..._checks];
 
   /// The full name of this group.
   ///
@@ -134,14 +134,14 @@ mixin GroupMixin {
   }
 
   /// Build the options for registering this group to the Discord API for slash commands.
-  List<CommandOptionBuilder> getOptions(Bot bot) {
+  Iterable<CommandOptionBuilder> getOptions(Bot bot) {
     if (!hasSlashCommand) {
       throw SlashException(
         'Groups with no slash command children cannot be converted to slash command members',
       );
     }
 
-    final List<CommandOptionBuilder> options = [];
+    List<CommandOptionBuilder> options = [];
 
     for (final child in children) {
       if (child.hasSlashCommand) {
@@ -149,14 +149,14 @@ mixin GroupMixin {
           CommandOptionType.subCommandGroup,
           child.name,
           child.description,
-          options: child.getOptions(bot),
+          options: List.of(child.getOptions(bot)),
         ));
       } else if (child is Command && child.type != CommandType.textOnly) {
         options.add(CommandOptionBuilder(
           CommandOptionType.subCommand,
           child.name,
           child.description,
-          options: child.getOptions(bot),
+          options: List.of(child.getOptions(bot)),
         ));
       }
     }
@@ -178,15 +178,15 @@ class Group with GroupMixin {
   @override
   String description;
   @override
-  List<String> aliases;
+  Iterable<String> aliases;
 
   /// Construct a new [Group]
   Group(
     this.name,
     this.description, {
     this.aliases = const [],
-    List<GroupMixin> children = const [],
-    List<Check> checks = const [],
+    Iterable<GroupMixin> children = const [],
+    Iterable<Check> checks = const [],
   }) {
     if (!commandNameRegexp.hasMatch(name)) {
       throw InvalidNameException(name);

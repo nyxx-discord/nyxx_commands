@@ -70,7 +70,7 @@ class Bot extends Nyxx with GroupMixin {
   @override
   String get description => throw UnsupportedError('get description');
   @override
-  List<String> get aliases => throw UnsupportedError('get aliases');
+  Iterable<String> get aliases => throw UnsupportedError('get aliases');
 
   /// Create a new [Bot] instance.
   Bot(
@@ -223,7 +223,7 @@ class Bot extends Nyxx with GroupMixin {
     );
   }
 
-  Future<List<SlashCommandBuilder>> _getSlashBuilders() async {
+  Future<Iterable<SlashCommandBuilder>> _getSlashBuilders() async {
     List<SlashCommandBuilder> builders = [];
 
     for (final child in children) {
@@ -231,7 +231,7 @@ class Bot extends Nyxx with GroupMixin {
         Map<Snowflake, ICommandPermissionBuilder> uniquePermissions = {};
 
         for (final check in child.checks) {
-          List<ICommandPermissionBuilder> checkPermissions = await check.permissions;
+          Iterable<ICommandPermissionBuilder> checkPermissions = await check.permissions;
 
           for (final permission in checkPermissions) {
             if (uniquePermissions.containsKey(permission.id) &&
@@ -270,7 +270,9 @@ class Bot extends Nyxx with GroupMixin {
           SlashCommandBuilder builder = SlashCommandBuilder(
             child.name,
             child.description,
-            _processHandlerRegistration(child.getOptions(this), child),
+            List.of(
+              _processHandlerRegistration(child.getOptions(this), child),
+            ),
             defaultPermissions: uniquePermissions[Snowflake.zero()]?.hasPermission ?? true,
             permissions: List.of(
               uniquePermissions.values.where((permission) => permission.id != Snowflake.zero()),
@@ -290,8 +292,8 @@ class Bot extends Nyxx with GroupMixin {
     return builders;
   }
 
-  List<CommandOptionBuilder> _processHandlerRegistration(
-    List<CommandOptionBuilder> options,
+  Iterable<CommandOptionBuilder> _processHandlerRegistration(
+    Iterable<CommandOptionBuilder> options,
     GroupMixin current,
   ) {
     for (final builder in options) {

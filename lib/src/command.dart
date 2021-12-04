@@ -31,9 +31,9 @@ class Command with GroupMixin {
   @override
   final String name;
 
-  /// A [List] of short names this command is aliased to.
+  /// A [Iterable] of short names this command is aliased to.
   @override
-  final List<String> aliases;
+  final Iterable<String> aliases;
 
   /// A description of this command.
   @override
@@ -58,7 +58,7 @@ class Command with GroupMixin {
   final List<Check> singleChecks = [];
 
   late final MethodMirror _mirror;
-  late final List<ParameterMirror> _arguments;
+  late final Iterable<ParameterMirror> _arguments;
   late final int _requiredArguments;
   final List<String> _orderedArgumentNames = [];
   final Map<String, Type> _mappedArgumentTypes = {};
@@ -76,9 +76,9 @@ class Command with GroupMixin {
     this.execute, {
     this.aliases = const [],
     this.type = CommandType.all,
-    List<GroupMixin> children = const [],
-    List<Check> checks = const [],
-    List<Check> singleChecks = const [],
+    Iterable<GroupMixin> children = const [],
+    Iterable<Check> checks = const [],
+    Iterable<Check> singleChecks = const [],
   }) {
     if (!commandNameRegexp.hasMatch(name)) {
       throw InvalidNameException(name);
@@ -108,9 +108,9 @@ class Command with GroupMixin {
     this.description,
     this.execute, {
     this.aliases = const [],
-    List<GroupMixin> children = const [],
-    List<Check> checks = const [],
-    List<Check> singleChecks = const [],
+    Iterable<GroupMixin> children = const [],
+    Iterable<Check> checks = const [],
+    Iterable<Check> singleChecks = const [],
   }) : type = CommandType.textOnly {
     if (!commandNameRegexp.hasMatch(name)) {
       throw InvalidNameException(name);
@@ -140,9 +140,9 @@ class Command with GroupMixin {
     this.description,
     this.execute, {
     this.aliases = const [],
-    List<GroupMixin> children = const [],
-    List<Check> checks = const [],
-    List<Check> singleChecks = const [],
+    Iterable<GroupMixin> children = const [],
+    Iterable<Check> checks = const [],
+    Iterable<Check> singleChecks = const [],
   }) : type = CommandType.slashOnly {
     if (!commandNameRegexp.hasMatch(name)) {
       throw InvalidNameException('Invalid name "$name" for command');
@@ -166,19 +166,19 @@ class Command with GroupMixin {
   void _loadArguments(Function fn, Type contextType) {
     _mirror = (reflect(fn) as ClosureMirror).function;
 
-    List<ParameterMirror> arguments = _mirror.parameters;
+    Iterable<ParameterMirror> arguments = _mirror.parameters;
 
     if (arguments.isEmpty) {
       throw InvalidFunctionException('execute function must have at least one argument');
     }
 
-    if (!reflectType(contextType).isAssignableTo(arguments[0].type)) {
+    if (!reflectType(contextType).isAssignableTo(arguments.first.type)) {
       throw InvalidFunctionException(
           'The first parameter to the execute function must be of type $contextType');
     }
 
     // Skip context argument
-    _arguments = List.of(arguments.skip(1));
+    _arguments = arguments.skip(1);
     _requiredArguments = _arguments.fold(0, (i, e) {
       if (e.isOptional) {
         return i;
@@ -254,7 +254,7 @@ class Command with GroupMixin {
   /// string representations or will not be parsed at all if the type received from the API is
   /// correct.
   Future<void> invoke(Bot bot, Context context) async {
-    List arguments = <dynamic>[];
+    List<dynamic> arguments = [];
 
     if (context is MessageContext) {
       StringView argumentsView = StringView(context.rawArguments);
@@ -310,7 +310,7 @@ class Command with GroupMixin {
   }
 
   @override
-  List<CommandOptionBuilder> getOptions(Bot bot) {
+  Iterable<CommandOptionBuilder> getOptions(Bot bot) {
     if (type != CommandType.textOnly) {
       if (depth > 2) {
         throw SlashException('Slash commands may at most be two layers deep');

@@ -3,7 +3,7 @@ part of nyxx_commands;
 /// Contains data about a command's execution context.
 abstract class Context {
   /// The list of arguments parsed from this context.
-  late final List<dynamic> arguments;
+  late final Iterable<dynamic> arguments;
 
   /// The bot that triggered this context's execution.
   final Bot bot;

@@ -37,7 +37,7 @@ class Converter<T> {
   /// which the next argument should be parsed.
   final FutureOr<T?> Function(StringView, Context) convert;
 
-  /// A List of choices users can choose from.
+  /// A Iterable of choices users can choose from.
   ///
   /// There is a maximum of 25 choices per option.
   final Iterable<ArgChoiceBuilder>? choices;
@@ -82,7 +82,7 @@ class CombineConverter<R, T> extends Converter<T> {
 /// Object used to successivly try similar [Converter]s until a successful parsing is found.
 class FallbackConverter<T> extends Converter<T> {
   /// A list of [Converter]s this [FallbackConverter] will try in succession.
-  final List<Converter<T>> converters;
+  final Iterable<Converter<T>> converters;
 
   /// Construct a new [FallbackConverter].
   ///
@@ -172,10 +172,10 @@ final Converter<double> doubleConverter = Converter<double>(
 final Converter<bool> boolConverter = Converter<bool>((view, context) {
   String word = view.getQuotedWord();
 
-  const List<String> truthy = ['y', 'yes', '+', '1', 'true'];
-  const List<String> falsy = ['n', 'no', '-', '0', 'false'];
+  const Iterable<String> truthy = ['y', 'yes', '+', '1', 'true'];
+  const Iterable<String> falsy = ['n', 'no', '-', '0', 'false'];
 
-  const List<String> valid = [...truthy, ...falsy];
+  const Iterable<String> valid = [...truthy, ...falsy];
 
   if (valid.contains(word.toLowerCase())) {
     return truthy.contains(word.toLowerCase());
@@ -238,7 +238,7 @@ final Converter<Member> memberConverter = FallbackConverter<Member>([
     String word = view.getQuotedWord();
 
     if (context.guild != null) {
-      List<Member> named = await context.guild!.searchMembersGateway(word, limit: 800000).toList();
+      Stream<Member> named = context.guild!.searchMembersGateway(word, limit: 800000);
 
       List<Member> usernameExact = [];
       List<Member> nickExact = [];
@@ -249,7 +249,7 @@ final Converter<Member> memberConverter = FallbackConverter<Member>([
       List<Member> usernameStart = [];
       List<Member> nickStart = [];
 
-      for (final member in named) {
+      await for (final member in named) {
         User user = await member.user.getOrDownload();
 
         if (user.username == word) {
@@ -366,7 +366,7 @@ Converter<T> _guildChannelConverterFor<T extends GuildChannel>() {
     Converter<T>((view, context) {
       if (context.guild != null) {
         String word = view.getQuotedWord();
-        List<T> channels = List.of(context.guild!.channels.whereType<T>());
+        Iterable<T> channels = context.guild!.channels.whereType<T>();
 
         List<T> caseInsensitive = [];
         List<T> partial = [];
@@ -483,13 +483,13 @@ final Converter<Role> roleConverter = FallbackConverter<Role>([
   Converter<Role>((view, context) async {
     String word = view.getQuotedWord();
     if (context.guild != null) {
-      List<Role> roles = await context.guild!.fetchRoles().toList();
+      Stream<Role> roles = context.guild!.fetchRoles();
 
       List<Role> exact = [];
       List<Role> caseInsensitive = [];
       List<Role> partial = [];
 
-      for (final role in roles) {
+      await for (final role in roles) {
         if (role.name == word) {
           exact.add(role);
         }
