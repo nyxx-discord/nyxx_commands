@@ -70,3 +70,31 @@ class Choices {
   @override
   String toString() => 'Choices[choices=$choices]';
 }
+
+/// A decorator used to specify the Discord name of [Command] arguments.
+///
+/// This overrides the default, which is to convert camelCase names to kebab-case.
+class Name {
+  /// The name for this argument.
+  ///
+  /// This must match [commandNameRegexp].
+  final String name;
+
+  /// Create a new instance to specify the name of an argument, like so:
+  /// ```dart
+  /// Command(
+  ///   'test',
+  ///   'A test command',
+  ///   (
+  ///     Context context,
+  ///     @Name('name') int input
+  ///   ) async {
+  ///     await context.respond('Hello, $input!');
+  ///   }
+  /// )
+  /// ```
+  const Name(this.name);
+
+  @override
+  String toString() => 'Name[name=$name]';
+}

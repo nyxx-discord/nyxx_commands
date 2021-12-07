@@ -200,17 +200,39 @@ class Command with GroupMixin {
         throw CommandRegistrationError(
             'Command callback parameters must not have more than one Description annotation');
       }
+      if (parametrer.metadata.where((element) => element.reflectee is Choices).length > 1) {
+        throw CommandRegistrationError(
+            'Command callback parameters must not have more than one Choices annotation');
+      }
+      if (parametrer.metadata.where((element) => element.reflectee is Name).length > 1) {
+        throw CommandRegistrationError(
+            'Command callback parameters must not have more than one Name annotation');
+      }
     }
 
     for (final argument in _arguments) {
-      String argumentName = MirrorSystem.getName(argument.simpleName);
+      Iterable<Name> names = argument.metadata
+          .where((element) => element.reflectee is Name)
+          .map((nameMirror) => nameMirror.reflectee)
+          .cast<Name>();
 
-      String kebabCaseName = convertToKebabCase(argumentName);
+      String argumentName;
+      if (names.isNotEmpty) {
+        argumentName = names.first.name;
 
-      if (!commandNameRegexp.hasMatch(kebabCaseName)) {
-        throw CommandRegistrationError(
-            'Could not convert parameter "$argumentName" to a valid Discord '
-            'Slash command argument name (got "$kebabCaseName")');
+        if (!commandNameRegexp.hasMatch(argumentName)) {
+          throw CommandRegistrationError('Invalid argument name "$argumentName"');
+        }
+      } else {
+        String rawArgumentName = MirrorSystem.getName(argument.simpleName);
+
+        argumentName = convertToKebabCase(rawArgumentName);
+
+        if (!commandNameRegexp.hasMatch(argumentName)) {
+          throw CommandRegistrationError(
+              'Could not convert parameter "$rawArgumentName" to a valid Discord '
+              'Slash command argument name (got "$argumentName")');
+        }
       }
 
       Iterable<Description> descriptions = argument.metadata
@@ -236,13 +258,13 @@ class Command with GroupMixin {
           .cast<Choices>();
 
       if (choices.isNotEmpty) {
-        _mappedChoices[kebabCaseName] = choices.first;
+        _mappedChoices[argumentName] = choices.first;
       }
 
-      _mappedDescriptions[kebabCaseName] = description;
-      _mappedArgumentTypes[kebabCaseName] = argument.type.reflectedType;
-      _mappedArgumentMirrors[kebabCaseName] = argument;
-      _orderedArgumentNames.add(kebabCaseName);
+      _mappedDescriptions[argumentName] = description;
+      _mappedArgumentTypes[argumentName] = argument.type.reflectedType;
+      _mappedArgumentMirrors[argumentName] = argument;
+      _orderedArgumentNames.add(argumentName);
     }
   }
 
@@ -317,7 +339,19 @@ class Command with GroupMixin {
       List<CommandOptionBuilder> options = [];
 
       for (final mirror in _arguments) {
-        String name = convertToKebabCase(MirrorSystem.getName(mirror.simpleName));
+        Iterable<Name> names = mirror.metadata
+            .where((element) => element.reflectee is Name)
+            .map((nameMirror) => nameMirror.reflectee)
+            .cast<Name>();
+
+        String name;
+        if (names.isNotEmpty) {
+          name = names.first.name;
+        } else {
+          String rawArgumentName = MirrorSystem.getName(mirror.simpleName);
+
+          name = convertToKebabCase(rawArgumentName);
+        }
 
         Iterable<ArgChoiceBuilder>? choices = _mappedChoices[name]?.builders;
 
