@@ -375,4 +375,8 @@ class Bot extends Nyxx with GroupMixin {
       _commandsLogger.info('Registered command "${command.fullName}"');
     }
   }
+
+  @override
+  String toString() =>
+      'Bot[commands=${List.of(walkCommands())}, converters=${List.of(_converters.values)}]';
 }

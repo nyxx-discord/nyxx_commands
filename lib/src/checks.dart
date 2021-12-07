@@ -25,6 +25,9 @@ class Check {
 
   /// A Iterable of permission overrides that will be used on slash commands using this check.
   Future<Iterable<ICommandPermissionBuilder>> get permissions => Future.value([]);
+
+  @override
+  String toString() => 'Check[name=$name]';
 }
 
 class _AnyCheck extends Check {

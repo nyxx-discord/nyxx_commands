@@ -46,6 +46,9 @@ class Converter<T> {
   ///
   /// This must then be registered to a [Bot] instance with [Bot.addConverter].
   Converter(this.convert, {this.choices});
+
+  @override
+  String toString() => 'Converter<$T>';
 }
 
 /// Object used to combine converters.
@@ -77,6 +80,9 @@ class CombineConverter<R, T> extends Converter<T> {
 
   @override
   Iterable<ArgChoiceBuilder>? get choices => converter.choices;
+
+  @override
+  String toString() => 'CombineConverter<$R, $T>[converter=$converter]';
 }
 
 /// Object used to successivly try similar [Converter]s until a successful parsing is found.
@@ -139,6 +145,9 @@ class FallbackConverter<T> extends Converter<T> {
 
     return allChoices;
   }
+
+  @override
+  String toString() => 'FallbackConverter<$T>[converters=${List.of(converters)}]';
 }
 
 /// Converter to convert input to [String]s.

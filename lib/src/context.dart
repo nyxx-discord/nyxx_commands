@@ -84,6 +84,9 @@ class MessageContext extends Context {
       return channel.sendMessage(builder..replyBuilder = null);
     }
   }
+
+  @override
+  String toString() => 'MessageContext[message=$message, message.content=${message.content}]';
 }
 
 /// Represents a [Context] triggered by a slash command ([Interaction]).
@@ -119,4 +122,8 @@ class InteractionContext extends Context {
 
   @override
   Future<Message> respond(MessageBuilder builder) => interactionEvent.sendFollowup(builder);
+
+  @override
+  String toString() =>
+      'InteractionContext[interaction=${interaction.token}, arguments=$rawArguments]';
 }

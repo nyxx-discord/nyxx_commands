@@ -33,6 +33,9 @@ class Description {
   ///
   /// Descriptions must be between 1-100 characters in length.
   const Description(this.value);
+
+  @override
+  String toString() => 'Description[value="$value"]';
 }
 
 /// A decorator used to specify choices for [Command] arguments.
@@ -63,4 +66,7 @@ class Choices {
   /// Converts the entries in [choices] to [ArgChoiceBuilder]s.
   Iterable<ArgChoiceBuilder> get builders =>
       choices.entries.map((entry) => ArgChoiceBuilder(entry.key, entry.value));
+
+  @override
+  String toString() => 'Choices[choices=$choices]';
 }

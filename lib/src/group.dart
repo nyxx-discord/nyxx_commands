@@ -196,5 +196,5 @@ class Group with GroupMixin {
   }
 
   @override
-  String toString() => 'Group[name=$name, fullName=$fullName]';
+  String toString() => 'Group[name="$name", fullName="$fullName"]';
 }
