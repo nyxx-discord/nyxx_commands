@@ -162,7 +162,7 @@ class Bot extends Nyxx with GroupMixin {
   }
 
   Future<Context> _messageContext(Message message, StringView contentView, String prefix) async {
-    Command command = getCommand(contentView) ?? (throw CommandNotFound(contentView));
+    Command command = getCommand(contentView) ?? (throw CommandNotFoundException(contentView));
 
     TextChannel channel = await message.channel.getOrDownload();
 

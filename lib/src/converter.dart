@@ -523,7 +523,7 @@ final Converter<Role> roleConverter = FallbackConverter<Role>([
 /// Attempt to parse a single argument from an argument view.
 ///
 /// [bot] is the [Bot] used for retrieving the converters for a specific [Type]. If no converter
-/// for [expectedType] is found, a [MissingConverterException] is thrown.
+/// for [expectedType] is found, a [NoConverterException] is thrown.
 Future<dynamic> parse(Bot bot, Context context, StringView toParse, Type expectedType) async {
   Converter? converter = bot.converterFor(expectedType);
   if (converter == null) {
@@ -538,7 +538,7 @@ Future<dynamic> parse(Bot bot, Context context, StringView toParse, Type expecte
     }
 
     return parsed;
-  } on ParsingError catch (e) {
+  } on ParsingException catch (e) {
     throw BadInputException('Bad input $context: ${e.message}', context);
   }
 }

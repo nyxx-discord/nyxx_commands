@@ -68,7 +68,7 @@ class Command with GroupMixin {
 
   /// Create a new [Command].
   ///
-  /// [name] must match [commandNameRegexp] or an [InvalidNameException] will be thrown.
+  /// [name] must match [commandNameRegexp] or an [CommandRegistrationError] will be thrown.
   /// [execute] must be a function whose first parameter must be of type [Context].
   Command(
     this.name,
@@ -101,7 +101,7 @@ class Command with GroupMixin {
 
   /// Create a new text-only [Command].
   ///
-  /// [name] must match [commandNameRegexp] or an [InvalidNameException] will be thrown.
+  /// [name] must match [commandNameRegexp] or an [CommandRegistrationError] will be thrown.
   /// [execute] must be a function whose first parameter must be of type [MessageContext].
   Command.textOnly(
     this.name,
@@ -133,7 +133,7 @@ class Command with GroupMixin {
 
   /// Create a new slash-only [Command].
   ///
-  /// [name] must match [commandNameRegexp] or an [InvalidNameException] will be thrown.
+  /// [name] must match [commandNameRegexp] or an [CommandRegistrationError] will be thrown.
   /// [execute] must be a function whose first parameter must be of type [InteractionContext].
   Command.slashOnly(
     this.name,

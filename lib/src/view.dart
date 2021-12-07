@@ -124,7 +124,7 @@ class StringView {
       }
 
       if (eof) {
-        throw ParsingError('Unclosed quote at position $start');
+        throw ParsingException('Unclosed quote at position $start');
       }
 
       String escaped = escape(start, index);

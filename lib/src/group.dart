@@ -91,9 +91,9 @@ mixin GroupMixin {
   /// Add a child to this group.
   ///
   /// If any of its name or aliases confict with already registered commands, a
-  /// [DuplicateNameException] is thrown.
+  /// [CommandRegistrationError] is thrown.
   ///
-  /// If [child] already has a parent, an [AlreadyRegisteredException] is thrown.
+  /// If [child] already has a parent, an [CommandRegistrationError] is thrown.
   void registerChild(GroupMixin child) {
     if (childrenMap.containsKey(child.name)) {
       throw CommandRegistrationError('Command with name "$fullName ${child.name}" already exists');
