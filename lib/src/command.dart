@@ -81,7 +81,7 @@ class Command with GroupMixin {
     Iterable<Check> singleChecks = const [],
   }) {
     if (!commandNameRegexp.hasMatch(name)) {
-      throw InvalidNameException(name);
+      throw CommandRegistrationError('Invalid command name "$name"');
     }
 
     _loadArguments(execute, Context);
@@ -113,7 +113,7 @@ class Command with GroupMixin {
     Iterable<Check> singleChecks = const [],
   }) : type = CommandType.textOnly {
     if (!commandNameRegexp.hasMatch(name)) {
-      throw InvalidNameException(name);
+      throw CommandRegistrationError('Invalid command name "$name"');
     }
 
     _loadArguments(execute, MessageContext);
@@ -145,7 +145,7 @@ class Command with GroupMixin {
     Iterable<Check> singleChecks = const [],
   }) : type = CommandType.slashOnly {
     if (!commandNameRegexp.hasMatch(name)) {
-      throw InvalidNameException('Invalid name "$name" for command');
+      throw CommandRegistrationError('Invalid command name "$name"');
     }
 
     _loadArguments(execute, InteractionContext);
@@ -169,12 +169,12 @@ class Command with GroupMixin {
     Iterable<ParameterMirror> arguments = _mirror.parameters;
 
     if (arguments.isEmpty) {
-      throw InvalidFunctionException('execute function must have at least one argument');
+      throw CommandRegistrationError('Command callback function must have a Context parameter');
     }
 
     if (!reflectType(contextType).isAssignableTo(arguments.first.type)) {
-      throw InvalidFunctionException(
-          'The first parameter to the execute function must be of type $contextType');
+      throw CommandRegistrationError(
+          'The first parameter of a command callback must be of type $contextType');
     }
 
     // Skip context argument
@@ -188,25 +188,29 @@ class Command with GroupMixin {
 
     for (final parametrer in _arguments) {
       if (!parametrer.type.hasReflectedType) {
-        throw InvalidFunctionException('execute function must have reflected parameter types');
+        throw CommandRegistrationError('Command callback parameters must have reflected types');
       }
       if (parametrer.type.reflectedType == dynamic) {
-        throw InvalidFunctionException('execute function cannot have dynamic parameter types');
+        throw CommandRegistrationError('Command callback parameters must not be of type "dynamic"');
       }
       if (parametrer.isNamed) {
-        throw InvalidFunctionException('execute function cannot have named parameters');
+        throw CommandRegistrationError('Command callback parameters must not be named parameters');
       }
       if (parametrer.metadata.where((element) => element.reflectee is Description).length > 1) {
-        throw InvalidFunctionException('execute function may not have more than one description '
-            'per argument');
+        throw CommandRegistrationError(
+            'Command callback parameters must not have more than one Description annotation');
       }
     }
 
     for (final argument in _arguments) {
-      String kebabCaseName = convertToKebabCase(MirrorSystem.getName(argument.simpleName));
+      String argumentName = MirrorSystem.getName(argument.simpleName);
+
+      String kebabCaseName = convertToKebabCase(argumentName);
 
       if (!commandNameRegexp.hasMatch(kebabCaseName)) {
-        throw InvalidNameException('Invalid converted name "$kebabCaseName" for argument');
+        throw CommandRegistrationError(
+            'Could not convert parameter "$argumentName" to a valid Discord '
+            'Slash command argument name (got "$kebabCaseName")');
       }
 
       Iterable<Description> descriptions = argument.metadata
@@ -222,7 +226,8 @@ class Command with GroupMixin {
       }
 
       if (description.value.isEmpty || description.value.length > 100) {
-        throw InvalidDescriptionException(description.value);
+        throw CommandRegistrationError(
+            'Descriptions must not be empty nor longer than 100 characters');
       }
 
       Iterable<Choices> choices = argument.metadata
@@ -268,6 +273,10 @@ class Command with GroupMixin {
 
         arguments.add(await parse(bot, context, argumentsView, expectedType));
       }
+
+      if (arguments.length < _requiredArguments) {
+        throw NotEnoughArgumentsException(context);
+      }
     } else if (context is InteractionContext) {
       for (final argumentName in _orderedArgumentNames) {
         if (!context.rawArguments.containsKey(argumentName)) {
@@ -287,35 +296,24 @@ class Command with GroupMixin {
       }
     }
 
-    if (arguments.length < _requiredArguments) {
-      throw NotEnoughArgumentsException(
-        arguments.length,
-        _requiredArguments,
-      );
-    }
-
     context.arguments = arguments;
 
     for (final check in [...checks, ...singleChecks]) {
       if (!await check.check(context)) {
-        throw CheckFailedException(context);
+        throw CheckFailedException(check, context);
       }
     }
 
     try {
       Function.apply(execute, [context, ...arguments]);
     } on Exception catch (e) {
-      throw UncaughtException(e);
+      throw UncaughtException(e, context);
     }
   }
 
   @override
   Iterable<CommandOptionBuilder> getOptions(Bot bot) {
     if (type != CommandType.textOnly) {
-      if (depth > 2) {
-        throw SlashException('Slash commands may at most be two layers deep');
-      }
-
       List<CommandOptionBuilder> options = [];
 
       for (final mirror in _arguments) {
@@ -345,7 +343,7 @@ class Command with GroupMixin {
   void registerChild(GroupMixin child) {
     if (type != CommandType.textOnly) {
       if (child.hasSlashCommand || (child is Command && child.type != CommandType.textOnly)) {
-        throw SlashException('Slash commands cannot have slash command decendants');
+        throw CommandRegistrationError('Cannot nest Slash commands!');
       }
     }
 

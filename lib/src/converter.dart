@@ -518,16 +518,20 @@ final Converter<Role> roleConverter = FallbackConverter<Role>([
 Future<dynamic> parse(Bot bot, Context context, StringView toParse, Type expectedType) async {
   Converter? converter = bot.converterFor(expectedType);
   if (converter == null) {
-    throw MissingConverterException(expectedType);
+    throw NoConverterException(expectedType, context);
   }
 
-  dynamic parsed = await converter.convert(toParse, context);
+  try {
+    dynamic parsed = await converter.convert(toParse, context);
 
-  if (parsed == null) {
-    throw BadInputException(type: expectedType);
+    if (parsed == null) {
+      throw BadInputException('Could not parse input $context to type "$expectedType"', context);
+    }
+
+    return parsed;
+  } on ParsingError catch (e) {
+    throw BadInputException('Bad input $context: ${e.message}', context);
   }
-
-  return parsed;
 }
 
 /// Register default converters for a [Bot].

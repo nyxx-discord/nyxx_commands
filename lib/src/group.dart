@@ -96,17 +96,17 @@ mixin GroupMixin {
   /// If [child] already has a parent, an [AlreadyRegisteredException] is thrown.
   void registerChild(GroupMixin child) {
     if (childrenMap.containsKey(child.name)) {
-      throw DuplicateNameException(child.name);
+      throw CommandRegistrationError('Command with name "$fullName ${child.name}" already exists');
     }
 
     for (final alias in child.aliases) {
       if (childrenMap.containsKey(alias)) {
-        throw DuplicateNameException(alias);
+        throw CommandRegistrationError('Command with alias "$fullName $alias" already exists');
       }
     }
 
     if (child._parent != null) {
-      throw AlreadyRegisteredException(child.fullName);
+      throw CommandRegistrationError('Cannot register command "${child.fullName}" again');
     }
 
     if (_parent != null) {
@@ -135,12 +135,6 @@ mixin GroupMixin {
 
   /// Build the options for registering this group to the Discord API for slash commands.
   Iterable<CommandOptionBuilder> getOptions(Bot bot) {
-    if (!hasSlashCommand) {
-      throw SlashException(
-        'Groups with no slash command children cannot be converted to slash command members',
-      );
-    }
-
     List<CommandOptionBuilder> options = [];
 
     for (final child in children) {
@@ -189,7 +183,7 @@ class Group with GroupMixin {
     Iterable<Check> checks = const [],
   }) {
     if (!commandNameRegexp.hasMatch(name)) {
-      throw InvalidNameException(name);
+      throw CommandRegistrationError('Invalid group name "$name"');
     }
 
     for (final child in children) {

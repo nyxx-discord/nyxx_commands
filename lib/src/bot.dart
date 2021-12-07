@@ -93,11 +93,11 @@ class Bot extends Nyxx with GroupMixin {
           useDefaultLogger: useDefaultLogger,
         ) {
     if ((prefix ?? prefixFunction) == null) {
-      throw InvalidPrefixException('At least one of prefix or prefixFunction must be set');
+      throw CommandsError('At least one of prefix or prefixFunction must be set');
     }
 
     if (prefix != null && prefixFunction != null) {
-      throw InvalidPrefixException('At most one of prefix and prefixFunction can be set at once');
+      throw CommandsError('At most one of prefix and prefixFunction can be set at once');
     }
 
     registerDefaultConverters(this);
@@ -128,16 +128,16 @@ class Bot extends Nyxx with GroupMixin {
     try {
       String prefix = _prefixFor(message);
       StringView view = StringView(message.content);
+
       if (view.skipString(prefix)) {
         Context context = await _messageContext(message, view, prefix);
 
         _commandsLogger.fine('Invoking command ${context.command.name} from message $message');
+
         await context.command.invoke(this, context);
       }
     } on CommandsException catch (e) {
       _onCommandErrorController.add(e);
-    } on Exception catch (e) {
-      _onCommandErrorController.add(UncaughtException(e));
     }
   }
 
@@ -154,16 +154,15 @@ class Bot extends Nyxx with GroupMixin {
 
       _commandsLogger.fine('Invoking command ${context.command.name} '
           'from interaction ${interactionEvent.interaction.token}');
+
       await context.command.invoke(this, context);
     } on CommandsException catch (e) {
       _onCommandErrorController.add(e);
-    } on Exception catch (e) {
-      _onCommandErrorController.add(UncaughtException(e));
     }
   }
 
   Future<Context> _messageContext(Message message, StringView contentView, String prefix) async {
-    Command command = getCommand(contentView) ?? (throw CommandNotFound(contentView.getWord()));
+    Command command = getCommand(contentView) ?? (throw CommandNotFound(contentView));
 
     TextChannel channel = await message.channel.getOrDownload();
 

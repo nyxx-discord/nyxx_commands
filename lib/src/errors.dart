@@ -3,91 +3,77 @@
 part of nyxx_commands;
 
 class CommandsException implements Exception {
-  String? message;
+  String message;
 
-  CommandsException([this.message]);
+  CommandsException(this.message);
 
   @override
-  String toString() {
-    return message == null ? 'Command Exception' : 'Command Exception: $message';
-  }
+  String toString() => 'Command Exception: $message';
 }
 
-class SlashException extends CommandsException {
-  SlashException(String message) : super(message);
+class CommandInvocationException extends CommandsException {
+  final Context context;
+
+  CommandInvocationException(String message, this.context) : super(message);
+}
+
+class UncaughtException extends CommandInvocationException {
+  final Exception exception;
+
+  UncaughtException(this.exception, Context context) : super(exception.toString(), context);
+}
+
+class BadInputException extends CommandInvocationException {
+  BadInputException(String message, Context context) : super(message, context);
+}
+
+class NotEnoughArgumentsException extends BadInputException {
+  NotEnoughArgumentsException(MessageContext context)
+      : super(
+          'Not enough arguments for command "${context.command.fullName}": '
+          '"${context.rawArguments}"',
+          context,
+        );
+}
+
+class CheckFailedException extends CommandInvocationException {
+  final Check failed;
+
+  CheckFailedException(this.failed, Context context)
+      : super('Check "${failed.name}" failed', context);
 }
 
 class CommandNotFound extends CommandsException {
-  CommandNotFound(String name) : super('Command "$name" not found.');
+  final StringView input;
+
+  CommandNotFound(this.input) : super('Command "${input.buffer}" not found');
 }
 
-class CommandInvokeException extends CommandsException {
-  CommandInvokeException(String message) : super(message);
+class NoConverterException extends CommandInvocationException {
+  final Type expectedType;
+
+  NoConverterException(this.expectedType, Context context)
+      : super('No converter found for type "$expectedType"', context);
 }
 
-class NotEnoughArgumentsException extends CommandInvokeException {
-  NotEnoughArgumentsException(int got, int expected)
-      : super('Not enough arguments: expected $expected, got $got');
+class ParsingError implements Exception {
+  final String message;
+
+  ParsingError(this.message);
+
+  @override
+  String toString() => message;
 }
 
-class BadInputException extends CommandInvokeException {
-  BadInputException({
-    Type? type,
-    String message = '',
-  }) : super(
-          type == null ? message : 'Invalid format for argument type "$type"',
-        );
+class CommandsError extends Error {
+  final String message;
+
+  CommandsError(this.message);
+
+  @override
+  String toString() => message;
 }
 
-class MissingConverterException extends CommandInvokeException {
-  MissingConverterException(Type type)
-      : super(
-          'Missing converter for type "$type"',
-        );
-}
-
-class UncaughtException extends CommandInvokeException {
-  UncaughtException(Exception exc)
-      : super(
-          'Uncaught exception in command: ${exc.toString()}',
-        );
-}
-
-class CheckFailedException extends CommandInvokeException {
-  CheckFailedException(Context context) : super('Check failed on context $context');
-}
-
-class ParsingException extends CommandsException {
-  ParsingException([String? message]) : super(message);
-}
-
-class CommandRegistrationException extends CommandsException {
-  CommandRegistrationException([String? message]) : super(message);
-}
-
-class DuplicateNameException extends CommandRegistrationException {
-  DuplicateNameException(String name)
-      : super(
-          'Command with name or alias $name already exists',
-        );
-}
-
-class AlreadyRegisteredException extends CommandRegistrationException {
-  AlreadyRegisteredException(String name) : super('Command "$name" already has a parent');
-}
-
-class InvalidNameException extends CommandRegistrationException {
-  InvalidNameException(String message) : super(message);
-}
-
-class InvalidFunctionException extends CommandRegistrationException {
-  InvalidFunctionException(String message) : super(message);
-}
-
-class InvalidDescriptionException extends CommandRegistrationException {
-  InvalidDescriptionException(String description) : super('Invalid description "$description"');
-}
-
-class InvalidPrefixException extends CommandsException {
-  InvalidPrefixException(String message) : super(message);
+class CommandRegistrationError extends CommandsError {
+  CommandRegistrationError(String message) : super(message);
 }
