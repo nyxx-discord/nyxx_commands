@@ -71,9 +71,79 @@ class Command with GroupMixin {
   /// [name] must match [commandNameRegexp] or an [CommandRegistrationError] will be thrown.
   /// [execute] must be a function whose first parameter must be of type [Context].
   Command(
+    String name,
+    String description,
+    Function execute, {
+    List<String> aliases = const [],
+    CommandType type = CommandType.all,
+    Iterable<GroupMixin> children = const [],
+    Iterable<Check> checks = const [],
+    Iterable<Check> singleChecks = const [],
+  }) : this._(
+          name,
+          description,
+          execute,
+          Context,
+          aliases: aliases,
+          type: type,
+          children: children,
+          checks: checks,
+          singleChecks: singleChecks,
+        );
+
+  /// Create a new text-only [Command].
+  ///
+  /// [name] must match [commandNameRegexp] or an [CommandRegistrationError] will be thrown.
+  /// [execute] must be a function whose first parameter must be of type [MessageContext].
+  Command.textOnly(
+    String name,
+    String description,
+    Function execute, {
+    List<String> aliases = const [],
+    Iterable<GroupMixin> children = const [],
+    Iterable<Check> checks = const [],
+    Iterable<Check> singleChecks = const [],
+  }) : this._(
+          name,
+          description,
+          execute,
+          MessageContext,
+          aliases: aliases,
+          type: CommandType.textOnly,
+          children: children,
+          checks: checks,
+          singleChecks: singleChecks,
+        );
+
+  /// Create a new slash-only [Command].
+  ///
+  /// [name] must match [commandNameRegexp] or an [CommandRegistrationError] will be thrown.
+  /// [execute] must be a function whose first parameter must be of type [InteractionContext].
+  Command.slashOnly(
+    String name,
+    String description,
+    Function execute, {
+    List<String> aliases = const [],
+    Iterable<GroupMixin> children = const [],
+    Iterable<Check> checks = const [],
+    Iterable<Check> singleChecks = const [],
+  }) : this._(
+          name,
+          description,
+          execute,
+          InteractionContext,
+          aliases: aliases,
+          type: CommandType.slashOnly,
+          children: children,
+          checks: checks,
+          singleChecks: singleChecks,
+        );
+
+  Command._(
     this.name,
     this.description,
-    this.execute, {
+    this.execute,
+    Type contextType, {
     this.aliases = const [],
     this.type = CommandType.all,
     Iterable<GroupMixin> children = const [],
@@ -84,71 +154,7 @@ class Command with GroupMixin {
       throw CommandRegistrationError('Invalid command name "$name"');
     }
 
-    _loadArguments(execute, Context);
-
-    for (final child in children) {
-      registerChild(child);
-    }
-
-    for (final check in checks) {
-      super.check(check);
-    }
-
-    for (final singleCheck in singleChecks) {
-      this.singleCheck(singleCheck);
-    }
-  }
-
-  /// Create a new text-only [Command].
-  ///
-  /// [name] must match [commandNameRegexp] or an [CommandRegistrationError] will be thrown.
-  /// [execute] must be a function whose first parameter must be of type [MessageContext].
-  Command.textOnly(
-    this.name,
-    this.description,
-    this.execute, {
-    this.aliases = const [],
-    Iterable<GroupMixin> children = const [],
-    Iterable<Check> checks = const [],
-    Iterable<Check> singleChecks = const [],
-  }) : type = CommandType.textOnly {
-    if (!commandNameRegexp.hasMatch(name)) {
-      throw CommandRegistrationError('Invalid command name "$name"');
-    }
-
-    _loadArguments(execute, MessageContext);
-
-    for (final child in children) {
-      registerChild(child);
-    }
-
-    for (final check in checks) {
-      super.check(check);
-    }
-
-    for (final singleCheck in singleChecks) {
-      this.singleCheck(singleCheck);
-    }
-  }
-
-  /// Create a new slash-only [Command].
-  ///
-  /// [name] must match [commandNameRegexp] or an [CommandRegistrationError] will be thrown.
-  /// [execute] must be a function whose first parameter must be of type [InteractionContext].
-  Command.slashOnly(
-    this.name,
-    this.description,
-    this.execute, {
-    this.aliases = const [],
-    Iterable<GroupMixin> children = const [],
-    Iterable<Check> checks = const [],
-    Iterable<Check> singleChecks = const [],
-  }) : type = CommandType.slashOnly {
-    if (!commandNameRegexp.hasMatch(name)) {
-      throw CommandRegistrationError('Invalid command name "$name"');
-    }
-
-    _loadArguments(execute, InteractionContext);
+    _loadArguments(execute, contextType);
 
     for (final child in children) {
       registerChild(child);
