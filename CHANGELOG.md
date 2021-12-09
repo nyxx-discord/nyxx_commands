@@ -1,3 +1,11 @@
+## 0.4.0
+__Breaking changes__:
+- Exceptions have been reworked and are no longer named the same
+
+__New features__:
+- Converters can now specify pre-defined choices for their type, this behaviour can be overridden on a per-command basis with the `@Choices` decorator
+- Command arguments can now have custom names with the `@Name` decorator
+
 ## 0.3.0
 __New features__:
 - Checks now integrate with Discord's slash command permissions
