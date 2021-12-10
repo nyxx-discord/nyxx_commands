@@ -150,7 +150,7 @@ class Command with GroupMixin {
     Iterable<Check> checks = const [],
     Iterable<Check> singleChecks = const [],
   }) {
-    if (!commandNameRegexp.hasMatch(name)) {
+    if (!commandNameRegexp.hasMatch(name) || name != name.toLowerCase()) {
       throw CommandRegistrationError('Invalid command name "$name"');
     }
 
@@ -226,7 +226,7 @@ class Command with GroupMixin {
       if (names.isNotEmpty) {
         argumentName = names.first.name;
 
-        if (!commandNameRegexp.hasMatch(argumentName)) {
+        if (!commandNameRegexp.hasMatch(argumentName) || name != name.toLowerCase()) {
           throw CommandRegistrationError('Invalid argument name "$argumentName"');
         }
       } else {
@@ -234,7 +234,7 @@ class Command with GroupMixin {
 
         argumentName = convertToKebabCase(rawArgumentName);
 
-        if (!commandNameRegexp.hasMatch(argumentName)) {
+        if (!commandNameRegexp.hasMatch(argumentName) || name != name.toLowerCase()) {
           throw CommandRegistrationError(
               'Could not convert parameter "$rawArgumentName" to a valid Discord '
               'Slash command argument name (got "$argumentName")');

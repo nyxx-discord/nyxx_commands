@@ -182,7 +182,7 @@ class Group with GroupMixin {
     Iterable<GroupMixin> children = const [],
     Iterable<Check> checks = const [],
   }) {
-    if (!commandNameRegexp.hasMatch(name)) {
+    if (!commandNameRegexp.hasMatch(name) || name != name.toLowerCase()) {
       throw CommandRegistrationError('Invalid group name "$name"');
     }
 
