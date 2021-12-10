@@ -9,6 +9,15 @@ class BotOptions extends ClientOptions {
   /// set this to false, you *must* respond to the interaction yourself, or the command will fail.
   bool autoAcknowledgeInteractions;
 
+  /// Whether to process commands coming from bot users on Discord.
+  bool acceptBotCommands;
+
+  /// Whether to process commands coming from the bot's own user.
+  ///
+  /// Setting this to [true] might result in infinite loops.
+  /// [acceptBotCommands] must also be set to true for this to have any effect.
+  bool acceptSelfCommands;
+
   /// Create a new [BotOptions] instance.
   BotOptions({
     AllowedMentions? allowedMentions,
@@ -23,6 +32,8 @@ class BotOptions extends ClientOptions {
     bool dispatchRawShardEvent = false,
     this.logErrors = true,
     this.autoAcknowledgeInteractions = true,
+    this.acceptBotCommands = false,
+    this.acceptSelfCommands = false,
   }) : super(
           allowedMentions: allowedMentions,
           shardCount: shardCount,
@@ -57,7 +68,7 @@ class Bot extends Nyxx with GroupMixin {
   /// The [Interactions] instance that this bot uses for managing slash commands.
   late final Interactions interactions;
 
-  late final BotOptions _options = options as BotOptions;
+  late final BotOptions _botOptions = options as BotOptions;
 
   final Logger _commandsLogger = Logger('Commands');
 
@@ -104,7 +115,7 @@ class Bot extends Nyxx with GroupMixin {
 
     onMessageReceived.listen((event) => _processMessage(event.message));
 
-    if (_options.logErrors) {
+    if (_botOptions.logErrors) {
       onCommandError.listen((error) {
         _commandsLogger
           ..warning('Uncaught exception in command')
@@ -125,6 +136,14 @@ class Bot extends Nyxx with GroupMixin {
   }
 
   Future<void> _processMessage(Message message) async {
+    if (message.author.bot && !_botOptions.acceptBotCommands) {
+      return;
+    }
+
+    if (message.author.id == self.id && !_botOptions.acceptSelfCommands) {
+      return;
+    }
+
     try {
       String prefix = _prefixFor(message);
       StringView view = StringView(message.content);
@@ -146,7 +165,7 @@ class Bot extends Nyxx with GroupMixin {
     Command command,
   ) async {
     try {
-      if (_options.autoAcknowledgeInteractions) {
+      if (_botOptions.autoAcknowledgeInteractions) {
         await interactionEvent.acknowledge();
       }
 
