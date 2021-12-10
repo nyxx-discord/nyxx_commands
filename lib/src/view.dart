@@ -137,9 +137,9 @@ class StringView {
     }
   }
 
-  /// Escape characters in [buffer] from [start] to [index].
+  /// Escape characters in [buffer] from [start] to [end].
   String escape(int start, int end) {
-    String raw = buffer.substring(start, index);
+    String raw = buffer.substring(start, end);
 
     int currentIndex = start;
     return raw.split('').fold('', (ret, s) {
