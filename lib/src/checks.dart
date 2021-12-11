@@ -8,31 +8,67 @@ import 'context.dart';
 /// Represents a check executed on a [Command].
 ///
 /// All checks must succeed in order for a [Command] to be executed.
-class Check {
-  /// The name of the check.
+abstract class AbstractCheck {
+  /// The name of the check
   final String name;
 
-  /// The function called to validate this check.
-  final FutureOr<bool> Function(Context) check;
+  /// Create a new [AbstractCheck] with a given name.
+  AbstractCheck(this.name);
+
+  /// The method called to validate this check.
+  ///
+  /// Should not change the check's internal state.
+  FutureOr<bool> check(Context context);
+
+  /// An Iterable of permission overrides that will be used on slash commands using this check.
+  Future<Iterable<ICommandPermissionBuilder>> get permissions;
+
+  /// An Iterable of pre-call hooks that will be called when a command this check is on emits to
+  /// [Commands.onPreCall].
+  ///
+  /// Should be used by checks that have internal state to update that state, instead of updating it
+  /// in [check].
+  Iterable<void Function(Context)> get preCallHooks;
+
+  /// An Iterable of post-call hooks that will be called when a command this check is on emits to
+  /// [Commands.onPostCall].
+  ///
+  /// Should be used by checks that have internal state to update that state, instead of updating it
+  /// in [check].
+  Iterable<void Function(Context)> get postCallHooks;
+
+  @override
+  String toString() => 'Check[name=$name]';
+}
+
+/// Represents a simple stateless check.
+class Check extends AbstractCheck {
+  final FutureOr<bool> Function(Context) _check;
 
   /// Creates a new [Check].
   ///
   /// [check] should return a bool indicating whether this check succeeded.
   /// It should not throw.
-  Check(this.check, [this.name = 'Check']);
+  Check(this._check, [String name = 'Check']) : super(name);
 
   /// Creates a new [Check] that succeeds if at least one of the supplied checks succeed.
-  static Check any(Iterable<Check> checks, [String? name]) => _AnyCheck(checks, name);
+  factory Check.any(Iterable<Check> checks, [String? name]) => _AnyCheck(checks, name);
 
   /// Creates a new [Check] that inverts the result of the supplied check. Use this to allow use of
   /// commands by default but deny it for cecrtain users.
-  static Check deny(Check check, [String? name]) => _DenyCheck(check, name);
+  factory Check.deny(Check check, [String? name]) => _DenyCheck(check, name);
 
-  /// A Iterable of permission overrides that will be used on slash commands using this check.
+  @override
+  FutureOr<bool> check(Context context) => _check(context);
+
+  @override
   Future<Iterable<ICommandPermissionBuilder>> get permissions => Future.value([]);
 
   @override
-  String toString() => 'Check[name=$name]';
+  Iterable<void Function(Context context)> get postCallHooks => [];
+
+  @override
+  Iterable<void Function(Context context)> get preCallHooks => [];
 }
 
 class _AnyCheck extends Check {
@@ -213,7 +249,7 @@ class GuildCheck extends Check {
   GuildCheck.any(Iterable<Guild> guilds, [String? name])
       : this.anyId(guilds.map((guild) => guild.id), name);
 
-  /// Creatte a Guild Check based on multiple guild ids.
+  /// Create a Guild Check based on multiple guild ids.
   GuildCheck.anyId(Iterable<Snowflake> ids, [String? name])
       : guildIds = ids,
         super(

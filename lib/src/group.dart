@@ -33,14 +33,14 @@ mixin GroupMixin {
   /// A description of what this group represents.
   String get description;
 
-  final List<Check> _checks = [];
+  final List<AbstractCheck> _checks = [];
 
   /// A list of functions that must return `true` for any descendant of this group to be executed.
   /// These are called before command invocation and can cause it to fail.
   ///
   /// If you only want to apply a check to a specific command and not all descendants, see
   /// [Command.singleChecks]
-  Iterable<Check> get checks => [...?_parent?.checks, ..._checks];
+  Iterable<AbstractCheck> get checks => [...?_parent?.checks, ..._checks];
 
   /// The full name of this group.
   ///
@@ -166,7 +166,7 @@ mixin GroupMixin {
   }
 
   /// Add a check to this groups [checks].
-  void check(Check check) => _checks.add(check);
+  void check(AbstractCheck check) => _checks.add(check);
 }
 
 /// A [Group] is a simple class that allows [GroupMixin]s to be instanciated.
@@ -187,7 +187,7 @@ class Group with GroupMixin {
     this.description, {
     this.aliases = const [],
     Iterable<GroupMixin> children = const [],
-    Iterable<Check> checks = const [],
+    Iterable<AbstractCheck> checks = const [],
   }) {
     if (!commandNameRegexp.hasMatch(name) || name != name.toLowerCase()) {
       throw CommandRegistrationError('Invalid group name "$name"');

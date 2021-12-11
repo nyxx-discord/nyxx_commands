@@ -67,7 +67,7 @@ class Command with GroupMixin {
   final Function execute;
 
   /// Similar to [checks] but only applies to this command.
-  final List<Check> singleChecks = [];
+  final List<AbstractCheck> singleChecks = [];
 
   final StreamController<Context> _preCallController = StreamController.broadcast();
   final StreamController<Context> _postCallController = StreamController.broadcast();
@@ -100,8 +100,8 @@ class Command with GroupMixin {
     List<String> aliases = const [],
     CommandType type = CommandType.all,
     Iterable<GroupMixin> children = const [],
-    Iterable<Check> checks = const [],
-    Iterable<Check> singleChecks = const [],
+    Iterable<AbstractCheck> checks = const [],
+    Iterable<AbstractCheck> singleChecks = const [],
   }) : this._(
           name,
           description,
@@ -124,8 +124,8 @@ class Command with GroupMixin {
     Function execute, {
     List<String> aliases = const [],
     Iterable<GroupMixin> children = const [],
-    Iterable<Check> checks = const [],
-    Iterable<Check> singleChecks = const [],
+    Iterable<AbstractCheck> checks = const [],
+    Iterable<AbstractCheck> singleChecks = const [],
   }) : this._(
           name,
           description,
@@ -148,8 +148,8 @@ class Command with GroupMixin {
     Function execute, {
     List<String> aliases = const [],
     Iterable<GroupMixin> children = const [],
-    Iterable<Check> checks = const [],
-    Iterable<Check> singleChecks = const [],
+    Iterable<AbstractCheck> checks = const [],
+    Iterable<AbstractCheck> singleChecks = const [],
   }) : this._(
           name,
           description,
@@ -170,8 +170,8 @@ class Command with GroupMixin {
     this.aliases = const [],
     this.type = CommandType.all,
     Iterable<GroupMixin> children = const [],
-    Iterable<Check> checks = const [],
-    Iterable<Check> singleChecks = const [],
+    Iterable<AbstractCheck> checks = const [],
+    Iterable<AbstractCheck> singleChecks = const [],
   }) {
     if (!commandNameRegexp.hasMatch(name) || name != name.toLowerCase()) {
       throw CommandRegistrationError('Invalid command name "$name"');
@@ -418,7 +418,17 @@ class Command with GroupMixin {
   }
 
   /// Add a check to this commands [singleChecks].
-  void singleCheck(Check check) => singleChecks.add(check);
+  void singleCheck(AbstractCheck check) {
+    for (final preCallHook in check.preCallHooks) {
+      onPreCall.listen(preCallHook);
+    }
+
+    for (final postCallHook in check.postCallHooks) {
+      onPostCall.listen(postCallHook);
+    }
+
+    singleChecks.add(check);
+  }
 
   @override
   String toString() => 'Command[name="$name", fullName="$fullName"]';

@@ -3,7 +3,7 @@
 library nyxx_commands;
 
 export 'src/bot.dart' show Bot, BotOptions;
-export 'src/checks.dart' show Check, GuildCheck, RoleCheck, UserCheck;
+export 'src/checks.dart' show AbstractCheck, Check, GuildCheck, RoleCheck, UserCheck;
 export 'src/command.dart' show Command, CommandType, commandNameRegexp;
 export 'src/context.dart' show Context, InteractionContext, MessageContext;
 export 'src/converter.dart'

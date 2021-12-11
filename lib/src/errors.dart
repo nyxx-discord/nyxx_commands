@@ -55,10 +55,10 @@ class NotEnoughArgumentsException extends BadInputException {
         );
 }
 
-/// Exception thrown when a [Check] fails.
+/// Exception thrown when an [AbstractCheck] fails.
 class CheckFailedException extends CommandInvocationException {
-  /// The [Check] that failed.
-  final Check failed;
+  /// The [AbstractCheck] that failed.
+  final AbstractCheck failed;
 
   /// Create a new [CheckFailedException] with a specific check and context.
   CheckFailedException(this.failed, Context context)
