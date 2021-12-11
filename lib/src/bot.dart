@@ -68,7 +68,8 @@ class BotOptions extends ClientOptions {
 /// Note that although this class uses [GroupMixin], attempting to access [name], [description],
 /// [aliases] or any operation dependant on these will result in an [UnsupportedError] being thrown.
 class Bot extends Nyxx with GroupMixin {
-  final String Function(Message) _prefixFor;
+  /// This bot's prefix function
+  final String Function(Message) prefix;
 
   final StreamController<CommandsException> _onCommandErrorController =
       StreamController.broadcast();
@@ -100,15 +101,13 @@ class Bot extends Nyxx with GroupMixin {
   Bot(
     String token,
     int intents, {
-    String? prefix,
-    String Function(Message)? prefixFunction,
+    required this.prefix,
     this.guild,
     BotOptions? options,
     CacheOptions? cacheOptions,
     bool ignoreExceptions = true,
     bool useDefaultLogger = true,
-  })  : _prefixFor = (prefixFunction ?? (m) => prefix!),
-        super(
+  }) : super(
           token,
           intents,
           options: options ?? BotOptions(),
@@ -116,14 +115,6 @@ class Bot extends Nyxx with GroupMixin {
           ignoreExceptions: ignoreExceptions,
           useDefaultLogger: useDefaultLogger,
         ) {
-    if ((prefix ?? prefixFunction) == null) {
-      throw CommandsError('At least one of prefix or prefixFunction must be set');
-    }
-
-    if (prefix != null && prefixFunction != null) {
-      throw CommandsError('At most one of prefix and prefixFunction can be set at once');
-    }
-
     registerDefaultConverters(this);
 
     onMessageReceived.listen((event) => _processMessage(event.message));
@@ -158,7 +149,7 @@ class Bot extends Nyxx with GroupMixin {
     }
 
     try {
-      String prefix = _prefixFor(message);
+      String prefix = this.prefix(message);
       StringView view = StringView(message.content);
 
       if (view.skipString(prefix)) {
