@@ -280,6 +280,12 @@ class Bot extends Nyxx with GroupMixin {
           }
         }
 
+        if (uniquePermissions.length == 1 && uniquePermissions.containsKey(Snowflake.zero())) {
+          if (uniquePermissions[Snowflake.zero()]!.hasPermission == false) {
+            continue;
+          }
+        }
+
         Iterable<GuildCheck> guilds = child.checks.whereType<GuildCheck>();
 
         if (guilds.length > 1) {
