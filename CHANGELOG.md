@@ -1,3 +1,23 @@
+## 2.0.0:
+__Breaking features__:
+- Messages sent by bot users will no longer be executed by default, see `BotOptions.acceptBotCommands` and `BotOptions.acceptSelfCommands`
+
+__New features__:
+- A new `acceptBotCommands` option has been added to `BotOptions` to allow executing commands from messages sent by other bot users
+- A new `acceptSelfCommands` options has been added to `BotOptions` to allow executing commands from messages sent by the bot itself
+- `onPreCall` and `onPostCall` streams on `Commands` and  `Groups` can be used to register pre- and post- call hooks
+- `AbstractCheck` class can be exetended to implement stateful checks
+- `CooldownCheck` can be used to apply a cooldown to a command based on different criteria
+- `InteractionCheck` and `MessageCheck` can be used with `Check.any()` to allow slash commands or text commands to bypass other checks
+- `Check.all()` can be used to group checks
+
+__Bug fixes__:
+- Invalid cased command/group/argument names are now caught and a `CommandRegistrationError` is thrown
+- `StringView.escape()` now correctly escapes from `start` to `end` and not `start` to `index`
+
+## 1.0.0
+- *Version 1 was skipped to keep version consistent with the other nyxx libraries*
+
 ## 0.4.0
 __Breaking changes__:
 - Exceptions have been reworked and are no longer named the same
