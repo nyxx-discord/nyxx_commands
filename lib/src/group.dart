@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:logging/logging.dart';
+import 'package:meta/meta.dart';
 import 'package:nyxx_interactions/interactions.dart';
 
 import 'bot.dart';
 import 'checks.dart';
 import 'command.dart';
+import 'context.dart';
 import 'errors.dart';
 import 'view.dart';
 
@@ -32,6 +36,22 @@ mixin GroupMixin {
 
   /// A description of what this group represents.
   String get description;
+
+  @protected
+  // ignore: public_member_api_docs
+  final StreamController<Context> preCallController = StreamController.broadcast();
+
+  @protected
+  // ignore: public_member_api_docs
+  final StreamController<Context> postCallController = StreamController.broadcast();
+
+  /// A [Stream] of [Context]s that emits after the checks have succeeded, but before
+  /// [Command.execute] is called.
+  late final Stream<Context> onPreCall = preCallController.stream;
+
+  /// A [Stream] of [Context]s that emits after [Command.execute] has successfully been called (no
+  /// exceptions were thrown).
+  late final Stream<Context> onPostCall = postCallController.stream;
 
   final List<AbstractCheck> _checks = [];
 
@@ -127,6 +147,9 @@ mixin GroupMixin {
     for (final alias in child.aliases) {
       childrenMap[alias] = child;
     }
+
+    child.onPreCall.listen(preCallController.add);
+    child.onPostCall.listen(postCallController.add);
   }
 
   /// Iterate over all the commands in this group and any subgroups.
@@ -166,7 +189,17 @@ mixin GroupMixin {
   }
 
   /// Add a check to this groups [checks].
-  void check(AbstractCheck check) => _checks.add(check);
+  void check(AbstractCheck check) {
+    _checks.add(check);
+
+    for (final preCallHook in check.preCallHooks) {
+      onPreCall.listen(preCallHook);
+    }
+
+    for (final postCallHook in check.postCallHooks) {
+      onPostCall.listen(postCallHook);
+    }
+  }
 }
 
 /// A [Group] is a simple class that allows [GroupMixin]s to be instanciated.

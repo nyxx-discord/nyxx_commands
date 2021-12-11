@@ -69,17 +69,6 @@ class Command with GroupMixin {
   /// Similar to [checks] but only applies to this command.
   final List<AbstractCheck> singleChecks = [];
 
-  final StreamController<Context> _preCallController = StreamController.broadcast();
-  final StreamController<Context> _postCallController = StreamController.broadcast();
-
-  /// A [Stream] of [Context]s that emits after the checks have succeeded, but before [execute] is
-  /// called.
-  late final Stream<Context> onPreCall = _preCallController.stream;
-
-  /// A [Stream] of [Context]s that emits after [execute] has successfully been called (no
-  /// exceptions were thrown).
-  late final Stream<Context> onPostCall = _postCallController.stream;
-
   late final MethodMirror _mirror;
   late final Iterable<ParameterMirror> _arguments;
   late final int _requiredArguments;
@@ -355,7 +344,7 @@ class Command with GroupMixin {
       }
     }
 
-    _preCallController.add(context);
+    preCallController.add(context);
 
     try {
       Function.apply(execute, [context, ...arguments]);
@@ -363,7 +352,7 @@ class Command with GroupMixin {
       throw UncaughtException(e, context);
     }
 
-    _postCallController.add(context);
+    postCallController.add(context);
   }
 
   @override
