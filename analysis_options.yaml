@@ -18,7 +18,7 @@ include: package:lints/recommended.yaml
 linter:
   rules:
     - camel_case_types
-    - always_use_package_imports
+    - avoid_relative_lib_imports
     - avoid_print
     - unnecessary_statements
     - always_declare_return_types

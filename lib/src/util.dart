@@ -1,4 +1,4 @@
-part of nyxx_commands;
+import 'package:nyxx_interactions/interactions.dart';
 
 /// The function used to convert camelCase identifiers to Discord compatible kebab-case names
 String convertToKebabCase(String camelCase) {

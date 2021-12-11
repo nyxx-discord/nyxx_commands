@@ -1,4 +1,17 @@
-part of nyxx_commands;
+import 'dart:async';
+import 'dart:mirrors';
+
+import 'package:logging/logging.dart';
+import 'package:nyxx/nyxx.dart';
+import 'package:nyxx_interactions/interactions.dart';
+
+import 'checks.dart';
+import 'command.dart';
+import 'context.dart';
+import 'converter.dart';
+import 'errors.dart';
+import 'group.dart';
+import 'view.dart';
 
 /// Optional bot and client settings.
 class BotOptions extends ClientOptions {

@@ -1,4 +1,4 @@
-part of nyxx_commands;
+import 'errors.dart';
 
 const Map<String, String> _quotes = {
   '"': '"',

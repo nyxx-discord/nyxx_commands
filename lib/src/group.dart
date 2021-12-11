@@ -1,4 +1,11 @@
-part of nyxx_commands;
+import 'package:logging/logging.dart';
+import 'package:nyxx_interactions/interactions.dart';
+
+import 'bot.dart';
+import 'checks.dart';
+import 'command.dart';
+import 'errors.dart';
+import 'view.dart';
 
 /// A [Group] is a collection of commands. This mixin implements that functionality.
 ///

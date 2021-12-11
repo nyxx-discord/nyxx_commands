@@ -1,4 +1,15 @@
-part of nyxx_commands;
+import 'dart:mirrors';
+
+import 'package:nyxx_interactions/interactions.dart';
+
+import 'bot.dart';
+import 'checks.dart';
+import 'context.dart';
+import 'converter.dart';
+import 'errors.dart';
+import 'group.dart';
+import 'util.dart';
+import 'view.dart';
 
 /// An enum used to specify how a [Command] can be executed.
 enum CommandType {

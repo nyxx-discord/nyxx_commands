@@ -1,4 +1,12 @@
-part of nyxx_commands;
+import 'dart:async';
+
+import 'package:nyxx/nyxx.dart';
+import 'package:nyxx_interactions/interactions.dart';
+
+import 'bot.dart';
+import 'context.dart';
+import 'errors.dart';
+import 'view.dart';
 
 /// Mapping of Dart [Type]s to their Discord API equivalents.
 ///

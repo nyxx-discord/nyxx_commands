@@ -1,4 +1,9 @@
-part of nyxx_commands;
+import 'dart:async';
+
+import 'package:nyxx/nyxx.dart';
+import 'package:nyxx_interactions/interactions.dart';
+
+import 'context.dart';
 
 /// Represents a check executed on a [Command].
 ///

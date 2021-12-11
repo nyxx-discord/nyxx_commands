@@ -1,4 +1,6 @@
-part of nyxx_commands;
+import 'checks.dart';
+import 'context.dart';
+import 'view.dart';
 
 /// Base class for exceptions thrown by this library.
 ///
