@@ -257,3 +257,175 @@ class GuildCheck extends Check {
           name ?? 'Guild Check on any of [${ids.join(', ')}]',
         );
 }
+
+/// Represents different types of cooldown
+enum CooldownType {
+  /// Cooldown is per category.
+  ///
+  /// If the command is executed in a guild channel belonging to a category, the cooldown is set for
+  /// all users in all channels belonging to that category.
+  ///
+  /// If the channel does not belong to a category or is not a guild channel, the cooldown works in
+  /// the same was as [channel].
+  category,
+
+  /// Cooldown is per channel.
+  ///
+  /// If the command is executed in a channel, then the cooldown is set for all users in that
+  /// channel.
+  channel,
+
+  /// Cooldown is per command.
+  ///
+  /// If the command is executed, then the cooldown is set for all users in all channels for that
+  /// command.
+  command,
+
+  /// Cooldown is global.
+  ///
+  /// Generally works in the same was as [command], but if the same [CooldownCheck] instance is used
+  /// in multiple commands' [GroupMixin.checks] or [Command.singleChecks] then the cooldown will be
+  /// set for all users in all channels for the commands sharing the [CooldownCheck] instance.
+  global,
+
+  /// Cooldown is per guild.
+  ///
+  /// If the command is executed in a guild, then the cooldown is set for all users in all channels
+  /// in that guild. If the command is executed outside of a guild, then the cooldown works in the
+  /// same way as [channel].
+  guild,
+
+  /// Cooldown is per role.
+  ///
+  /// If the command is executed in a guild by a member, then the command is set for all channels
+  /// for all members with the same highest role as the member. If the command is executed by a
+  /// member with no roles, the cooldown is set for all members with no roles. If the command is
+  /// executed outside of a guild, the cooldown works in the same way as [channel].
+  role,
+
+  /// Cooldown is per user.
+  ///
+  /// If the command is executed by a user, then the cooldown is set for all channels for that user.
+  user,
+}
+
+class _BucketEntry {
+  final DateTime start;
+  int count = 1;
+
+  _BucketEntry(this.start);
+}
+
+/// A [Check] that checks that a [Command] is not on cooldown.
+class CooldownCheck extends AbstractCheck {
+  // Implementation of a cooldown system that does not store last-used times forever, does not use
+  // [Timer]s and does not perform a filtering pass on the entire data set.
+  //
+  // Works by storing last-used time temporarily in two maps. The first stores last-used times in
+  // a period equivalent to the cooldown time and the second stores last-used times in the previous
+  // period.
+  // If a key is present in the current map, then the cooldown will certainly be active for that key
+  // (if the token usage is high enough). If a key is in the previous map, then it might still be
+  // active but needs additional checking. If a key is not in the current nor in the previous
+  // period, then it is certainly not active, meaning that only last-used times for the current and
+  // previous periods need to be stored.
+
+  /// Create a new [CooldownCheck] with a specific type, period and token count.
+  CooldownCheck(this.type, this.duration, [this.tokensPer = 1, String? name])
+      : super(name ?? 'Cooldown Check on $type');
+
+  /// The number of tokens per [duration].
+  ///
+  /// A command can be executed [tokensPer] times each [duration] before this check fails. The
+  /// cooldown starts as soon as the first token is consumed, not when the last token is consumed.
+  int tokensPer;
+
+  /// The duration of this cooldown.
+  Duration duration;
+
+  /// The type of this cooldown.
+  ///
+  /// See [CooldownType] for details on how each type is handled.
+  final CooldownType type;
+
+  Map<int, _BucketEntry> _currentBucket = {};
+  Map<int, _BucketEntry> _previousBucket = {};
+
+  late DateTime _currentStart = DateTime.now();
+
+  @override
+  FutureOr<bool> check(Context context) {
+    if (DateTime.now().isAfter(_currentStart.add(duration))) {
+      _previousBucket = _currentBucket;
+      _currentBucket = {};
+
+      _currentStart = DateTime.now();
+    }
+
+    int key = getKey(context);
+
+    if (_currentBucket.containsKey(key)) {
+      return _currentBucket[key]!.count < tokensPer;
+    }
+
+    if (_previousBucket.containsKey(key)) {
+      return !_isActive(_previousBucket[key]!) || _previousBucket[key]!.count < tokensPer;
+    }
+
+    return true;
+  }
+
+  bool _isActive(_BucketEntry entry) => entry.start.add(duration).isAfter(DateTime.now());
+
+  /// Get a key representing a [Context] depending on [type].
+  int getKey(Context context) {
+    switch (type) {
+      case CooldownType.category:
+        if (context.guild != null) {
+          if ((context.channel as GuildChannel).parentChannel != null) {
+            return (context.channel as GuildChannel).parentChannel!.id.id;
+          }
+        }
+        return context.channel.id.id;
+      case CooldownType.channel:
+        return context.channel.id.id;
+      case CooldownType.command:
+        return context.command.hashCode;
+      case CooldownType.global:
+        return 0;
+      case CooldownType.guild:
+        return context.guild?.id.id ?? context.user.id.id;
+      case CooldownType.role:
+        if (context.member != null) {
+          if (context.member!.roles.isNotEmpty) {
+            return context.member!.highestRole.id.id;
+          }
+          return context.guild!.id.id;
+        }
+        return context.channel.id.id;
+      case CooldownType.user:
+        return context.user.id.id;
+    }
+  }
+
+  @override
+  late Iterable<void Function(Context)> preCallHooks = [
+    (context) {
+      int key = getKey(context);
+
+      if (_previousBucket.containsKey(key) && _isActive(_previousBucket[key]!)) {
+        _previousBucket[key]!.count++;
+      } else if (_currentBucket.containsKey(key)) {
+        _currentBucket[key]!.count++;
+      } else {
+        _currentBucket[key] = _BucketEntry(DateTime.now());
+      }
+    }
+  ];
+
+  @override
+  Future<Iterable<ICommandPermissionBuilder>> get permissions => Future.value([]);
+
+  @override
+  Iterable<void Function(Context p1)> get postCallHooks => [];
+}
