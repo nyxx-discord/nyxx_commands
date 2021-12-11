@@ -475,8 +475,15 @@ class InteractionCheck extends Check {
 ///
 /// If you want to restrict command usage to text-only, use [Command.textOnly] instead. This class
 /// is meant to be used with [Check.any] and other checks to allow text commands to bypass checks.
+///
+/// Integrates with Discord slash command permissions (denies usage entirely).
 class MessageCheck extends Check {
   /// Create a new [MessageCheck]
   MessageCheck([String? name])
       : super((context) => context is MessageContext, name ?? 'Message Check');
+
+  @override
+  Future<Iterable<ICommandPermissionBuilder>> get permissions => Future.value(
+        [ICommandPermissionBuilder.role(Snowflake.zero(), hasPermission: false)],
+      );
 }
