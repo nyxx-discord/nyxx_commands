@@ -58,6 +58,15 @@ class Check extends AbstractCheck {
   /// commands by default but deny it for cecrtain users.
   factory Check.deny(Check check, [String? name]) => _DenyCheck(check, name);
 
+  /// Creates a new [Check] that succeeds if all of the supplied checks succeeds, and fails
+  /// otherwise.
+  ///
+  /// This effectively functions the same as [GroupMixin.checks] and [Command.singleChecks], but can
+  /// be used to group common patterns of checks together.
+  ///
+  /// Stateful checks in [checks] will share their state for all uses of this check group.
+  factory Check.all(Iterable<Check> checks, [String? name]) => _GroupCheck(checks, name);
+
   @override
   FutureOr<bool> check(Context context) => _check(context);
 
@@ -130,6 +139,27 @@ class _DenyCheck extends Check {
           .map((e) => ICommandPermissionBuilder.user(e.id, hasPermission: !e.hasPermission)),
     ];
   }
+}
+
+class _GroupCheck extends Check {
+  final Iterable<Check> checks;
+
+  _GroupCheck(this.checks, [String? name])
+      : super((context) async {
+          Iterable<FutureOr<bool>> results = checks.map((e) => e.check(context));
+
+          Iterable<Future<bool>> asyncResults = results.whereType<Future<bool>>();
+          Iterable<bool> syncResults = results.whereType<bool>();
+
+          return !syncResults.contains(false) && !(await Future.wait(asyncResults)).contains(false);
+        }, name ?? 'All of [${checks.map((e) => e.name).join(', ')}]');
+
+  @override
+  Future<Iterable<ICommandPermissionBuilder>> get permissions async =>
+      (await Future.wait(checks.map(
+        (e) => e.permissions,
+      )))
+          .fold([], (acc, element) => (acc as List<ICommandPermissionBuilder>)..addAll(element));
 }
 
 /// A [Check] thats checks for a specific role or roles.
@@ -428,4 +458,25 @@ class CooldownCheck extends AbstractCheck {
 
   @override
   Iterable<void Function(Context p1)> get postCallHooks => [];
+}
+
+/// A [Check] that checks that a [Command] is invoked from an [InteractionEvent].
+///
+/// If you just want to restrict command usage to slash commands, use [Command.slashOnly] instead.
+/// This class is meant to be used with [Check.any] and other checks to allow interaction commands
+/// to bypass checks.
+class InteractionCheck extends Check {
+  /// Create a new [InteractionCheck]
+  InteractionCheck([String? name])
+      : super((context) => context is InteractionContext, name ?? 'Interaction Check');
+}
+
+/// A [Check] that checks that a [Command] is invoked from a text message.
+///
+/// If you want to restrict command usage to text-only, use [Command.textOnly] instead. This class
+/// is meant to be used with [Check.any] and other checks to allow text commands to bypass checks.
+class MessageCheck extends Check {
+  /// Create a new [MessageCheck]
+  MessageCheck([String? name])
+      : super((context) => context is MessageContext, name ?? 'Message Check');
 }
