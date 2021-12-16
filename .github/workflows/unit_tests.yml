@@ -56,7 +56,7 @@ jobs:
         run: dart pub get
 
       - name: Format
-        run: dart format --set-exit-if-changed -l 160 ./lib
+        run: dart format --set-exit-if-changed -l 100 ./lib
 
   tests:
     needs: [ format, analyze ]
