@@ -26,7 +26,7 @@ abstract class Context {
   /// The [CommandsPlugin] that triggered this context's execution.
   final CommandsPlugin commands;
 
-  /// The [Guild] in which this context was executed, if any.
+  /// The [IGuild] in which this context was executed, if any.
   final IGuild? guild;
 
   /// The channel in which this context was executed.
@@ -71,7 +71,7 @@ class MessageContext extends Context {
   /// The prefix that triggered this context's execution.
   final String prefix;
 
-  /// The [Message] that triggered this context's execution.
+  /// The [IMessage] that triggered this context's execution.
   final IMessage message;
 
   /// The raw [String] that was used to parse this context's arguments, i.e the [message]s content
@@ -113,12 +113,12 @@ class MessageContext extends Context {
   String toString() => 'MessageContext[message=$message, message.content=${message.content}]';
 }
 
-/// Represents a [Context] triggered by a slash command ([Interaction]).
+/// Represents a [Context] triggered by a slash command ([ISlashCommandInteraction]).
 class InteractionContext extends Context {
-  /// The [Interaction] that triggered this context's execution.
+  /// The [ISlashCommandInteraction] that triggered this context's execution.
   final ISlashCommandInteraction interaction;
 
-  /// The [InteractionEvent] that triggered this context's exeecution.
+  /// The [ISlashCommandInteractionEvent] that triggered this context's exeecution.
   final ISlashCommandInteractionEvent interactionEvent;
 
   /// The raw arguments received from the API, mapped by name to value.

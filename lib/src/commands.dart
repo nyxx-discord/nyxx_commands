@@ -59,9 +59,7 @@ class CommandsOptions {
   });
 }
 
-/// The base bot class. This is used to listen to and register commands.
-///
-/// Extends [Nyxx] so you can use this as you would any other Nyxx client.
+/// The base plugin class. This is used to listen to and register commands.
 ///
 /// Note that although this class uses [GroupMixin], attempting to access [name], [description],
 /// [aliases] or any operation dependant on these will result in an [UnsupportedError] being thrown.

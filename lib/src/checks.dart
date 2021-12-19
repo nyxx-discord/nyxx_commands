@@ -15,6 +15,7 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
+import 'package:nyxx_commands/src/commands.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import 'context.dart';
@@ -38,14 +39,14 @@ abstract class AbstractCheck {
   Future<Iterable<CommandPermissionBuilderAbstract>> get permissions;
 
   /// An Iterable of pre-call hooks that will be called when a command this check is on emits to
-  /// [Commands.onPreCall].
+  /// [Command.onPreCall].
   ///
   /// Should be used by checks that have internal state to update that state, instead of updating it
   /// in [check].
   Iterable<void Function(Context)> get preCallHooks;
 
   /// An Iterable of post-call hooks that will be called when a command this check is on emits to
-  /// [Commands.onPostCall].
+  /// [Command.onPostCall].
   ///
   /// Should be used by checks that have internal state to update that state, instead of updating it
   /// in [check].
@@ -69,7 +70,7 @@ class Check extends AbstractCheck {
   factory Check.any(Iterable<Check> checks, [String? name]) => _AnyCheck(checks, name);
 
   /// Creates a new [Check] that inverts the result of the supplied check. Use this to allow use of
-  /// commands by default but deny it for cecrtain users.
+  /// commands by default but deny it for certain users.
   factory Check.deny(Check check, [String? name]) => _DenyCheck(check, name);
 
   /// Creates a new [Check] that succeeds if all of the supplied checks succeeds, and fails
@@ -254,14 +255,14 @@ class UserCheck extends Check {
 
 /// A [Check] that checks for a specific guild.
 ///
-/// This check is treated specially by [Bot]:
+/// This check is treated specially by [CommandsPlugin]:
 /// - There can only be one [GuildCheck] per command
 /// - Commands will be registered as guild commands in the specified guilds. This overrides
-/// [Bot.guild]
+/// [CommandsPlugin.guild]
 class GuildCheck extends Check {
   /// The guilds this check allows.
   ///
-  /// [null] indicates that all guilds are allowed.
+  /// `null` indicates that all guilds are allowed.
   Iterable<Snowflake?> guildIds;
 
   /// Create a Guild Check based on a guild.
@@ -282,7 +283,7 @@ class GuildCheck extends Check {
   /// Create a Guild Check that allows all guilds, but denies DMs.
   ///
   /// This means that this command will be registered globally or, if it is set, the guild specified
-  /// by [Bot.guild], and cannot be used in DMs with the bot.
+  /// by [CommandsPlugin.guild], and cannot be used in DMs with the bot.
   GuildCheck.all([String? name])
       : guildIds = [null],
         super(
@@ -311,7 +312,7 @@ enum CooldownType {
   /// all users in all channels belonging to that category.
   ///
   /// If the channel does not belong to a category or is not a guild channel, the cooldown works in
-  /// the same was as [channel].
+  /// the same way as [channel].
   category,
 
   /// Cooldown is per channel.

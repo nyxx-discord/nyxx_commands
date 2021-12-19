@@ -234,7 +234,7 @@ final Converter<Snowflake> snowflakeConverter = Converter<Snowflake>(
   },
 );
 
-/// Converter to convert input to [Member]s.
+/// Converter to convert input to [IMember]s.
 ///
 /// This uses multiple strategies to look up members, in the order below:
 /// - ID lookup (parse input as snowflake or mention)
@@ -323,11 +323,11 @@ final Converter<IMember> memberConverter = FallbackConverter<IMember>([
   }),
 ]);
 
-/// Converter to convert input to [User]s.
+/// Converter to convert input to [IUser]s.
 ///
 /// This uses multiple strategies to look up users, in the order below:
 /// - ID lookup (parse input as snowflake)
-/// - Member lookup (convert to member using [memberConverter] and extract [Member.user])
+/// - Member lookup (convert to member using [memberConverter] and extract [IMember.user])
 /// - Exact username match
 /// - Full case insensitive username match
 /// - Partial case insensitive username match (username starts with input)
@@ -429,7 +429,7 @@ Converter<T> _guildChannelConverterFor<T extends IGuildChannel>() {
   ]);
 }
 
-/// Converter to convert input to [GuildChannel]s.
+/// Converter to convert input to [IGuildChannel]s.
 ///
 /// This uses multiple strategies to look up channels, in the order below:
 /// - ID lookup (parse input as snowflake)
@@ -441,7 +441,7 @@ Converter<T> _guildChannelConverterFor<T extends IGuildChannel>() {
 /// will be given based off of that condition.
 final Converter<IGuildChannel> guildChannelConverter = _guildChannelConverterFor<IGuildChannel>();
 
-/// Converter to convert input to [TextGuildChannel]s.
+/// Converter to convert input to [ITextGuildChannel]s.
 ///
 /// This uses multiple strategies to look up channels, in the order below:
 /// - ID lookup (parse input as snowflake)
@@ -454,7 +454,7 @@ final Converter<IGuildChannel> guildChannelConverter = _guildChannelConverterFor
 final Converter<ITextGuildChannel> textGuildChannelConverter =
     _guildChannelConverterFor<ITextGuildChannel>();
 
-/// Converter to convert input to [VoiceGuildChannel]s.
+/// Converter to convert input to [IVoiceGuildChannel]s.
 ///
 /// This uses multiple strategies to look up channels, in the order below:
 /// - ID lookup (parse input as snowflake)
@@ -467,7 +467,7 @@ final Converter<ITextGuildChannel> textGuildChannelConverter =
 final Converter<IVoiceGuildChannel> voiceGuildChannelConverter =
     _guildChannelConverterFor<IVoiceGuildChannel>();
 
-/// Converter to convert input to [CategoryGuildChannel]s.
+/// Converter to convert input to [ICategoryGuildChannel]s.
 ///
 /// This uses multiple strategies to look up channels, in the order below:
 /// - ID lookup (parse input as snowflake)
@@ -480,7 +480,7 @@ final Converter<IVoiceGuildChannel> voiceGuildChannelConverter =
 final Converter<ICategoryGuildChannel> categoryGuildChannelConverter =
     _guildChannelConverterFor<ICategoryGuildChannel>();
 
-/// Converter to convert input to [StageVoiceGuildChannel]s.
+/// Converter to convert input to [IStageVoiceGuildChannel]s.
 ///
 /// This uses multiple strategies to look up channels, in the order below:
 /// - ID lookup (parse input as snowflake)
@@ -493,7 +493,7 @@ final Converter<ICategoryGuildChannel> categoryGuildChannelConverter =
 final Converter<IStageVoiceGuildChannel> stageVoiceChannelConverter =
     _guildChannelConverterFor<IStageVoiceGuildChannel>();
 
-/// Converter to convert input to [Role]s.
+/// Converter to convert input to [IRole]s.
 ///
 /// This uses multiple strategies to look up roles, in the order below:
 /// - ID lookup (parse input as snowflake)
