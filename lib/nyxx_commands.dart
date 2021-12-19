@@ -2,10 +2,10 @@
 /// [nyxx](https://pub.dev/packages/nyxx) library.
 library nyxx_commands;
 
-export 'src/bot.dart' show Bot, BotOptions;
 export 'src/checks.dart'
     show AbstractCheck, Check, GuildCheck, RoleCheck, UserCheck, CooldownCheck, CooldownType;
 export 'src/command.dart' show Command, CommandType, commandNameRegexp;
+export 'src/commands.dart' show CommandsPlugin, CommandsOptions;
 export 'src/context.dart' show Context, InteractionContext, MessageContext;
 export 'src/converter.dart'
     show

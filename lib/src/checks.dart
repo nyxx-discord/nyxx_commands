@@ -15,7 +15,7 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_interactions/interactions.dart';
+import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import 'context.dart';
 
@@ -35,7 +35,7 @@ abstract class AbstractCheck {
   FutureOr<bool> check(Context context);
 
   /// An Iterable of permission overrides that will be used on slash commands using this check.
-  Future<Iterable<ICommandPermissionBuilder>> get permissions;
+  Future<Iterable<CommandPermissionBuilderAbstract>> get permissions;
 
   /// An Iterable of pre-call hooks that will be called when a command this check is on emits to
   /// [Commands.onPreCall].
@@ -85,7 +85,7 @@ class Check extends AbstractCheck {
   FutureOr<bool> check(Context context) => _check(context);
 
   @override
-  Future<Iterable<ICommandPermissionBuilder>> get permissions => Future.value([]);
+  Future<Iterable<CommandPermissionBuilderAbstract>> get permissions => Future.value([]);
 
   @override
   Iterable<void Function(Context context)> get postCallHooks => [];
@@ -112,8 +112,8 @@ class _AnyCheck extends Check {
   }
 
   @override
-  Future<Iterable<ICommandPermissionBuilder>> get permissions async {
-    Iterable<Iterable<ICommandPermissionBuilder>> permissions =
+  Future<Iterable<CommandPermissionBuilderAbstract>> get permissions async {
+    Iterable<Iterable<CommandPermissionBuilderAbstract>> permissions =
         await Future.wait(checks.map((check) => check.permissions));
 
     return permissions.first.where(
@@ -123,7 +123,7 @@ class _AnyCheck extends Check {
           // checks. If every check denies the permission for this id, also deny the permission in
           // the combined version.
           permissions.every((element) => element.any(
-                // ICommandPermissionBuilder does not override == so we manually check it
+                // CommandPermissionBuilderAbstract does not override == so we manually check it
                 (p) => p.id == permission.id && !p.hasPermission,
               )),
     );
@@ -137,8 +137,8 @@ class _DenyCheck extends Check {
       : super((context) async => !(await source.check(context)), name ?? 'Denied ${source.name}');
 
   @override
-  Future<Iterable<ICommandPermissionBuilder>> get permissions async {
-    Iterable<ICommandPermissionBuilder> permissions = await source.permissions;
+  Future<Iterable<CommandPermissionBuilderAbstract>> get permissions async {
+    Iterable<CommandPermissionBuilderAbstract> permissions = await source.permissions;
 
     Iterable<RoleCommandPermissionBuilder> rolePermissions =
         permissions.whereType<RoleCommandPermissionBuilder>();
@@ -147,10 +147,10 @@ class _DenyCheck extends Check {
         permissions.whereType<UserCommandPermissionBuilder>();
 
     return [
-      ...rolePermissions.map((permission) =>
-          ICommandPermissionBuilder.role(permission.id, hasPermission: !permission.hasPermission)),
+      ...rolePermissions.map((permission) => CommandPermissionBuilderAbstract.role(permission.id,
+          hasPermission: !permission.hasPermission)),
       ...userPermissions
-          .map((e) => ICommandPermissionBuilder.user(e.id, hasPermission: !e.hasPermission)),
+          .map((e) => CommandPermissionBuilderAbstract.user(e.id, hasPermission: !e.hasPermission)),
     ];
   }
 }
@@ -169,11 +169,12 @@ class _GroupCheck extends Check {
         }, name ?? 'All of [${checks.map((e) => e.name).join(', ')}]');
 
   @override
-  Future<Iterable<ICommandPermissionBuilder>> get permissions async =>
+  Future<Iterable<CommandPermissionBuilderAbstract>> get permissions async =>
       (await Future.wait(checks.map(
         (e) => e.permissions,
       )))
-          .fold([], (acc, element) => (acc as List<ICommandPermissionBuilder>)..addAll(element));
+          .fold([],
+              (acc, element) => (acc as List<CommandPermissionBuilderAbstract>)..addAll(element));
 }
 
 /// A [Check] thats checks for a specific role or roles.
@@ -186,7 +187,7 @@ class RoleCheck extends Check {
   Iterable<Snowflake> roleIds;
 
   /// Create a new Role Check based on a role.
-  RoleCheck(Role role, [String? name]) : this.id(role.id, name);
+  RoleCheck(IRole role, [String? name]) : this.id(role.id, name);
 
   /// Create a new Role Check based on a role id.
   RoleCheck.id(Snowflake id, [String? name])
@@ -197,7 +198,7 @@ class RoleCheck extends Check {
         );
 
   /// Create a new Role Check based on multiple roles.
-  RoleCheck.any(Iterable<Role> roles, [String? name])
+  RoleCheck.any(Iterable<IRole> roles, [String? name])
       : this.anyId(roles.map((role) => role.id), name);
 
   /// Create a new Role Check based on multiple role ids.
@@ -209,9 +210,9 @@ class RoleCheck extends Check {
         );
 
   @override
-  Future<Iterable<ICommandPermissionBuilder>> get permissions => Future.value([
-        ICommandPermissionBuilder.role(Snowflake.zero(), hasPermission: false),
-        ...roleIds.map((e) => ICommandPermissionBuilder.role(e, hasPermission: true)),
+  Future<Iterable<CommandPermissionBuilderAbstract>> get permissions => Future.value([
+        CommandPermissionBuilderAbstract.role(Snowflake.zero(), hasPermission: false),
+        ...roleIds.map((e) => CommandPermissionBuilderAbstract.role(e, hasPermission: true)),
       ]);
 }
 
@@ -225,7 +226,7 @@ class UserCheck extends Check {
   Iterable<Snowflake> userIds;
 
   /// Create a User Check based on a user.
-  UserCheck(User user, [String? name]) : this.id(user.id, name);
+  UserCheck(IUser user, [String? name]) : this.id(user.id, name);
 
   /// Create a User Check based on a user id.
   UserCheck.id(Snowflake id, [String? name])
@@ -233,7 +234,7 @@ class UserCheck extends Check {
         super((context) => context.user.id == id, name ?? 'User Check on $id');
 
   /// Create a User Check based on multiple users.
-  UserCheck.any(Iterable<User> users, [String? name])
+  UserCheck.any(Iterable<IUser> users, [String? name])
       : this.anyId(users.map((user) => user.id), name);
 
   /// Create a User Check based on multiple user ids.
@@ -245,9 +246,9 @@ class UserCheck extends Check {
         );
 
   @override
-  Future<Iterable<ICommandPermissionBuilder>> get permissions => Future.value([
-        ICommandPermissionBuilder.user(Snowflake.zero(), hasPermission: false),
-        ...userIds.map((e) => ICommandPermissionBuilder.user(e, hasPermission: true)),
+  Future<Iterable<CommandPermissionBuilderAbstract>> get permissions => Future.value([
+        CommandPermissionBuilderAbstract.user(Snowflake.zero(), hasPermission: false),
+        ...userIds.map((e) => CommandPermissionBuilderAbstract.user(e, hasPermission: true)),
       ]);
 }
 
@@ -264,7 +265,7 @@ class GuildCheck extends Check {
   Iterable<Snowflake?> guildIds;
 
   /// Create a Guild Check based on a guild.
-  GuildCheck(Guild guild, [String? name]) : this.id(guild.id, name);
+  GuildCheck(IGuild guild, [String? name]) : this.id(guild.id, name);
 
   /// Create a Guild Check based on a guild id.
   GuildCheck.id(Snowflake id, [String? name])
@@ -290,7 +291,7 @@ class GuildCheck extends Check {
         );
 
   /// Create a Guild Check based on multiple guilds.
-  GuildCheck.any(Iterable<Guild> guilds, [String? name])
+  GuildCheck.any(Iterable<IGuild> guilds, [String? name])
       : this.anyId(guilds.map((guild) => guild.id), name);
 
   /// Create a Guild Check based on multiple guild ids.
@@ -426,8 +427,8 @@ class CooldownCheck extends AbstractCheck {
     switch (type) {
       case CooldownType.category:
         if (context.guild != null) {
-          if ((context.channel as GuildChannel).parentChannel != null) {
-            return (context.channel as GuildChannel).parentChannel!.id.id;
+          if ((context.channel as IGuildChannel).parentChannel != null) {
+            return (context.channel as IGuildChannel).parentChannel!.id.id;
           }
         }
         return context.channel.id.id;
@@ -442,9 +443,9 @@ class CooldownCheck extends AbstractCheck {
       case CooldownType.role:
         if (context.member != null) {
           if (context.member!.roles.isNotEmpty) {
-            return context.member!.highestRole.id.id;
+            return PermissionsUtils.getMemberHighestRole(context.member!).id.id;
           }
-          return context.guild!.id.id;
+          return context.guild!.everyoneRole.id.id;
         }
         return context.channel.id.id;
       case CooldownType.user:
@@ -468,7 +469,7 @@ class CooldownCheck extends AbstractCheck {
   ];
 
   @override
-  Future<Iterable<ICommandPermissionBuilder>> get permissions => Future.value([]);
+  Future<Iterable<CommandPermissionBuilderAbstract>> get permissions => Future.value([]);
 
   @override
   Iterable<void Function(Context p1)> get postCallHooks => [];
@@ -497,7 +498,7 @@ class MessageCheck extends Check {
       : super((context) => context is MessageContext, name ?? 'Message Check');
 
   @override
-  Future<Iterable<ICommandPermissionBuilder>> get permissions => Future.value(
-        [ICommandPermissionBuilder.role(Snowflake.zero(), hasPermission: false)],
+  Future<Iterable<CommandPermissionBuilderAbstract>> get permissions => Future.value(
+        [CommandPermissionBuilderAbstract.role(Snowflake.zero(), hasPermission: false)],
       );
 }

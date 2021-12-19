@@ -15,9 +15,9 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_interactions/interactions.dart';
+import 'package:nyxx_interactions/nyxx_interactions.dart';
 
-import 'bot.dart';
+import 'commands.dart';
 import 'context.dart';
 import 'errors.dart';
 import 'view.dart';
@@ -34,18 +34,18 @@ final Map<Type, CommandOptionType> discordTypes = {
   String: CommandOptionType.string,
 
   // User types
-  Member: CommandOptionType.user,
-  User: CommandOptionType.user,
+  IMember: CommandOptionType.user,
+  IUser: CommandOptionType.user,
 
   // Channel types
-  GuildChannel: CommandOptionType.channel,
-  TextGuildChannel: CommandOptionType.channel,
-  CategoryGuildChannel: CommandOptionType.channel,
-  VoiceGuildChannel: CommandOptionType.channel,
-  StageVoiceGuildChannel: CommandOptionType.channel,
+  IGuildChannel: CommandOptionType.channel,
+  ITextGuildChannel: CommandOptionType.channel,
+  ICategoryGuildChannel: CommandOptionType.channel,
+  IVoiceGuildChannel: CommandOptionType.channel,
+  IStageVoiceGuildChannel: CommandOptionType.channel,
 
   // Role types
-  Role: CommandOptionType.role,
+  IRole: CommandOptionType.role,
 };
 
 /// Object used to convert raw argument strings to the type required by the
@@ -66,7 +66,7 @@ class Converter<T> {
 
   /// Construct a new [Converter].
   ///
-  /// This must then be registered to a [Bot] instance with [Bot.addConverter].
+  /// This must then be registered to a [CommandsPlugin] instance with [CommandsPlugin.addConverter].
   Converter(this.convert, {this.choices});
 
   @override
@@ -89,7 +89,7 @@ class CombineConverter<R, T> extends Converter<T> {
 
   /// Construct a new [CombineConverter].
   ///
-  /// This must then be registered to a [Bot] instance with [Bot.addConverter].
+  /// This must then be registered to a [CommandsPlugin] instance with [CommandsPlugin.addConverter].
   CombineConverter(this.converter, this.process)
       : super((view, context) async {
           R? ret = await converter.convert(view, context);
@@ -114,7 +114,7 @@ class FallbackConverter<T> extends Converter<T> {
 
   /// Construct a new [FallbackConverter].
   ///
-  /// This must then be registered to a [Bot] instance with [Bot.addConverter].
+  /// This must then be registered to a [CommandsPlugin] instance with [CommandsPlugin.addConverter].
   FallbackConverter(this.converters)
       : super((view, context) async {
           StringView? used;
@@ -247,41 +247,41 @@ final Converter<Snowflake> snowflakeConverter = Converter<Snowflake>(
 ///
 /// Note that for all of these strategies, if multiple members match any condition then no results
 /// will be given based off of that condition.
-final Converter<Member> memberConverter = FallbackConverter<Member>([
+final Converter<IMember> memberConverter = FallbackConverter<IMember>([
   // Get member from mention or snowflake.
-  CombineConverter<Snowflake, Member>(snowflakeConverter, (snowflake, context) async {
+  CombineConverter<Snowflake, IMember>(snowflakeConverter, (snowflake, context) async {
     if (context.guild != null) {
-      Member? cached = context.guild!.members.asMap[snowflake];
+      IMember? cached = context.guild!.members[snowflake];
       if (cached != null) {
         return cached;
       }
 
       try {
         return await context.guild!.fetchMember(snowflake);
-      } on HttpResponseError {
+      } on IHttpResponseError {
         return null;
       }
     }
     return null;
   }),
   // Get member by name or nickname
-  Converter<Member>((view, context) async {
+  Converter<IMember>((view, context) async {
     String word = view.getQuotedWord();
 
     if (context.guild != null) {
-      Stream<Member> named = context.guild!.searchMembersGateway(word, limit: 800000);
+      Stream<IMember> named = context.guild!.searchMembersGateway(word, limit: 800000);
 
-      List<Member> usernameExact = [];
-      List<Member> nickExact = [];
+      List<IMember> usernameExact = [];
+      List<IMember> nickExact = [];
 
-      List<Member> usernameCaseInsensitive = [];
-      List<Member> nickCaseInsensitive = [];
+      List<IMember> usernameCaseInsensitive = [];
+      List<IMember> nickCaseInsensitive = [];
 
-      List<Member> usernameStart = [];
-      List<Member> nickStart = [];
+      List<IMember> usernameStart = [];
+      List<IMember> nickStart = [];
 
       await for (final member in named) {
-        User user = await member.user.getOrDownload();
+        IUser user = await member.user.getOrDownload();
 
         if (user.username == word) {
           usernameExact.add(member);
@@ -334,30 +334,38 @@ final Converter<Member> memberConverter = FallbackConverter<Member>([
 ///
 /// Note that for all of these strategies, if multiple users match any condition then no results
 /// will be given based off of that condition.
-final Converter<User> userConverter = FallbackConverter<User>([
-  CombineConverter<Snowflake, User>(snowflakeConverter, (snowflake, context) async {
-    User? cached = context.bot.users.asMap[snowflake];
+final Converter<IUser> userConverter = FallbackConverter<IUser>([
+  CombineConverter<Snowflake, IUser>(snowflakeConverter, (snowflake, context) async {
+    IUser? cached = context.client.users[snowflake];
     if (cached != null) {
       return cached;
     }
 
-    try {
-      return await context.bot.fetchUser(snowflake);
-    } on HttpResponseError {
-      return null;
+    if (context.client is INyxxRest) {
+      try {
+        return await (context.client as INyxxRest).httpEndpoints.fetchUser(snowflake);
+      } on IHttpResponseError {
+        return null;
+      }
     }
+
+    return null;
   }),
-  CombineConverter<Member, User>(memberConverter, (member, context) => member.user.getOrDownload()),
-  Converter<User>((view, context) {
+  CombineConverter<IMember, IUser>(
+      memberConverter, (member, context) => member.user.getOrDownload()),
+  Converter<IUser>((view, context) {
     String word = view.getWord();
 
     if (context.channel.channelType == ChannelType.dm ||
         context.channel.channelType == ChannelType.groupDm) {
-      List<User> exact = [];
-      List<User> caseInsensitive = [];
-      List<User> start = [];
+      List<IUser> exact = [];
+      List<IUser> caseInsensitive = [];
+      List<IUser> start = [];
 
-      for (final user in [...(context.channel as DMChannel).participants, context.bot.self]) {
+      for (final user in [
+        ...(context.channel as IDMChannel).participants,
+        if (context.client is INyxxRest) (context.client as INyxxRest).self,
+      ]) {
         if (user.username == word) {
           exact.add(user);
         }
@@ -381,7 +389,7 @@ final Converter<User> userConverter = FallbackConverter<User>([
   }),
 ]);
 
-Converter<T> _guildChannelConverterFor<T extends GuildChannel>() {
+Converter<T> _guildChannelConverterFor<T extends IGuildChannel>() {
   return FallbackConverter<T>([
     CombineConverter<Snowflake, T>(snowflakeConverter, (snowflake, context) async {
       if (context.guild != null) {
@@ -431,7 +439,7 @@ Converter<T> _guildChannelConverterFor<T extends GuildChannel>() {
 ///
 /// Note that for all of these strategies, if multiple channels match any condition then no results
 /// will be given based off of that condition.
-final Converter<GuildChannel> guildChannelConverter = _guildChannelConverterFor<GuildChannel>();
+final Converter<IGuildChannel> guildChannelConverter = _guildChannelConverterFor<IGuildChannel>();
 
 /// Converter to convert input to [TextGuildChannel]s.
 ///
@@ -443,8 +451,8 @@ final Converter<GuildChannel> guildChannelConverter = _guildChannelConverterFor<
 ///
 /// Note that for all of these strategies, if multiple channels match any condition then no results
 /// will be given based off of that condition.
-final Converter<TextGuildChannel> textGuildChannelConverter =
-    _guildChannelConverterFor<TextGuildChannel>();
+final Converter<ITextGuildChannel> textGuildChannelConverter =
+    _guildChannelConverterFor<ITextGuildChannel>();
 
 /// Converter to convert input to [VoiceGuildChannel]s.
 ///
@@ -456,8 +464,8 @@ final Converter<TextGuildChannel> textGuildChannelConverter =
 ///
 /// Note that for all of these strategies, if multiple channels match any condition then no results
 /// will be given based off of that condition.
-final Converter<VoiceGuildChannel> voiceGuildChannelConverter =
-    _guildChannelConverterFor<VoiceGuildChannel>();
+final Converter<IVoiceGuildChannel> voiceGuildChannelConverter =
+    _guildChannelConverterFor<IVoiceGuildChannel>();
 
 /// Converter to convert input to [CategoryGuildChannel]s.
 ///
@@ -469,8 +477,8 @@ final Converter<VoiceGuildChannel> voiceGuildChannelConverter =
 ///
 /// Note that for all of these strategies, if multiple channels match any condition then no results
 /// will be given based off of that condition.
-final Converter<CategoryGuildChannel> categoryGuildChannelConverter =
-    _guildChannelConverterFor<CategoryGuildChannel>();
+final Converter<ICategoryGuildChannel> categoryGuildChannelConverter =
+    _guildChannelConverterFor<ICategoryGuildChannel>();
 
 /// Converter to convert input to [StageVoiceGuildChannel]s.
 ///
@@ -482,8 +490,8 @@ final Converter<CategoryGuildChannel> categoryGuildChannelConverter =
 ///
 /// Note that for all of these strategies, if multiple channels match any condition then no results
 /// will be given based off of that condition.
-final Converter<StageVoiceGuildChannel> stageVoiceChannelConverter =
-    _guildChannelConverterFor<StageVoiceGuildChannel>();
+final Converter<IStageVoiceGuildChannel> stageVoiceChannelConverter =
+    _guildChannelConverterFor<IStageVoiceGuildChannel>();
 
 /// Converter to convert input to [Role]s.
 ///
@@ -496,10 +504,10 @@ final Converter<StageVoiceGuildChannel> stageVoiceChannelConverter =
 ///
 /// Note that for all of these strategies, if multiple channels match any condition then no results
 /// will be given based off of that condition.
-final Converter<Role> roleConverter = FallbackConverter<Role>([
-  CombineConverter<Snowflake, Role>(snowflakeConverter, (snowflake, context) {
+final Converter<IRole> roleConverter = FallbackConverter<IRole>([
+  CombineConverter<Snowflake, IRole>(snowflakeConverter, (snowflake, context) {
     if (context.guild != null) {
-      Role? cached = context.guild!.roles.asMap[snowflake];
+      IRole? cached = context.guild!.roles[snowflake];
       if (cached != null) {
         return cached;
       }
@@ -511,14 +519,14 @@ final Converter<Role> roleConverter = FallbackConverter<Role>([
       }
     }
   }),
-  Converter<Role>((view, context) async {
+  Converter<IRole>((view, context) async {
     String word = view.getQuotedWord();
     if (context.guild != null) {
-      Stream<Role> roles = context.guild!.fetchRoles();
+      Stream<IRole> roles = context.guild!.fetchRoles();
 
-      List<Role> exact = [];
-      List<Role> caseInsensitive = [];
-      List<Role> partial = [];
+      List<IRole> exact = [];
+      List<IRole> caseInsensitive = [];
+      List<IRole> partial = [];
 
       await for (final role in roles) {
         if (role.name == word) {
@@ -544,10 +552,11 @@ final Converter<Role> roleConverter = FallbackConverter<Role>([
 
 /// Attempt to parse a single argument from an argument view.
 ///
-/// [bot] is the [Bot] used for retrieving the converters for a specific [Type]. If no converter
+/// [commands] is the [CommandsPlugin] used for retrieving the converters for a specific [Type]. If no converter
 /// for [expectedType] is found, a [NoConverterException] is thrown.
-Future<dynamic> parse(Bot bot, Context context, StringView toParse, Type expectedType) async {
-  Converter? converter = bot.converterFor(expectedType);
+Future<dynamic> parse(
+    CommandsPlugin commands, Context context, StringView toParse, Type expectedType) async {
+  Converter<dynamic>? converter = commands.converterFor(expectedType);
   if (converter == null) {
     throw NoConverterException(expectedType, context);
   }
@@ -565,11 +574,11 @@ Future<dynamic> parse(Bot bot, Context context, StringView toParse, Type expecte
   }
 }
 
-/// Register default converters for a [Bot].
+/// Register default converters for a [CommandsPlugin].
 ///
 /// This registers converters for commonly used types such as [String]s, [int]s or [double]s.
-void registerDefaultConverters(Bot bot) {
-  bot
+void registerDefaultConverters(CommandsPlugin commands) {
+  commands
     ..addConverter(stringConverter)
     ..addConverter(intConverter)
     ..addConverter(doubleConverter)

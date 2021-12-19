@@ -17,7 +17,7 @@ import 'dart:mirrors';
 
 import 'package:logging/logging.dart';
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_interactions/interactions.dart';
+import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import 'checks.dart';
 import 'command.dart';
@@ -27,52 +27,36 @@ import 'errors.dart';
 import 'group.dart';
 import 'view.dart';
 
-/// Optional bot and client settings.
-class BotOptions extends ClientOptions {
-  /// Whether to log [CommandsException]s that occur when received from [Bot.onCommandError].
-  bool logErrors;
+/// Optional commands options.
+class CommandsOptions {
+  /// Whether to log [CommandsException]s that occur when received from
+  /// [CommandsPlugin.onCommandError].
+  final bool logErrors;
 
   /// Whether to automatically acknowledge slash command interactions upon receiving them. If you
   /// set this to false, you *must* respond to the interaction yourself, or the command will fail.
-  bool autoAcknowledgeInteractions;
+  final bool autoAcknowledgeInteractions;
 
   /// Whether to process commands coming from bot users on Discord.
-  bool acceptBotCommands;
+  final bool acceptBotCommands;
 
   /// Whether to process commands coming from the bot's own user.
   ///
-  /// Setting this to [true] might result in infinite loops.
+  /// Setting this to `true` might result in infinite loops.
   /// [acceptBotCommands] must also be set to true for this to have any effect.
-  bool acceptSelfCommands;
+  final bool acceptSelfCommands;
 
-  /// Create a new [BotOptions] instance.
-  BotOptions({
-    AllowedMentions? allowedMentions,
-    int? shardCount,
-    int messageCacheSize = 100,
-    int largeThreshold = 50,
-    bool compressedGatewayPayloads = true,
-    bool guildSubscriptions = true,
-    PresenceBuilder? initialPresence,
-    ShutdownHook? shutdownHook,
-    ShutdownShardHook? shutdownShardHook,
-    bool dispatchRawShardEvent = false,
+  /// A custom [InteractionBackend] to use when creating the [IInteractions] instance.
+  final InteractionBackend? backend;
+
+  /// Create a new [CommandsOptions] instance.
+  const CommandsOptions({
     this.logErrors = true,
     this.autoAcknowledgeInteractions = true,
     this.acceptBotCommands = false,
     this.acceptSelfCommands = false,
-  }) : super(
-          allowedMentions: allowedMentions,
-          shardCount: shardCount,
-          messageCacheSize: messageCacheSize,
-          largeThreshold: largeThreshold,
-          compressedGatewayPayloads: compressedGatewayPayloads,
-          guildSubscriptions: guildSubscriptions,
-          initialPresence: initialPresence,
-          shutdownHook: shutdownHook,
-          shutdownShardHook: shutdownShardHook,
-          dispatchRawShardEvent: dispatchRawShardEvent,
-        );
+    this.backend,
+  });
 }
 
 /// The base bot class. This is used to listen to and register commands.
@@ -81,9 +65,9 @@ class BotOptions extends ClientOptions {
 ///
 /// Note that although this class uses [GroupMixin], attempting to access [name], [description],
 /// [aliases] or any operation dependant on these will result in an [UnsupportedError] being thrown.
-class Bot extends Nyxx with GroupMixin {
+class CommandsPlugin extends BasePlugin with GroupMixin {
   /// This bot's prefix function
-  final String Function(Message) prefix;
+  final String Function(IMessage) prefix;
 
   final StreamController<CommandsException> _onCommandErrorController =
       StreamController.broadcast();
@@ -91,18 +75,22 @@ class Bot extends Nyxx with GroupMixin {
   /// A [Stream] of exceptions that occur when processing [Command]s
   late final Stream<CommandsException> onCommandError = _onCommandErrorController.stream;
 
-  final Map<Type, Converter> _converters = {};
+  final Map<Type, Converter<dynamic>> _converters = {};
 
-  /// The [Interactions] instance that this bot uses for managing slash commands.
-  late final Interactions interactions;
+  /// The [IInteractions] instance that this bot uses for managing slash commands.
+  late final IInteractions interactions;
 
-  late final BotOptions _botOptions = options as BotOptions;
+  /// The options for this [CommandsPlugin] instance.
+  late final CommandsOptions options;
 
   final Logger _commandsLogger = Logger('Commands');
 
   /// The guild that registered commands will be restricted to. Use for testing, and disable when
   /// deploying the bot.
   Snowflake? guild;
+
+  /// The [INyxx] client this plugin is registered on
+  INyxx? client;
 
   @override
   String get name => throw UnsupportedError('get name');
@@ -111,54 +99,61 @@ class Bot extends Nyxx with GroupMixin {
   @override
   Iterable<String> get aliases => throw UnsupportedError('get aliases');
 
-  /// Create a new [Bot] instance.
-  Bot(
-    String token,
-    int intents, {
+  /// Create a new [CommandsPlugin] instance.
+  CommandsPlugin({
     required this.prefix,
     this.guild,
-    BotOptions? options,
-    CacheOptions? cacheOptions,
-    bool ignoreExceptions = true,
-    bool useDefaultLogger = true,
-  }) : super(
-          token,
-          intents,
-          options: options ?? BotOptions(),
-          cacheOptions: cacheOptions,
-          ignoreExceptions: ignoreExceptions,
-          useDefaultLogger: useDefaultLogger,
-        ) {
+    CommandsOptions? options,
+  }) : options = options ?? CommandsOptions() {
     registerDefaultConverters(this);
 
-    onMessageReceived.listen((event) => _processMessage(event.message));
-
-    if (_botOptions.logErrors) {
+    if (this.options.logErrors) {
       onCommandError.listen((error) {
         _commandsLogger
           ..warning('Uncaught exception in command')
           ..shout(error);
       });
     }
+  }
 
-    onReady.listen((event) async {
+  @override
+  void onRegister(INyxx nyxx, Logger logger) async {
+    client = nyxx;
+
+    if (nyxx is INyxxWebsocket) {
+      nyxx.eventsWs.onMessageReceived.listen((event) => _processMessage(event.message));
+
+      interactions = IInteractions.create(options.backend ?? WebsocketInteractionBackend(nyxx));
+    } else {
+      logger.warning('Commands was not intended for use without NyxxWebsocket.');
+
+      throw CommandsError(
+          'Cannot create the Interactions backend for non-websocket INyxx instances.');
+    }
+
+    if (nyxx.ready) {
       for (final builder in await _getSlashBuilders()) {
         interactions.registerSlashCommand(builder);
       }
 
       interactions.sync();
-    });
+    } else {
+      nyxx.onReady.listen((event) async {
+        for (final builder in await _getSlashBuilders()) {
+          interactions.registerSlashCommand(builder);
+        }
 
-    // Interactions expects to be instanciated before onReady is dispatched.
-    interactions = Interactions(this);
+        interactions.sync();
+      });
+    }
   }
 
-  Future<void> _processMessage(Message message) async {
-    if (message.author.bot && !_botOptions.acceptBotCommands) {
+  Future<void> _processMessage(IMessage message) async {
+    if (message.author.bot && !options.acceptBotCommands) {
       return;
     }
 
-    if (message.author.id == self.id && !_botOptions.acceptSelfCommands) {
+    if (message.author.id == (client as INyxxRest).self.id && !options.acceptSelfCommands) {
       return;
     }
 
@@ -179,11 +174,11 @@ class Bot extends Nyxx with GroupMixin {
   }
 
   Future<void> _processInteraction(
-    SlashCommandInteractionEvent interactionEvent,
+    ISlashCommandInteractionEvent interactionEvent,
     Command command,
   ) async {
     try {
-      if (_botOptions.autoAcknowledgeInteractions) {
+      if (options.autoAcknowledgeInteractions) {
         await interactionEvent.acknowledge();
       }
 
@@ -198,30 +193,31 @@ class Bot extends Nyxx with GroupMixin {
     }
   }
 
-  Future<Context> _messageContext(Message message, StringView contentView, String prefix) async {
+  Future<Context> _messageContext(IMessage message, StringView contentView, String prefix) async {
     Command command = getCommand(contentView) ?? (throw CommandNotFoundException(contentView));
 
-    TextChannel channel = await message.channel.getOrDownload();
+    ITextChannel channel = await message.channel.getOrDownload();
 
-    Guild? guild;
-    Member? member;
-    User user;
-    if (message is GuildMessage) {
-      guild = await (channel as GuildChannel).guild.getOrDownload();
+    IGuild? guild;
+    IMember? member;
+    IUser user;
+    if (message.guild != null) {
+      guild = await message.guild!.getOrDownload();
 
       member = message.member;
-      user = await member.user.getOrDownload();
+      user = await member!.user.getOrDownload();
     } else {
-      user = message.author as User;
+      user = message.author as IUser;
     }
 
     return MessageContext(
-      bot: this,
+      commands: this,
       guild: guild,
       channel: channel,
       member: member,
       user: user,
       command: command,
+      client: client!,
       prefix: prefix,
       message: message,
       rawArguments: contentView.remaining,
@@ -229,11 +225,11 @@ class Bot extends Nyxx with GroupMixin {
   }
 
   Future<Context> _interactionContext(
-      SlashCommandInteractionEvent interactionEvent, Command command) async {
-    SlashCommandInteraction interaction = interactionEvent.interaction;
+      ISlashCommandInteractionEvent interactionEvent, Command command) async {
+    ISlashCommandInteraction interaction = interactionEvent.interaction;
 
-    Member? member = interaction.memberAuthor;
-    User user;
+    IMember? member = interaction.memberAuthor;
+    IUser user;
     if (member != null) {
       user = await member.user.getOrDownload();
     } else {
@@ -247,12 +243,13 @@ class Bot extends Nyxx with GroupMixin {
     }
 
     return InteractionContext(
-      bot: this,
+      commands: this,
       guild: await interaction.guild?.getOrDownload(),
       channel: await interaction.channel.getOrDownload(),
       member: member,
       user: user,
       command: command,
+      client: client!,
       interaction: interaction,
       rawArguments: rawArguments,
       interactionEvent: interactionEvent,
@@ -264,10 +261,10 @@ class Bot extends Nyxx with GroupMixin {
 
     for (final child in children) {
       if (child.hasSlashCommand || (child is Command && child.type != CommandType.textOnly)) {
-        Map<Snowflake, ICommandPermissionBuilder> uniquePermissions = {};
+        Map<Snowflake, CommandPermissionBuilderAbstract> uniquePermissions = {};
 
         for (final check in child.checks) {
-          Iterable<ICommandPermissionBuilder> checkPermissions = await check.permissions;
+          Iterable<CommandPermissionBuilderAbstract> checkPermissions = await check.permissions;
 
           for (final permission in checkPermissions) {
             if (uniquePermissions.containsKey(permission.id) &&
@@ -281,10 +278,10 @@ class Bot extends Nyxx with GroupMixin {
 
               if (permission is RoleCommandPermissionBuilder) {
                 uniquePermissions[permission.id] =
-                    ICommandPermissionBuilder.role(permission.id, hasPermission: false);
+                    CommandPermissionBuilderAbstract.role(permission.id, hasPermission: false);
               } else {
                 uniquePermissions[permission.id] =
-                    ICommandPermissionBuilder.user(permission.id, hasPermission: false);
+                    CommandPermissionBuilderAbstract.user(permission.id, hasPermission: false);
               }
 
               continue;
@@ -360,15 +357,15 @@ class Bot extends Nyxx with GroupMixin {
   /// assebled with all converters that might be able to provide the requested type indirectly.
   ///
   /// If [logWarn] is `true`, a warning will be issued when using an assembled converter.
-  Converter? converterFor(Type type, {bool logWarn = true}) {
+  Converter<dynamic>? converterFor(Type type, {bool logWarn = true}) {
     if (_converters.containsKey(type)) {
       return _converters[type]!;
     }
 
     TypeMirror targetMirror = reflectType(type);
 
-    List<Converter> assignable = [];
-    List<Converter> superClasses = [];
+    List<Converter<dynamic>> assignable = [];
+    List<Converter<dynamic>> superClasses = [];
 
     for (final key in _converters.keys) {
       TypeMirror keyMirror = reflectType(key);
@@ -396,7 +393,7 @@ class Bot extends Nyxx with GroupMixin {
         _commandsLogger
             .warning('Using assembled converter for type $type. If this is intentional, you '
                 'should register a custom converter for that type using '
-                '`bot.addConverter(bot.converterFor($type, logWarn: false) as Converter<$type>)`');
+                '`addConverter(converterFor($type, logWarn: false) as Converter<$type>)`');
       }
       return FallbackConverter(assignable);
     }
@@ -407,7 +404,7 @@ class Bot extends Nyxx with GroupMixin {
   void registerChild(GroupMixin child) {
     super.registerChild(child);
 
-    if (super.ready) {
+    if (client?.ready ?? false) {
       _commandsLogger
           .warning('Registering commands after bot is ready might cause global commands to be '
               'deleted');
@@ -421,5 +418,5 @@ class Bot extends Nyxx with GroupMixin {
 
   @override
   String toString() =>
-      'Bot[commands=${List.of(walkCommands())}, converters=${List.of(_converters.values)}]';
+      'CommandsPlugin[commands=${List.of(walkCommands())}, converters=${List.of(_converters.values)}]';
 }
