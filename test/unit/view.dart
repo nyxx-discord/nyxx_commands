@@ -1,5 +1,4 @@
 import 'package:nyxx_commands/nyxx_commands.dart';
-import 'package:test/scaffolding.dart';
 import 'package:test/test.dart';
 
 void main() {

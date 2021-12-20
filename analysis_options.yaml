@@ -1,57 +1,13 @@
-# This file configures the static analysis results for your project (errors,
-# warnings, and lints).
-#
-# This enables the 'recommended' set of lints from `package:lints`.
-# This set helps identify many issues that may lead to problems when running
-# or consuming Dart code, and enforces writing Dart using a single, idiomatic
-# style and format.
-#
-# If you want a smaller set of lints you can change this to specify
-# 'package:lints/core.yaml'. These are just the most critical lints
-# (the recommended set includes the core lints).
-# The core lints are also what is used by pub.dev for scoring packages.
-
 include: package:lints/recommended.yaml
-
-# Uncomment the following section to specify additional rules.
 
 linter:
   rules:
-    - camel_case_types
-    - avoid_relative_lib_imports
-    - avoid_print
-    - unnecessary_statements
-    - always_declare_return_types
-    - avoid_catches_without_on_clauses
-    - avoid_multiple_declarations_per_line
-    - avoid_types_on_closure_parameters
-    - cascade_invocations
-    - directives_ordering
-    - eol_at_end_of_file
-    - only_throw_errors
-    - package_api_docs
-    - prefer_single_quotes
-    - prefer_final_in_for_each
-    - prefer_if_elements_to_conditional_expressions
-    - prefer_null_aware_method_calls
-    - public_member_api_docs
-    - sort_unnamed_constructors_first
-    - type_annotate_public_apis
-    - unnecessary_await_in_return
-    - unnecessary_lambdas
-    - unnecessary_parenthesis
-    - unnecessary_raw_strings
-    - use_raw_strings
-    - depend_on_referenced_packages
-    - sort_pub_dependencies
+    unrelated_type_equality_checks: false
+    implementation_imports: false
 
 analyzer:
+  exclude: [build/**]
+  language:
+    strict-raw-types: true
   strong-mode:
     implicit-casts: false
-  
-
-# For more information about the core and recommended set of lints, see
-# https://dart.dev/go/core-lints
-
-# For additional information about configuring this file, see
-# https://dart.dev/guides/language/analysis-options

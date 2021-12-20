@@ -15,10 +15,10 @@
 import 'dart:async';
 import 'dart:mirrors';
 
-import 'package:nyxx_interactions/interactions.dart';
+import 'package:nyxx_interactions/nyxx_interactions.dart';
 
-import 'bot.dart';
 import 'checks.dart';
+import 'commands.dart';
 import 'context.dart';
 import 'converter.dart';
 import 'errors.dart';
@@ -77,7 +77,7 @@ class Command with GroupMixin {
   /// The [Function] that is called when this command is invoked.
   ///
   /// Any uncaught [Exception]s thrown from this function will be caught and sent to the relevant
-  /// bot's [Bot.onCommandError].
+  /// bot's [CommandsPlugin.onCommandError].
   final Function execute;
 
   /// Similar to [checks] but only applies to this command.
@@ -307,12 +307,12 @@ class Command with GroupMixin {
   /// If an exception is thrown from [execute], it is caught and rethrown as an [UncaughtException].
   ///
   /// The arguments, if the context is a [MessageContext], will be parsed using the relevant
-  /// converter on the [bot]. If no converter is found, the command execution will fail.
+  /// converter on the [commands]. If no converter is found, the command execution will fail.
   ///
   /// If the context is an [InteractionContext], the arguments will either be parsed from their raw
   /// string representations or will not be parsed at all if the type received from the API is
   /// correct.
-  Future<void> invoke(Bot bot, Context context) async {
+  Future<void> invoke(CommandsPlugin commands, Context context) async {
     List<dynamic> arguments = [];
 
     if (context is MessageContext) {
@@ -325,7 +325,7 @@ class Command with GroupMixin {
 
         Type expectedType = _mappedArgumentTypes[argumentName]!;
 
-        arguments.add(await parse(bot, context, argumentsView, expectedType));
+        arguments.add(await parse(commands, context, argumentsView, expectedType));
       }
 
       if (arguments.length < _requiredArguments) {
@@ -346,7 +346,8 @@ class Command with GroupMixin {
           continue;
         }
 
-        arguments.add(await parse(bot, context, StringView(rawArgument.toString()), expectedType));
+        arguments
+            .add(await parse(commands, context, StringView(rawArgument.toString()), expectedType));
       }
     }
 
@@ -370,7 +371,7 @@ class Command with GroupMixin {
   }
 
   @override
-  Iterable<CommandOptionBuilder> getOptions(Bot bot) {
+  Iterable<CommandOptionBuilder> getOptions(CommandsPlugin commands) {
     if (type != CommandType.textOnly) {
       List<CommandOptionBuilder> options = [];
 
@@ -391,7 +392,7 @@ class Command with GroupMixin {
 
         Iterable<ArgChoiceBuilder>? choices = _mappedChoices[name]?.builders;
 
-        choices ??= bot.converterFor(mirror.type.reflectedType)?.choices;
+        choices ??= commands.converterFor(mirror.type.reflectedType)?.choices;
 
         options.add(CommandOptionBuilder(
           discordTypes[mirror.type.reflectedType] ?? CommandOptionType.string,
@@ -405,7 +406,7 @@ class Command with GroupMixin {
       return options;
     } else {
       // Text-only commands might have children which are slash commands
-      return super.getOptions(bot);
+      return super.getOptions(commands);
     }
   }
 
