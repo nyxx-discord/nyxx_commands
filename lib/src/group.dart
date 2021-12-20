@@ -16,18 +16,18 @@ import 'dart:async';
 
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
-import 'package:nyxx_interactions/interactions.dart';
+import 'package:nyxx_interactions/nyxx_interactions.dart';
 
-import 'bot.dart';
 import 'checks.dart';
 import 'command.dart';
+import 'commands.dart';
 import 'context.dart';
 import 'errors.dart';
 import 'view.dart';
 
 /// A [Group] is a collection of commands. This mixin implements that functionality.
 ///
-/// All [Group]s, [Command]s and [Bot]s use this mixin to enable nesting and registration of
+/// All [Group]s, [Command]s and [CommandsPlugin]s use this mixin to enable nesting and registration of
 /// commands.
 mixin GroupMixin {
   /// A mapping of child names to children.
@@ -79,7 +79,8 @@ mixin GroupMixin {
   /// The full name of this group.
   ///
   /// The full name of a group is its name appended to its parents [fullName].
-  String get fullName => (_parent == null || _parent is Bot ? '' : _parent!.name + ' ') + name;
+  String get fullName =>
+      (_parent == null || _parent is CommandsPlugin ? '' : _parent!.name + ' ') + name;
 
   /// The depth of this group.
   ///
@@ -178,7 +179,7 @@ mixin GroupMixin {
   }
 
   /// Build the options for registering this group to the Discord API for slash commands.
-  Iterable<CommandOptionBuilder> getOptions(Bot bot) {
+  Iterable<CommandOptionBuilder> getOptions(CommandsPlugin commands) {
     List<CommandOptionBuilder> options = [];
 
     for (final child in children) {
@@ -187,14 +188,14 @@ mixin GroupMixin {
           CommandOptionType.subCommandGroup,
           child.name,
           child.description,
-          options: List.of(child.getOptions(bot)),
+          options: List.of(child.getOptions(commands)),
         ));
       } else if (child is Command && child.type != CommandType.textOnly) {
         options.add(CommandOptionBuilder(
           CommandOptionType.subCommand,
           child.name,
           child.description,
-          options: List.of(child.getOptions(bot)),
+          options: List.of(child.getOptions(commands)),
         ));
       }
     }
@@ -219,7 +220,7 @@ mixin GroupMixin {
 /// A [Group] is a simple class that allows [GroupMixin]s to be instanciated.
 ///
 /// This allows [GroupMixin] functionality to be used without the additional bloat of a [Command] or
-/// [Bot]
+/// [CommandsPlugin]
 class Group with GroupMixin {
   @override
   String name;

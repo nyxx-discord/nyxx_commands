@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-import 'package:nyxx_interactions/interactions.dart';
+import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 /// The function used to convert camelCase identifiers to Discord compatible kebab-case names
 String convertToKebabCase(String camelCase) {
