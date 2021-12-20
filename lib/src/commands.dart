@@ -101,11 +101,11 @@ class CommandsPlugin extends BasePlugin with GroupMixin {
   CommandsPlugin({
     required this.prefix,
     this.guild,
-    CommandsOptions? options,
-  }) : options = options ?? CommandsOptions() {
+    this.options = const CommandsOptions(),
+  }) {
     registerDefaultConverters(this);
 
-    if (this.options.logErrors) {
+    if (options.logErrors) {
       onCommandError.listen((error) {
         _commandsLogger
           ..warning('Uncaught exception in command')
