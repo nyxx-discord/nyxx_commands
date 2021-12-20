@@ -1,7 +1,7 @@
 // This is a file containing a "clean" version of example.dart, with comments stripped for
 // readability.
 // This file is generated automatically by scripts/generate_clean_example and should not be edited
-// manually; edit example.dart and run scripts/generate_clean_example.,
+// manually; edit example.dart and run scripts/generate_clean_example.
 
 import 'package:nyxx/nyxx.dart';
 
