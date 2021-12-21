@@ -27,8 +27,8 @@ import 'view.dart';
 
 /// A [Group] is a collection of commands. This mixin implements that functionality.
 ///
-/// All [Group]s, [Command]s and [CommandsPlugin]s use this mixin to enable nesting and registration of
-/// commands.
+/// All [Group]s, [Command]s and [CommandsPlugin]s use this mixin to enable nesting and registration
+/// of commands.
 mixin GroupMixin {
   /// A mapping of child names to children.
   ///

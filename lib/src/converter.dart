@@ -66,7 +66,8 @@ class Converter<T> {
 
   /// Construct a new [Converter].
   ///
-  /// This must then be registered to a [CommandsPlugin] instance with [CommandsPlugin.addConverter].
+  /// This must then be registered to a [CommandsPlugin] instance with
+  /// [CommandsPlugin.addConverter].
   Converter(this.convert, {this.choices});
 
   @override
@@ -570,8 +571,8 @@ final Converter<IRole> roleConverter = FallbackConverter<IRole>([
 
 /// Attempt to parse a single argument from an argument view.
 ///
-/// [commands] is the [CommandsPlugin] used for retrieving the converters for a specific [Type]. If no converter
-/// for [expectedType] is found, a [NoConverterException] is thrown.
+/// [commands] is the [CommandsPlugin] used for retrieving the converters for a specific [Type]. If
+/// no converter for [expectedType] is found, a [NoConverterException] is thrown.
 Future<dynamic> parse(
     CommandsPlugin commands, Context context, StringView toParse, Type expectedType) async {
   Converter<dynamic>? converter = commands.converterFor(expectedType);
