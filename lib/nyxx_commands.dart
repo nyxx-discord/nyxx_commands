@@ -12,6 +12,7 @@ export 'src/converter.dart'
         Converter,
         CombineConverter,
         FallbackConverter,
+        // ignore: deprecated_member_use_from_same_package
         discordTypes,
         boolConverter,
         categoryGuildChannelConverter,

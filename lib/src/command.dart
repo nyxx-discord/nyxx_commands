@@ -390,12 +390,16 @@ class Command with GroupMixin {
           name = convertToKebabCase(rawArgumentName);
         }
 
+        Converter<dynamic>? argumentConverter = commands.converterFor(mirror.type.reflectedType);
+
         Iterable<ArgChoiceBuilder>? choices = _mappedChoices[name]?.builders;
 
-        choices ??= commands.converterFor(mirror.type.reflectedType)?.choices;
+        choices ??= argumentConverter?.choices;
 
         options.add(CommandOptionBuilder(
-          discordTypes[mirror.type.reflectedType] ?? CommandOptionType.string,
+          argumentConverter?.type ??
+              discordTypes[mirror.type.reflectedType] ??
+              CommandOptionType.string,
           name,
           _mappedDescriptions[name]!.value,
           required: !mirror.isOptional,
