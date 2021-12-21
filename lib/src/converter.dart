@@ -87,11 +87,18 @@ class CombineConverter<R, T> extends Converter<T> {
   /// The function used to further process the output of [converter].
   final FutureOr<T?> Function(R, Context) process;
 
+  final Iterable<ArgChoiceBuilder>? _choices;
+
   /// Construct a new [CombineConverter].
   ///
-  /// This must then be registered to a [CommandsPlugin] instance with [CommandsPlugin.addConverter].
-  CombineConverter(this.converter, this.process)
-      : super((view, context) async {
+  /// This must then be registered to a [CommandsPlugin] instance with
+  /// [CommandsPlugin.addConverter].
+  ///
+  /// The choices for this converter will be inherited from [converter], but can be overridden by
+  /// passing [choices].
+  CombineConverter(this.converter, this.process, {Iterable<ArgChoiceBuilder>? choices})
+      : _choices = choices,
+        super((view, context) async {
           R? ret = await converter.convert(view, context);
 
           if (ret != null) {
@@ -101,7 +108,7 @@ class CombineConverter<R, T> extends Converter<T> {
         });
 
   @override
-  Iterable<ArgChoiceBuilder>? get choices => converter.choices;
+  Iterable<ArgChoiceBuilder>? get choices => _choices ?? converter.choices;
 
   @override
   String toString() => 'CombineConverter<$R, $T>[converter=$converter]';
@@ -112,11 +119,18 @@ class FallbackConverter<T> extends Converter<T> {
   /// A list of [Converter]s this [FallbackConverter] will try in succession.
   final Iterable<Converter<T>> converters;
 
+  final Iterable<ArgChoiceBuilder>? _choices;
+
   /// Construct a new [FallbackConverter].
   ///
-  /// This must then be registered to a [CommandsPlugin] instance with [CommandsPlugin.addConverter].
-  FallbackConverter(this.converters)
-      : super((view, context) async {
+  /// This must then be registered to a [CommandsPlugin] instance with
+  /// [CommandsPlugin.addConverter].
+  ///
+  /// The choices for this converter will be inherited from [converters], but can be overridden by
+  /// passing [choices].
+  FallbackConverter(this.converters, {Iterable<ArgChoiceBuilder>? choices})
+      : _choices = choices,
+        super((view, context) async {
           StringView? used;
           T? ret = await converters.fold(Future.value(null), (previousValue, element) async {
             if (await previousValue != null) {
@@ -140,6 +154,10 @@ class FallbackConverter<T> extends Converter<T> {
 
   @override
   Iterable<ArgChoiceBuilder>? get choices {
+    if (_choices != null) {
+      return _choices;
+    }
+
     List<ArgChoiceBuilder> allChoices = [];
 
     for (final converter in converters) {
