@@ -49,6 +49,11 @@ class CommandsOptions {
   /// A custom [InteractionBackend] to use when creating the [IInteractions] instance.
   final InteractionBackend? backend;
 
+  /// Whether to set the EPHEMERAL flag in the original response to interaction events.
+  ///
+  /// This only has an effect is [autoAcknowledgeInteractions] is set to `true`.
+  final bool hideOriginalResponse;
+
   /// Create a new [CommandsOptions] instance.
   const CommandsOptions({
     this.logErrors = true,
@@ -56,6 +61,7 @@ class CommandsOptions {
     this.acceptBotCommands = false,
     this.acceptSelfCommands = false,
     this.backend,
+    this.hideOriginalResponse = true,
   });
 }
 
@@ -177,7 +183,7 @@ class CommandsPlugin extends BasePlugin with GroupMixin {
   ) async {
     try {
       if (options.autoAcknowledgeInteractions) {
-        await interactionEvent.acknowledge();
+        await interactionEvent.acknowledge(hidden: options.hideOriginalResponse);
       }
 
       Context context = await _interactionContext(interactionEvent, command);
