@@ -59,6 +59,7 @@ abstract class Context {
   });
 
   /// Send a message to this context's [channel].
+  @Deprecated('Use context.respond(), or context.channel.sendMessage() instead')
   Future<IMessage> send(MessageBuilder builder) => channel.sendMessage(builder);
 
   /// Send a response to the command. This is the same as [send] but it references the original
