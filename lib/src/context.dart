@@ -163,7 +163,7 @@ class InteractionContext extends Context {
         );
 
   bool _hasCorrectlyAcked = false;
-  late bool _originalAckType = commands.options.hideOriginalResponse;
+  late bool _originalAckHidden = commands.options.hideOriginalResponse;
 
   /// Send a response to the command. This is the same as [send] but it references the original
   /// command.
@@ -184,10 +184,10 @@ class InteractionContext extends Context {
       } on AlreadyRespondedError {
         // interaction was already ACKed by timeout or [acknowledge], hidden state of ACK might not
         // be what we expect
-        if (_originalAckType != hidden) {
+        if (_originalAckHidden != hidden) {
           await interactionEvent
               .sendFollowup(MessageBuilder.content(MessageBuilder.clearCharacter));
-          if (!commands.options.hideOriginalResponse) {
+          if (!_originalAckHidden) {
             // If original response was hidden, we can't delete it
             await interactionEvent.deleteOriginalResponse();
           }
@@ -213,7 +213,7 @@ class InteractionContext extends Context {
   /// automatically responded to avoid a token timeout.
   Future<void> acknowledge({bool? hidden}) async {
     await interactionEvent.acknowledge(hidden: hidden ?? commands.options.hideOriginalResponse);
-    _originalAckType = hidden ?? commands.options.hideOriginalResponse;
+    _originalAckHidden = hidden ?? commands.options.hideOriginalResponse;
   }
 
   @override
