@@ -147,13 +147,16 @@ class InteractionContext extends Context {
         );
 
   bool _hasCorrectlyAcked = false;
+  late bool _originalAckType = commands.options.hideOriginalResponse;
 
   /// Send a response to the command. This is the same as [send] but it references the original
   /// command.
   ///
   /// You can set [hidden] to `true` to send an ephemeral response. Setting [hidden] to a value
   /// different that [CommandsOptions.hideOriginalResponse] will result in unusual behaviour if this
-  /// method is invoked more than two seconds after the command callback starts.
+  /// method is invoked more than two seconds after command execution starts.
+  /// Calling [acknowledge] less than two seconds after command execution starts with the same value
+  /// for `hidden` as this invocation will prevent this unusual behaviour from happening.
   @override
   Future<IMessage> respond(MessageBuilder builder, {bool hidden = false}) async {
     if (_hasCorrectlyAcked) {
@@ -163,8 +166,9 @@ class InteractionContext extends Context {
       try {
         await interactionEvent.acknowledge(hidden: hidden);
       } on AlreadyRespondedError {
-        // interaction was already ACKed by timeout, hidden state of ACK might not be what we expect
-        if (commands.options.hideOriginalResponse != hidden) {
+        // interaction was already ACKed by timeout or [acknowledge], hidden state of ACK might not
+        //be what we expect
+        if (_originalAckType != hidden) {
           await interactionEvent
               .sendFollowup(MessageBuilder.content(MessageBuilder.clearCharacter));
           if (!commands.options.hideOriginalResponse) {
@@ -175,6 +179,20 @@ class InteractionContext extends Context {
       }
       return interactionEvent.sendFollowup(builder, hidden: hidden);
     }
+  }
+
+  /// Acknowledge the underlying [interactionEvent].
+  ///
+  /// This allows you to acknowledge the interaction with a different hidden state that
+  /// [CommandsOptions.hideOriginalResponse].
+  ///
+  /// If unspecified, [hidden] will be set to [CommandsOptions.hideOriginalResponse].
+  ///
+  /// Prefer using this method over calling [ISlashCommandInteractionEvent.acknowledge] on
+  /// [interactionEvent] as this method will fix any unusual behaviour with [respond].
+  Future<void> acknowledge({bool? hidden}) {
+    _originalAckType = hidden ?? commands.options.hideOriginalResponse;
+    return interactionEvent.acknowledge(hidden: hidden ?? commands.options.hideOriginalResponse);
   }
 
   @override
