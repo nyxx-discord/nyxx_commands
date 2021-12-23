@@ -148,6 +148,12 @@ class InteractionContext extends Context {
 
   bool _hasCorrectlyAcked = false;
 
+  /// Send a response to the command. This is the same as [send] but it references the original
+  /// command.
+  ///
+  /// You can set [hidden] to `true` to send an ephemeral response. Setting [hidden] to a value
+  /// different that [CommandsOptions.hideOriginalResponse] will result in unusual behaviour if this
+  /// method is invoked more than two seconds after the command callback starts.
   @override
   Future<IMessage> respond(MessageBuilder builder, {bool hidden = false}) async {
     if (_hasCorrectlyAcked) {

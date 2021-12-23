@@ -33,8 +33,10 @@ class CommandsOptions {
   /// [CommandsPlugin.onCommandError].
   final bool logErrors;
 
-  /// Whether to automatically acknowledge slash command interactions upon receiving them. If you
-  /// set this to false, you *must* respond to the interaction yourself, or the command will fail.
+  /// Whether to automatically acknowledge slash command interactions if they are not acknowledged
+  /// or responded to within 2s of command invocation.
+  ///
+  /// If you set this to false, you *must* respond to the interaction yourself, or the command will fail.
   final bool autoAcknowledgeInteractions;
 
   /// Whether to process commands coming from bot users on Discord.
