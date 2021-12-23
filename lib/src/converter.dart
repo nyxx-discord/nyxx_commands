@@ -687,8 +687,13 @@ const Converter<IRole> roleConverter = FallbackConverter<IRole>(
 /// [commands] is the [CommandsPlugin] used for retrieving the converters for a specific [Type]. If
 /// no converter for [expectedType] is found, a [NoConverterException] is thrown.
 Future<dynamic> parse(
-    CommandsPlugin commands, Context context, StringView toParse, Type expectedType) async {
-  Converter<dynamic>? converter = commands.converterFor(expectedType);
+  CommandsPlugin commands,
+  Context context,
+  StringView toParse,
+  Type expectedType, {
+  Converter<dynamic>? converterOverride,
+}) async {
+  Converter<dynamic>? converter = converterOverride ?? commands.converterFor(expectedType);
   if (converter == null) {
     throw NoConverterException(expectedType, context);
   }

@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+import 'package:nyxx_commands/src/converter.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 /// The function used to convert camelCase identifiers to Discord compatible kebab-case names
@@ -111,4 +112,38 @@ class Name {
 
   @override
   String toString() => 'Name[name=$name]';
+}
+
+/// A decorator used to specify converter overrides for [Command] arguments.
+///
+/// This overrides the default converter for that type.
+class UseConverter {
+  /// The converter used instead of the default converter.
+  ///
+  /// This must return a type compatible with the argument, or a [CommandRegistrationError] will be
+  /// thrown.
+  final Converter<dynamic> converter;
+
+  /// Create a new instance to specify a converter override, like so:
+  /// ```dart
+  /// const Converter<String> nonEmptyStringConverter = CombineConverter(
+  ///   stringConverter,
+  ///   filterInput,
+  /// );
+  ///
+  /// Command betterSay = Command(
+  ///   'better-say',
+  ///   'A better version of the say command',
+  ///   (
+  ///     Context context,
+  ///     @UseConverter(nonEmptyStringConverter) String input,
+  ///   ) {
+  ///     context.respond(MessageBuilder.content(input));
+  ///   },
+  /// );
+  /// ```
+  const UseConverter(this.converter);
+
+  @override
+  String toString() => 'UseConverter[converter=$converter]';
 }
