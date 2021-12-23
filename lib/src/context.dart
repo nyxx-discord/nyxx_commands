@@ -146,8 +146,30 @@ class InteractionContext extends Context {
           client: client,
         );
 
+  bool _hasCorrectlyAcked = false;
+
   @override
-  Future<IMessage> respond(MessageBuilder builder) => interactionEvent.sendFollowup(builder);
+  Future<IMessage> respond(MessageBuilder builder, {bool hidden = false}) async {
+    if (_hasCorrectlyAcked) {
+      return interactionEvent.sendFollowup(builder, hidden: hidden);
+    } else {
+      _hasCorrectlyAcked = true;
+      try {
+        await interactionEvent.acknowledge(hidden: hidden);
+      } on AlreadyRespondedError {
+        // interaction was already ACKed by timeout, hidden state of ACK might not be what we expect
+        if (commands.options.hideOriginalResponse != hidden) {
+          await interactionEvent
+              .sendFollowup(MessageBuilder.content(MessageBuilder.clearCharacter));
+          if (!commands.options.hideOriginalResponse) {
+            // If original response was hidden, we can't delete it
+            await interactionEvent.deleteOriginalResponse();
+          }
+        }
+      }
+      return interactionEvent.sendFollowup(builder, hidden: hidden);
+    }
+  }
 
   @override
   String toString() =>
