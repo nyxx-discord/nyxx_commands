@@ -100,10 +100,25 @@ class MessageContext extends Context {
           client: client,
         );
 
+  /// Send a response to the command. This is the same as [send] but it references the original
+  /// command.
+  ///
+  /// You can set [mention] to `false` to prevent the reply from mentionning the user.
+  /// If [MessageBuilder.allowedMentions] is not `null` on [builder], [mention] will be ignored. If
+  /// not, the allowed mentions for [builder] will be set to allow all, with the exception of reply
+  /// mentions being set to [mention].
   @override
-  Future<IMessage> respond(MessageBuilder builder) async {
+  Future<IMessage> respond(MessageBuilder builder, {bool mention = true}) async {
     try {
-      return await channel.sendMessage(builder..replyBuilder = ReplyBuilder.fromMessage(message));
+      return await channel.sendMessage(builder
+        ..replyBuilder = ReplyBuilder.fromMessage(message)
+        ..allowedMentions ??= (AllowedMentions()
+          ..allow(
+            reply: mention,
+            everyone: true,
+            roles: true,
+            users: true,
+          )));
     } on IHttpResponseError {
       return channel.sendMessage(builder..replyBuilder = null);
     }
