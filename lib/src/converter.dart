@@ -69,6 +69,9 @@ class Converter<T> {
   /// commands.
   final CommandOptionType type;
 
+  /// The output [Type] of this converter.
+  final Type output;
+
   /// Construct a new [Converter].
   ///
   /// This must then be registered to a [CommandsPlugin] instance with
@@ -77,7 +80,7 @@ class Converter<T> {
     this.convert, {
     this.choices,
     this.type = CommandOptionType.string,
-  });
+  }) : output = T;
 
   @override
   String toString() => 'Converter<$T>';
@@ -96,6 +99,10 @@ class CombineConverter<R, T> implements Converter<T> {
 
   /// The function used to further process the output of [converter].
   final FutureOr<T?> Function(R, Context) process;
+
+  /// The output [Type] of this converter.
+  @override
+  final Type output;
 
   final Iterable<ArgChoiceBuilder>? _choices;
   final CommandOptionType? _type;
@@ -116,7 +123,8 @@ class CombineConverter<R, T> implements Converter<T> {
     Iterable<ArgChoiceBuilder>? choices,
     CommandOptionType? type,
   })  : _choices = choices,
-        _type = type;
+        _type = type,
+        output = T;
 
   @override
   Iterable<ArgChoiceBuilder>? get choices => _choices ?? converter.choices;
@@ -146,6 +154,10 @@ class FallbackConverter<T> implements Converter<T> {
   final Iterable<ArgChoiceBuilder>? _choices;
   final CommandOptionType? _type;
 
+  /// The output [Type] of this converter.
+  @override
+  final Type output;
+
   /// Construct a new [FallbackConverter].
   ///
   /// This must then be registered to a [CommandsPlugin] instance with
@@ -161,7 +173,8 @@ class FallbackConverter<T> implements Converter<T> {
     Iterable<ArgChoiceBuilder>? choices,
     CommandOptionType? type,
   })  : _choices = choices,
-        _type = type;
+        _type = type,
+        output = T;
 
   @override
   Iterable<ArgChoiceBuilder>? get choices {
