@@ -183,7 +183,7 @@ class InteractionContext extends Context {
         await interactionEvent.acknowledge(hidden: hidden);
       } on AlreadyRespondedError {
         // interaction was already ACKed by timeout or [acknowledge], hidden state of ACK might not
-        //be what we expect
+        // be what we expect
         if (_originalAckType != hidden) {
           await interactionEvent
               .sendFollowup(MessageBuilder.content(MessageBuilder.clearCharacter));
@@ -211,9 +211,9 @@ class InteractionContext extends Context {
   /// induced by [CommandsOptions.autoAcknowledgeInteractions].
   /// If called  after 2 seconds, an [AlreadyRespondedError] will be thrown as nyxx_commands will
   /// automatically responded to avoid a token timeout.
-  Future<void> acknowledge({bool? hidden}) {
+  Future<void> acknowledge({bool? hidden}) async {
+    await interactionEvent.acknowledge(hidden: hidden ?? commands.options.hideOriginalResponse);
     _originalAckType = hidden ?? commands.options.hideOriginalResponse;
-    return interactionEvent.acknowledge(hidden: hidden ?? commands.options.hideOriginalResponse);
   }
 
   @override
