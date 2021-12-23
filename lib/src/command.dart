@@ -83,6 +83,13 @@ class Command with GroupMixin {
   /// Similar to [checks] but only applies to this command.
   final List<AbstractCheck> singleChecks = [];
 
+  /// Whether to set the EPHEMERAL flag in the original response to interaction events.
+  ///
+  /// Has no effect for [CommandType.textOnly] commands.
+  /// If [CommandsOptions.autoAcknowledgeInteractions] is `true`, this will override
+  /// [CommandsOptions.hideOriginalResponse].
+  final bool? hideOriginalResponse;
+
   late final MethodMirror _mirror;
   late final Iterable<ParameterMirror> _arguments;
   late final int _requiredArguments;
@@ -105,6 +112,7 @@ class Command with GroupMixin {
     Iterable<GroupMixin> children = const [],
     Iterable<AbstractCheck> checks = const [],
     Iterable<AbstractCheck> singleChecks = const [],
+    bool? hideOriginalResponse,
   }) : this._(
           name,
           description,
@@ -115,6 +123,7 @@ class Command with GroupMixin {
           children: children,
           checks: checks,
           singleChecks: singleChecks,
+          hideOriginalResponse: hideOriginalResponse,
         );
 
   /// Create a new text-only [Command].
@@ -129,6 +138,7 @@ class Command with GroupMixin {
     Iterable<GroupMixin> children = const [],
     Iterable<AbstractCheck> checks = const [],
     Iterable<AbstractCheck> singleChecks = const [],
+    bool? hideOriginalResponse,
   }) : this._(
           name,
           description,
@@ -139,6 +149,7 @@ class Command with GroupMixin {
           children: children,
           checks: checks,
           singleChecks: singleChecks,
+          hideOriginalResponse: hideOriginalResponse,
         );
 
   /// Create a new slash-only [Command].
@@ -153,6 +164,7 @@ class Command with GroupMixin {
     Iterable<GroupMixin> children = const [],
     Iterable<AbstractCheck> checks = const [],
     Iterable<AbstractCheck> singleChecks = const [],
+    bool? hideOriginalResponse,
   }) : this._(
           name,
           description,
@@ -163,6 +175,7 @@ class Command with GroupMixin {
           children: children,
           checks: checks,
           singleChecks: singleChecks,
+          hideOriginalResponse: hideOriginalResponse,
         );
 
   Command._(
@@ -175,6 +188,7 @@ class Command with GroupMixin {
     Iterable<GroupMixin> children = const [],
     Iterable<AbstractCheck> checks = const [],
     Iterable<AbstractCheck> singleChecks = const [],
+    this.hideOriginalResponse,
   }) {
     if (!commandNameRegexp.hasMatch(name) || name != name.toLowerCase()) {
       throw CommandRegistrationError('Invalid command name "$name"');
