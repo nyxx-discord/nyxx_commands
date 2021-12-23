@@ -304,7 +304,13 @@ class Command with GroupMixin {
           .cast<UseConverter>();
 
       if (converterOverrides.isNotEmpty) {
-        _mappedConverterOverrides[argumentName] = converterOverrides.first;
+        UseConverter converterOverride = converterOverrides.first;
+
+        if (!reflectType(converterOverride.converter.output).isAssignableTo(argument.type)) {
+          throw CommandRegistrationError('Invalid converter override');
+        }
+
+        _mappedConverterOverrides[argumentName] = converterOverride;
       }
 
       _mappedDescriptions[argumentName] = description;
