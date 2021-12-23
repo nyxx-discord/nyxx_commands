@@ -58,7 +58,7 @@ class Converter<T> {
   ///
   /// The first [StringView] parameter should be left with its index pointing to the position from
   /// which the next argument should be parsed.
-  final FutureOr<T?> Function(StringView, Context) convert;
+  final FutureOr<T?> Function(StringView view, Context context) convert;
 
   /// A Iterable of choices users can choose from.
   ///
@@ -73,7 +73,11 @@ class Converter<T> {
   ///
   /// This must then be registered to a [CommandsPlugin] instance with
   /// [CommandsPlugin.addConverter].
-  Converter(this.convert, {this.choices, this.type = CommandOptionType.string});
+  const Converter(
+    this.convert, {
+    this.choices,
+    this.type = CommandOptionType.string,
+  });
 
   @override
   String toString() => 'Converter<$T>';
@@ -84,7 +88,7 @@ class Converter<T> {
 /// This is useful in cases where a preliminary parsing can then be refined by applying a filter
 /// to the output, especially if the preliminary parsing can be done on Discord in the case of slash
 /// commands.
-class CombineConverter<R, T> extends Converter<T> {
+class CombineConverter<R, T> implements Converter<T> {
   /// The initial [Converter].
   ///
   /// The output of this converter will be fed into [process] along with the context.
@@ -106,21 +110,13 @@ class CombineConverter<R, T> extends Converter<T> {
   ///
   /// The type for this converter will be inherited from [converter], but can be overridden by
   /// passing [type].
-  CombineConverter(
+  const CombineConverter(
     this.converter,
     this.process, {
     Iterable<ArgChoiceBuilder>? choices,
     CommandOptionType? type,
   })  : _choices = choices,
-        _type = type,
-        super((view, context) async {
-          R? ret = await converter.convert(view, context);
-
-          if (ret != null) {
-            return await process(ret, context);
-          }
-          return null;
-        });
+        _type = type;
 
   @override
   Iterable<ArgChoiceBuilder>? get choices => _choices ?? converter.choices;
@@ -129,11 +125,21 @@ class CombineConverter<R, T> extends Converter<T> {
   CommandOptionType get type => _type ?? converter.type;
 
   @override
+  FutureOr<T?> Function(StringView view, Context context) get convert => (view, context) async {
+        R? ret = await converter.convert(view, context);
+
+        if (ret != null) {
+          return await process(ret, context);
+        }
+        return null;
+      };
+
+  @override
   String toString() => 'CombineConverter<$R, $T>[converter=$converter]';
 }
 
 /// Object used to successivly try similar [Converter]s until a successful parsing is found.
-class FallbackConverter<T> extends Converter<T> {
+class FallbackConverter<T> implements Converter<T> {
   /// A list of [Converter]s this [FallbackConverter] will try in succession.
   final Iterable<Converter<T>> converters;
 
@@ -150,30 +156,12 @@ class FallbackConverter<T> extends Converter<T> {
   ///
   /// The type for this converter will be inferred from [converters], but can be overridden by
   /// passing [type].
-  FallbackConverter(this.converters, {Iterable<ArgChoiceBuilder>? choices, CommandOptionType? type})
-      : _choices = choices,
-        _type = type,
-        super((view, context) async {
-          StringView? used;
-          T? ret = await converters.fold(Future.value(null), (previousValue, element) async {
-            if (await previousValue != null) {
-              return await previousValue;
-            }
-
-            used = view.copy();
-            return await element.convert(used!, context);
-          });
-
-          if (used != null) {
-            view.history
-              ..clear()
-              ..addAll(used!.history);
-
-            view.index = used!.index;
-          }
-
-          return ret;
-        });
+  const FallbackConverter(
+    this.converters, {
+    Iterable<ArgChoiceBuilder>? choices,
+    CommandOptionType? type,
+  })  : _choices = choices,
+        _type = type;
 
   @override
   Iterable<ArgChoiceBuilder>? get choices {
@@ -223,6 +211,29 @@ class FallbackConverter<T> extends Converter<T> {
 
     return CommandOptionType.string;
   }
+
+  @override
+  FutureOr<T?> Function(StringView view, Context context) get convert => (view, context) async {
+        StringView? used;
+        T? ret = await converters.fold(Future.value(null), (previousValue, element) async {
+          if (await previousValue != null) {
+            return await previousValue;
+          }
+
+          used = view.copy();
+          return await element.convert(used!, context);
+        });
+
+        if (used != null) {
+          view.history
+            ..clear()
+            ..addAll(used!.history);
+
+          view.index = used!.index;
+        }
+
+        return ret;
+      };
 
   @override
   String toString() => 'FallbackConverter<$T>[converters=${List.of(converters)}]';
