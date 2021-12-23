@@ -183,7 +183,13 @@ class CommandsPlugin extends BasePlugin with GroupMixin {
   ) async {
     try {
       if (options.autoAcknowledgeInteractions) {
-        await interactionEvent.acknowledge(hidden: options.hideOriginalResponse);
+        Timer(Duration(seconds: 2), () async {
+          try {
+            await interactionEvent.acknowledge(hidden: options.hideOriginalResponse);
+          } on AlreadyRespondedError {
+            // ignore: command has responded itself
+          }
+        });
       }
 
       Context context = await _interactionContext(interactionEvent, command);
