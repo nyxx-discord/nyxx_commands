@@ -206,6 +206,11 @@ class InteractionContext extends Context {
   ///
   /// Prefer using this method over calling [ISlashCommandInteractionEvent.acknowledge] on
   /// [interactionEvent] as this method will fix any unusual behaviour with [respond].
+  ///
+  /// If called within 2 seconds of command execution, this will override the auto-acknowledge
+  /// induced by [CommandsOptions.autoAcknowledgeInteractions].
+  /// If called  after 2 seconds, an [AlreadyRespondedError] will be thrown as nyxx_commands will
+  /// automatically responded to avoid a token timeout.
   Future<void> acknowledge({bool? hidden}) {
     _originalAckType = hidden ?? commands.options.hideOriginalResponse;
     return interactionEvent.acknowledge(hidden: hidden ?? commands.options.hideOriginalResponse);
