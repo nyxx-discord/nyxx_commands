@@ -239,28 +239,49 @@ class FallbackConverter<T> implements Converter<T> {
   String toString() => 'FallbackConverter<$T>[converters=${List.of(converters)}]';
 }
 
+String? convertString(StringView view, Context context) => view.getQuotedWord();
+
 /// Converter to convert input to [String]s.
 ///
 /// This simply returns the next quoted word in the arguments view.
-final Converter<String> stringConverter = Converter<String>(
-  (input, _) => input.getQuotedWord(),
+const Converter<String> stringConverter = Converter<String>(
+  convertString,
   type: CommandOptionType.string,
 );
+
+int? convertInt(StringView view, Context context) => int.tryParse(view.getQuotedWord());
 
 /// Converter to convert input to [int]s.
 ///
 /// This attempts to parse the next quoted word in the input as a base-10 integer.
-final Converter<int> intConverter = Converter<int>(
-  (input, _) => int.tryParse(input.getQuotedWord()),
+const Converter<int> intConverter = Converter<int>(
+  convertInt,
   type: CommandOptionType.integer,
 );
+
+double? convertDouble(StringView view, Context context) => double.tryParse(view.getQuotedWord());
 
 /// Converter to convert input to [double]s.
 ///
 /// This attempts to parse the next quoted word in the input as a base-10 decimal number.
-final Converter<double> doubleConverter = Converter<double>(
-  (input, _) => double.tryParse(input.getQuotedWord()),
+const Converter<double> doubleConverter = Converter<double>(
+  convertDouble,
 );
+
+bool? convertBool(StringView view, Context context) {
+  String word = view.getQuotedWord();
+
+  const Iterable<String> truthy = ['y', 'yes', '+', '1', 'true'];
+  const Iterable<String> falsy = ['n', 'no', '-', '0', 'false'];
+
+  const Iterable<String> valid = [...truthy, ...falsy];
+
+  if (valid.contains(word.toLowerCase())) {
+    return truthy.contains(word.toLowerCase());
+  }
+
+  return null;
+}
 
 /// Converter to convert input to [bool]s.
 ///
@@ -269,42 +290,104 @@ final Converter<double> doubleConverter = Converter<double>(
 /// - Falsy: `['n', 'no', '-', '0', 'false']`
 ///
 /// This converter is case insensitive.
-final Converter<bool> boolConverter = Converter<bool>(
-  (view, context) {
-    String word = view.getQuotedWord();
-
-    const Iterable<String> truthy = ['y', 'yes', '+', '1', 'true'];
-    const Iterable<String> falsy = ['n', 'no', '-', '0', 'false'];
-
-    const Iterable<String> valid = [...truthy, ...falsy];
-
-    if (valid.contains(word.toLowerCase())) {
-      return truthy.contains(word.toLowerCase());
-    }
-
-    return null;
-  },
+const Converter<bool> boolConverter = Converter<bool>(
+  convertBool,
   type: CommandOptionType.boolean,
 );
 
 final RegExp _snowflakePattern = RegExp(r'^(?:<(?:@(?:!|&)?|#)([0-9]{15,20})>|([0-9]{15,20}))$');
 
+Snowflake? convertSnowflake(StringView view, Context context) {
+  String word = view.getQuotedWord();
+  if (!_snowflakePattern.hasMatch(word)) {
+    return null;
+  }
+
+  final RegExpMatch match = _snowflakePattern.firstMatch(word)!;
+
+  // 1st group will catch mentions, second will catch raw IDs
+  return Snowflake(match.group(1) ?? match.group(2));
+}
+
 /// Converter to convert input to [Snowflake]s.
 ///
 /// This tries to parse the next word in the input as a raw snowflake (integer), or as a mention.
-final Converter<Snowflake> snowflakeConverter = Converter<Snowflake>(
-  (input, _) {
-    String word = input.getQuotedWord();
-    if (!_snowflakePattern.hasMatch(word)) {
-      return null;
+const Converter<Snowflake> snowflakeConverter = Converter<Snowflake>(
+  convertSnowflake,
+);
+
+Future<IMember?> snowflakeToMember(Snowflake snowflake, Context context) async {
+  if (context.guild != null) {
+    IMember? cached = context.guild!.members[snowflake];
+    if (cached != null) {
+      return cached;
     }
 
-    final RegExpMatch match = _snowflakePattern.firstMatch(word)!;
+    try {
+      return await context.guild!.fetchMember(snowflake);
+    } on IHttpResponseError {
+      return null;
+    }
+  }
+  return null;
+}
 
-    // 1st group will catch mentions, second will catch raw IDs
-    return Snowflake(match.group(1) ?? match.group(2));
-  },
-);
+Future<IMember?> convertMember(StringView view, Context context) async {
+  String word = view.getQuotedWord();
+
+  if (context.guild != null) {
+    Stream<IMember> named = context.guild!.searchMembersGateway(word, limit: 800000);
+
+    List<IMember> usernameExact = [];
+    List<IMember> nickExact = [];
+
+    List<IMember> usernameCaseInsensitive = [];
+    List<IMember> nickCaseInsensitive = [];
+
+    List<IMember> usernameStart = [];
+    List<IMember> nickStart = [];
+
+    await for (final member in named) {
+      IUser user = await member.user.getOrDownload();
+
+      if (user.username == word) {
+        usernameExact.add(member);
+      }
+      if (user.username.toLowerCase() == word.toLowerCase()) {
+        usernameCaseInsensitive.add(member);
+      }
+      if (user.username.toLowerCase().startsWith(word.toLowerCase())) {
+        usernameStart.add(member);
+      }
+
+      if (member.nickname != null) {
+        if (member.nickname! == word) {
+          nickExact.add(member);
+        }
+        if (member.nickname!.toLowerCase() == word.toLowerCase()) {
+          nickCaseInsensitive.add(member);
+        }
+        if (member.nickname!.toLowerCase().startsWith(word.toLowerCase())) {
+          nickStart.add(member);
+        }
+      }
+    }
+
+    for (final list in [
+      usernameExact,
+      nickExact,
+      usernameCaseInsensitive,
+      nickCaseInsensitive,
+      usernameStart,
+      nickStart
+    ]) {
+      if (list.length == 1) {
+        return list.first;
+      }
+    }
+  }
+  return null;
+}
 
 /// Converter to convert input to [IMember]s.
 ///
@@ -319,84 +402,69 @@ final Converter<Snowflake> snowflakeConverter = Converter<Snowflake>(
 ///
 /// Note that for all of these strategies, if multiple members match any condition then no results
 /// will be given based off of that condition.
-final Converter<IMember> memberConverter = FallbackConverter<IMember>(
+const Converter<IMember> memberConverter = FallbackConverter<IMember>(
   [
     // Get member from mention or snowflake.
-    CombineConverter<Snowflake, IMember>(snowflakeConverter, (snowflake, context) async {
-      if (context.guild != null) {
-        IMember? cached = context.guild!.members[snowflake];
-        if (cached != null) {
-          return cached;
-        }
-
-        try {
-          return await context.guild!.fetchMember(snowflake);
-        } on IHttpResponseError {
-          return null;
-        }
-      }
-      return null;
-    }),
+    CombineConverter<Snowflake, IMember>(snowflakeConverter, snowflakeToMember),
     // Get member by name or nickname
-    Converter<IMember>((view, context) async {
-      String word = view.getQuotedWord();
-
-      if (context.guild != null) {
-        Stream<IMember> named = context.guild!.searchMembersGateway(word, limit: 800000);
-
-        List<IMember> usernameExact = [];
-        List<IMember> nickExact = [];
-
-        List<IMember> usernameCaseInsensitive = [];
-        List<IMember> nickCaseInsensitive = [];
-
-        List<IMember> usernameStart = [];
-        List<IMember> nickStart = [];
-
-        await for (final member in named) {
-          IUser user = await member.user.getOrDownload();
-
-          if (user.username == word) {
-            usernameExact.add(member);
-          }
-          if (user.username.toLowerCase() == word.toLowerCase()) {
-            usernameCaseInsensitive.add(member);
-          }
-          if (user.username.toLowerCase().startsWith(word.toLowerCase())) {
-            usernameStart.add(member);
-          }
-
-          if (member.nickname != null) {
-            if (member.nickname! == word) {
-              nickExact.add(member);
-            }
-            if (member.nickname!.toLowerCase() == word.toLowerCase()) {
-              nickCaseInsensitive.add(member);
-            }
-            if (member.nickname!.toLowerCase().startsWith(word.toLowerCase())) {
-              nickStart.add(member);
-            }
-          }
-        }
-
-        for (final list in [
-          usernameExact,
-          nickExact,
-          usernameCaseInsensitive,
-          nickCaseInsensitive,
-          usernameStart,
-          nickStart
-        ]) {
-          if (list.length == 1) {
-            return list.first;
-          }
-        }
-      }
-      return null;
-    }),
+    Converter<IMember>(convertMember),
   ],
   type: CommandOptionType.user,
 );
+
+Future<IUser?> snowflakeToUser(Snowflake snowflake, Context context) async {
+  IUser? cached = context.client.users[snowflake];
+  if (cached != null) {
+    return cached;
+  }
+
+  if (context.client is INyxxRest) {
+    try {
+      return await (context.client as INyxxRest).httpEndpoints.fetchUser(snowflake);
+    } on IHttpResponseError {
+      return null;
+    }
+  }
+
+  return null;
+}
+
+FutureOr<IUser?> memberToUser(IMember member, Context context) => member.user.getOrDownload();
+
+FutureOr<IUser?> convertUser(StringView view, Context context) {
+  String word = view.getWord();
+
+  if (context.channel.channelType == ChannelType.dm ||
+      context.channel.channelType == ChannelType.groupDm) {
+    List<IUser> exact = [];
+    List<IUser> caseInsensitive = [];
+    List<IUser> start = [];
+
+    for (final user in [
+      ...(context.channel as IDMChannel).participants,
+      if (context.client is INyxxRest) (context.client as INyxxRest).self,
+    ]) {
+      if (user.username == word) {
+        exact.add(user);
+      }
+
+      if (user.username.toLowerCase() == word.toLowerCase()) {
+        caseInsensitive.add(user);
+      }
+
+      if (user.username.toLowerCase().startsWith(word.toLowerCase())) {
+        start.add(user);
+      }
+
+      for (final list in [exact, caseInsensitive, start]) {
+        if (list.length == 1) {
+          return list.first;
+        }
+      }
+    }
+  }
+  return null;
+}
 
 /// Converter to convert input to [IUser]s.
 ///
@@ -409,105 +477,50 @@ final Converter<IMember> memberConverter = FallbackConverter<IMember>(
 ///
 /// Note that for all of these strategies, if multiple users match any condition then no results
 /// will be given based off of that condition.
-final Converter<IUser> userConverter = FallbackConverter<IUser>(
+const Converter<IUser> userConverter = FallbackConverter<IUser>(
   [
-    CombineConverter<Snowflake, IUser>(snowflakeConverter, (snowflake, context) async {
-      IUser? cached = context.client.users[snowflake];
-      if (cached != null) {
-        return cached;
-      }
-
-      if (context.client is INyxxRest) {
-        try {
-          return await (context.client as INyxxRest).httpEndpoints.fetchUser(snowflake);
-        } on IHttpResponseError {
-          return null;
-        }
-      }
-
-      return null;
-    }),
-    CombineConverter<IMember, IUser>(
-        memberConverter, (member, context) => member.user.getOrDownload()),
-    Converter<IUser>((view, context) {
-      String word = view.getWord();
-
-      if (context.channel.channelType == ChannelType.dm ||
-          context.channel.channelType == ChannelType.groupDm) {
-        List<IUser> exact = [];
-        List<IUser> caseInsensitive = [];
-        List<IUser> start = [];
-
-        for (final user in [
-          ...(context.channel as IDMChannel).participants,
-          if (context.client is INyxxRest) (context.client as INyxxRest).self,
-        ]) {
-          if (user.username == word) {
-            exact.add(user);
-          }
-
-          if (user.username.toLowerCase() == word.toLowerCase()) {
-            caseInsensitive.add(user);
-          }
-
-          if (user.username.toLowerCase().startsWith(word.toLowerCase())) {
-            start.add(user);
-          }
-
-          for (final list in [exact, caseInsensitive, start]) {
-            if (list.length == 1) {
-              return list.first;
-            }
-          }
-        }
-      }
-      return null;
-    }),
+    CombineConverter<Snowflake, IUser>(snowflakeConverter, snowflakeToUser),
+    CombineConverter<IMember, IUser>(memberConverter, memberToUser),
+    Converter<IUser>(convertUser),
   ],
   type: CommandOptionType.user,
 );
 
-Converter<T> _guildChannelConverterFor<T extends IGuildChannel>() {
-  return FallbackConverter<T>(
-    [
-      CombineConverter<Snowflake, T>(snowflakeConverter, (snowflake, context) async {
-        if (context.guild != null) {
-          try {
-            return context.guild!.channels
-                .whereType<T>()
-                .firstWhere((channel) => channel.id == snowflake);
-          } on StateError {
-            return null;
-          }
-        }
-      }),
-      Converter<T>((view, context) {
-        if (context.guild != null) {
-          String word = view.getQuotedWord();
-          Iterable<T> channels = context.guild!.channels.whereType<T>();
+T? snowflakeToGuildChannel<T extends IGuildChannel>(Snowflake snowflake, Context context) {
+  if (context.guild != null) {
+    try {
+      return context.guild!.channels
+          .whereType<T>()
+          .firstWhere((channel) => channel.id == snowflake);
+    } on StateError {
+      return null;
+    }
+  }
+}
 
-          List<T> caseInsensitive = [];
-          List<T> partial = [];
+T? convertGuildChannel<T extends IGuildChannel>(StringView view, Context context) {
+  if (context.guild != null) {
+    String word = view.getQuotedWord();
+    Iterable<T> channels = context.guild!.channels.whereType<T>();
 
-          for (final channel in channels) {
-            if (channel.name.toLowerCase() == word.toLowerCase()) {
-              caseInsensitive.add(channel);
-            }
-            if (channel.name.toLowerCase().startsWith(word.toLowerCase())) {
-              partial.add(channel);
-            }
-          }
+    List<T> caseInsensitive = [];
+    List<T> partial = [];
 
-          for (final list in [caseInsensitive, partial]) {
-            if (list.length == 1) {
-              return list.first;
-            }
-          }
-        }
-      }),
-    ],
-    type: CommandOptionType.channel,
-  );
+    for (final channel in channels) {
+      if (channel.name.toLowerCase() == word.toLowerCase()) {
+        caseInsensitive.add(channel);
+      }
+      if (channel.name.toLowerCase().startsWith(word.toLowerCase())) {
+        partial.add(channel);
+      }
+    }
+
+    for (final list in [caseInsensitive, partial]) {
+      if (list.length == 1) {
+        return list.first;
+      }
+    }
+  }
 }
 
 /// Converter to convert input to [IGuildChannel]s.
@@ -520,7 +533,14 @@ Converter<T> _guildChannelConverterFor<T extends IGuildChannel>() {
 ///
 /// Note that for all of these strategies, if multiple channels match any condition then no results
 /// will be given based off of that condition.
-final Converter<IGuildChannel> guildChannelConverter = _guildChannelConverterFor<IGuildChannel>();
+const Converter<IGuildChannel> guildChannelConverter = FallbackConverter(
+  [
+    CombineConverter<Snowflake, IGuildChannel>(
+        snowflakeConverter, snowflakeToGuildChannel<IGuildChannel>),
+    Converter<IGuildChannel>(convertGuildChannel<IGuildChannel>),
+  ],
+  type: CommandOptionType.channel,
+);
 
 /// Converter to convert input to [ITextGuildChannel]s.
 ///
@@ -532,8 +552,14 @@ final Converter<IGuildChannel> guildChannelConverter = _guildChannelConverterFor
 ///
 /// Note that for all of these strategies, if multiple channels match any condition then no results
 /// will be given based off of that condition.
-final Converter<ITextGuildChannel> textGuildChannelConverter =
-    _guildChannelConverterFor<ITextGuildChannel>();
+const Converter<ITextGuildChannel> textGuildChannelConverter = FallbackConverter(
+  [
+    CombineConverter<Snowflake, ITextGuildChannel>(
+        snowflakeConverter, snowflakeToGuildChannel<ITextGuildChannel>),
+    Converter<ITextGuildChannel>(convertGuildChannel<ITextGuildChannel>),
+  ],
+  type: CommandOptionType.channel,
+);
 
 /// Converter to convert input to [IVoiceGuildChannel]s.
 ///
@@ -545,8 +571,14 @@ final Converter<ITextGuildChannel> textGuildChannelConverter =
 ///
 /// Note that for all of these strategies, if multiple channels match any condition then no results
 /// will be given based off of that condition.
-final Converter<IVoiceGuildChannel> voiceGuildChannelConverter =
-    _guildChannelConverterFor<IVoiceGuildChannel>();
+const Converter<IVoiceGuildChannel> voiceGuildChannelConverter = FallbackConverter(
+  [
+    CombineConverter<Snowflake, IVoiceGuildChannel>(
+        snowflakeConverter, snowflakeToGuildChannel<IVoiceGuildChannel>),
+    Converter<IVoiceGuildChannel>(convertGuildChannel<IVoiceGuildChannel>),
+  ],
+  type: CommandOptionType.channel,
+);
 
 /// Converter to convert input to [ICategoryGuildChannel]s.
 ///
@@ -558,8 +590,14 @@ final Converter<IVoiceGuildChannel> voiceGuildChannelConverter =
 ///
 /// Note that for all of these strategies, if multiple channels match any condition then no results
 /// will be given based off of that condition.
-final Converter<ICategoryGuildChannel> categoryGuildChannelConverter =
-    _guildChannelConverterFor<ICategoryGuildChannel>();
+const Converter<ICategoryGuildChannel> categoryGuildChannelConverter = FallbackConverter(
+  [
+    CombineConverter<Snowflake, ICategoryGuildChannel>(
+        snowflakeConverter, snowflakeToGuildChannel<ICategoryGuildChannel>),
+    Converter<ICategoryGuildChannel>(convertGuildChannel<ICategoryGuildChannel>),
+  ],
+  type: CommandOptionType.channel,
+);
 
 /// Converter to convert input to [IStageVoiceGuildChannel]s.
 ///
@@ -571,8 +609,59 @@ final Converter<ICategoryGuildChannel> categoryGuildChannelConverter =
 ///
 /// Note that for all of these strategies, if multiple channels match any condition then no results
 /// will be given based off of that condition.
-final Converter<IStageVoiceGuildChannel> stageVoiceChannelConverter =
-    _guildChannelConverterFor<IStageVoiceGuildChannel>();
+const Converter<IStageVoiceGuildChannel> stageVoiceChannelConverter = FallbackConverter(
+  [
+    CombineConverter<Snowflake, IStageVoiceGuildChannel>(
+        snowflakeConverter, snowflakeToGuildChannel<IStageVoiceGuildChannel>),
+    Converter<IStageVoiceGuildChannel>(convertGuildChannel<IStageVoiceGuildChannel>),
+  ],
+  type: CommandOptionType.channel,
+);
+
+FutureOr<IRole?> snowflakeToRole(Snowflake snowflake, Context context) {
+  if (context.guild != null) {
+    IRole? cached = context.guild!.roles[snowflake];
+    if (cached != null) {
+      return cached;
+    }
+
+    try {
+      return context.guild!.fetchRoles().firstWhere((role) => role.id == snowflake);
+    } on StateError {
+      return null;
+    }
+  }
+}
+
+FutureOr<IRole?> convertRole(StringView view, Context context) async {
+  String word = view.getQuotedWord();
+  if (context.guild != null) {
+    Stream<IRole> roles = context.guild!.fetchRoles();
+
+    List<IRole> exact = [];
+    List<IRole> caseInsensitive = [];
+    List<IRole> partial = [];
+
+    await for (final role in roles) {
+      if (role.name == word) {
+        exact.add(role);
+      }
+      if (role.name.toLowerCase() == word.toLowerCase()) {
+        caseInsensitive.add(role);
+      }
+      if (role.name.toLowerCase().startsWith(word.toLowerCase())) {
+        partial.add(role);
+      }
+    }
+
+    for (final list in [exact, caseInsensitive, partial]) {
+      if (list.length == 1) {
+        return list.first;
+      }
+    }
+  }
+  return null;
+}
 
 /// Converter to convert input to [IRole]s.
 ///
@@ -585,51 +674,10 @@ final Converter<IStageVoiceGuildChannel> stageVoiceChannelConverter =
 ///
 /// Note that for all of these strategies, if multiple channels match any condition then no results
 /// will be given based off of that condition.
-final Converter<IRole> roleConverter = FallbackConverter<IRole>(
+const Converter<IRole> roleConverter = FallbackConverter<IRole>(
   [
-    CombineConverter<Snowflake, IRole>(snowflakeConverter, (snowflake, context) {
-      if (context.guild != null) {
-        IRole? cached = context.guild!.roles[snowflake];
-        if (cached != null) {
-          return cached;
-        }
-
-        try {
-          return context.guild!.fetchRoles().firstWhere((role) => role.id == snowflake);
-        } on StateError {
-          return null;
-        }
-      }
-    }),
-    Converter<IRole>((view, context) async {
-      String word = view.getQuotedWord();
-      if (context.guild != null) {
-        Stream<IRole> roles = context.guild!.fetchRoles();
-
-        List<IRole> exact = [];
-        List<IRole> caseInsensitive = [];
-        List<IRole> partial = [];
-
-        await for (final role in roles) {
-          if (role.name == word) {
-            exact.add(role);
-          }
-          if (role.name.toLowerCase() == word.toLowerCase()) {
-            caseInsensitive.add(role);
-          }
-          if (role.name.toLowerCase().startsWith(word.toLowerCase())) {
-            partial.add(role);
-          }
-        }
-
-        for (final list in [exact, caseInsensitive, partial]) {
-          if (list.length == 1) {
-            return list.first;
-          }
-        }
-      }
-      return null;
-    }),
+    CombineConverter<Snowflake, IRole>(snowflakeConverter, snowflakeToRole),
+    Converter<IRole>(convertRole),
   ],
   type: CommandOptionType.role,
 );
