@@ -11,6 +11,7 @@
 import 'package:nyxx/nyxx.dart';
 // nyxx_commands is needed to use the commands plugin
 import 'package:nyxx_commands/nyxx_commands.dart';
+import 'package:nyxx_commands/src/util.dart';
 
 // To add these dependancies to your project, run:
 // - `dart pub add nyxx`;
@@ -555,7 +556,48 @@ void main() {
   // command menu. Executing it once will run fine, however trying to execute it again less that 30
   // seconds later will cause the command to fail with an exception. After 30 seconds have passed,
   // the command can be used again.
+
+  // ====================================== //
+  // ===== Using converter overrides ====== //
+  // ====================================== //
+
+  // Converter overrides allow you to override which `Converter` is used to convert a specific
+  // argument.
+  // They can be used, for example, to filter the output of a converter so that only certain
+  // instances are ever passed to the function.
+
+  // You might have noticed that if we run the command `!say ""`, the bot will throw an error
+  // because it cannot send an empty message. This is because the string `Converter` saw `""` and
+  // interpreted it as an empty string - which the bot then tried to send.
+
+  // To counter this, let's create a converter that only allows non-empty strings:
+
+  // Since the converter is going to be passed into a decorator, it must be `const`. As such, any
+  // functions use must either be static methods or top-level functions.
+  // You can see the implementation of `filterInput` at the bottom of this file.
+  const Converter<String> nonEmptyStringConverter = CombineConverter(stringConverter, filterInput);
+
+  Command betterSay = Command(
+    'better-say',
+    'A better version of the say command',
+    (
+      Context context,
+      @UseConverter(nonEmptyStringConverter) String input,
+    ) {
+      context.respond(MessageBuilder.content(input));
+    },
+  );
+
+  commands.registerChild(betterSay);
+
+  // At this point, if you run the file, a new command `better-say` will have been added to the bot.
+  // Attempting to invoke it with an empty string (`!better-say  ""`) will cause the argument to
+  // fail parsing.
 }
+
+// -------------------------------------- //
+// ------------ Custom types ------------ //
+// -------------------------------------- //
 
 enum Shape {
   triangle,
@@ -566,4 +608,15 @@ enum Shape {
 enum Dimension {
   twoD,
   threeD,
+}
+
+// -------------------------------------- //
+// ---------- Global functions ---------- //
+// -------------------------------------- //
+
+String? filterInput(String input, Context context) {
+  if (input.isNotEmpty) {
+    return input;
+  }
+  return null;
 }
