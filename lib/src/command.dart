@@ -98,6 +98,7 @@ class Command with GroupMixin {
   final Map<String, ParameterMirror> _mappedArgumentMirrors = {};
   final Map<String, Description> _mappedDescriptions = {};
   final Map<String, Choices> _mappedChoices = {};
+  final Map<String, UseConverter> _mappedConverterOverrides = {};
 
   /// Create a new [Command].
   ///
@@ -254,6 +255,10 @@ class Command with GroupMixin {
         throw CommandRegistrationError(
             'Command callback parameters must not have more than one Name annotation');
       }
+      if (parametrer.metadata.where((element) => element.reflectee is UseConverter).length > 1) {
+        throw CommandRegistrationError(
+            'Command callback parameters must not have more than one UseConverter annotation');
+      }
     }
 
     for (final argument in _arguments) {
@@ -307,6 +312,21 @@ class Command with GroupMixin {
         _mappedChoices[argumentName] = choices.first;
       }
 
+      Iterable<UseConverter> converterOverrides = argument.metadata
+          .where((element) => element.reflectee is UseConverter)
+          .map((useConverterMirror) => useConverterMirror.reflectee)
+          .cast<UseConverter>();
+
+      if (converterOverrides.isNotEmpty) {
+        UseConverter converterOverride = converterOverrides.first;
+
+        if (!reflectType(converterOverride.converter.output).isAssignableTo(argument.type)) {
+          throw CommandRegistrationError('Invalid converter override');
+        }
+
+        _mappedConverterOverrides[argumentName] = converterOverride;
+      }
+
       _mappedDescriptions[argumentName] = description;
       _mappedArgumentTypes[argumentName] = argument.type.reflectedType;
       _mappedArgumentMirrors[argumentName] = argument;
@@ -339,7 +359,13 @@ class Command with GroupMixin {
 
         Type expectedType = _mappedArgumentTypes[argumentName]!;
 
-        arguments.add(await parse(commands, context, argumentsView, expectedType));
+        arguments.add(await parse(
+          commands,
+          context,
+          argumentsView,
+          expectedType,
+          converterOverride: _mappedConverterOverrides[argumentName]?.converter,
+        ));
       }
 
       if (arguments.length < _requiredArguments) {
@@ -360,8 +386,13 @@ class Command with GroupMixin {
           continue;
         }
 
-        arguments
-            .add(await parse(commands, context, StringView(rawArgument.toString()), expectedType));
+        arguments.add(await parse(
+          commands,
+          context,
+          StringView(rawArgument.toString()),
+          expectedType,
+          converterOverride: _mappedConverterOverrides[argumentName]?.converter,
+        ));
       }
     }
 
@@ -404,7 +435,8 @@ class Command with GroupMixin {
           name = convertToKebabCase(rawArgumentName);
         }
 
-        Converter<dynamic>? argumentConverter = commands.converterFor(mirror.type.reflectedType);
+        Converter<dynamic>? argumentConverter = _mappedConverterOverrides[name]?.converter ??
+            commands.converterFor(mirror.type.reflectedType);
 
         Iterable<ArgChoiceBuilder>? choices = _mappedChoices[name]?.builders;
 

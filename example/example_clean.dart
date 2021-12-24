@@ -199,6 +199,21 @@ void main() {
   );
 
   commands.registerChild(alphabet);
+
+  const Converter<String> nonEmptyStringConverter = CombineConverter(stringConverter, filterInput);
+
+  Command betterSay = Command(
+    'better-say',
+    'A better version of the say command',
+    (
+      Context context,
+      @UseConverter(nonEmptyStringConverter) String input,
+    ) {
+      context.respond(MessageBuilder.content(input));
+    },
+  );
+
+  commands.registerChild(betterSay);
 }
 
 enum Shape {
@@ -210,4 +225,11 @@ enum Shape {
 enum Dimension {
   twoD,
   threeD,
+}
+
+String? filterInput(String input, Context context) {
+  if (input.isNotEmpty) {
+    return input;
+  }
+  return null;
 }
