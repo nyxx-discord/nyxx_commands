@@ -572,7 +572,7 @@ void main() {
   // To counter this, let's create a converter that only allows non-empty strings:
 
   // Since the converter is going to be passed into a decorator, it must be `const`. As such, any
-  // functions use must either be static methods or top-level functions.
+  // functions used must either be static methods or top-level functions.
   // You can see the implementation of `filterInput` at the bottom of this file.
   const Converter<String> nonEmptyStringConverter = CombineConverter(stringConverter, filterInput);
 
