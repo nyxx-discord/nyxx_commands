@@ -6,7 +6,6 @@
 import 'package:nyxx/nyxx.dart';
 
 import 'package:nyxx_commands/nyxx_commands.dart';
-import 'package:nyxx_commands/src/util.dart';
 
 import 'dart:io';
 import 'dart:math';

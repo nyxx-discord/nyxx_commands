@@ -11,7 +11,6 @@
 import 'package:nyxx/nyxx.dart';
 // nyxx_commands is needed to use the commands plugin
 import 'package:nyxx_commands/nyxx_commands.dart';
-import 'package:nyxx_commands/src/util.dart';
 
 // To add these dependancies to your project, run:
 // - `dart pub add nyxx`;
