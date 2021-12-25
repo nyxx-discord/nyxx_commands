@@ -347,7 +347,7 @@ class Command with GroupMixin {
   /// string representations or will not be parsed at all if the type received from the API is
   /// correct.
   Future<void> invoke(CommandsPlugin commands, Context context) async {
-    List<dynamic> arguments = [];
+    List<Future<dynamic>> arguments = [];
 
     if (context is MessageContext) {
       StringView argumentsView = StringView(context.rawArguments);
@@ -359,7 +359,7 @@ class Command with GroupMixin {
 
         Type expectedType = _mappedArgumentTypes[argumentName]!;
 
-        arguments.add(await parse(
+        arguments.add(parse(
           commands,
           context,
           argumentsView,
@@ -374,7 +374,8 @@ class Command with GroupMixin {
     } else if (context is InteractionContext) {
       for (final argumentName in _orderedArgumentNames) {
         if (!context.rawArguments.containsKey(argumentName)) {
-          arguments.add(_mappedArgumentMirrors[argumentName]!.defaultValue?.reflectee);
+          arguments
+              .add(Future.value(_mappedArgumentMirrors[argumentName]!.defaultValue?.reflectee));
           continue;
         }
 
@@ -382,11 +383,11 @@ class Command with GroupMixin {
         Type expectedType = _mappedArgumentTypes[argumentName]!;
 
         if (reflect(rawArgument).type.isAssignableTo(reflectType(expectedType))) {
-          arguments.add(rawArgument);
+          arguments.add(Future.value(rawArgument));
           continue;
         }
 
-        arguments.add(await parse(
+        arguments.add(parse(
           commands,
           context,
           StringView(rawArgument.toString()),
@@ -396,7 +397,7 @@ class Command with GroupMixin {
       }
     }
 
-    context.arguments = arguments;
+    context.arguments = await Future.wait(arguments);
 
     for (final check in [...checks, ...singleChecks]) {
       if (!await check.check(context)) {
@@ -407,7 +408,7 @@ class Command with GroupMixin {
     preCallController.add(context);
 
     try {
-      Function.apply(execute, [context, ...arguments]);
+      Function.apply(execute, [context, ...context.arguments]);
     } on Exception catch (e) {
       throw UncaughtException(e, context);
     }
