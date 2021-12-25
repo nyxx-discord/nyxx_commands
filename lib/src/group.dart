@@ -40,6 +40,9 @@ mixin GroupMixin {
   /// Each child is only present once, and in no particular order.
   Iterable<GroupMixin> get children => Set.of(childrenMap.values);
 
+  /// The parent of this group, if any.
+  GroupMixin? get parent => _parent;
+
   GroupMixin? _parent;
 
   /// The name of this group.
