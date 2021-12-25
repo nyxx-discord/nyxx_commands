@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/src/converter.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
@@ -146,4 +147,24 @@ class UseConverter {
 
   @override
   String toString() => 'UseConverter[converter=$converter]';
+}
+
+final RegExp _mentionPattern = RegExp(r'^<@!?([0-9]{15,20})>');
+
+/// A Function that can be used as an input to [CommandsPlugin.prefix] to allow invoking commands by
+/// mentioning the bot.
+///
+/// The [defaultPrefix] parameter will be used if the message does not start with a mention.
+String Function(IMessage) mentionOr(String Function(IMessage) defaultPrefix) {
+  return (message) {
+    RegExpMatch? match = _mentionPattern.firstMatch(message.content);
+
+    if (match != null && message.client is INyxxWebsocket) {
+      if (int.parse(match.group(1)!) == (message.client as INyxxWebsocket).self.id.id) {
+        return match.group(0)!;
+      }
+    }
+
+    return defaultPrefix(message);
+  };
 }
