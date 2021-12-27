@@ -12,6 +12,7 @@ export 'src/converter.dart'
         Converter,
         CombineConverter,
         FallbackConverter,
+        // ignore: deprecated_member_use_from_same_package
         discordTypes,
         boolConverter,
         categoryGuildChannelConverter,
@@ -19,6 +20,7 @@ export 'src/converter.dart'
         guildChannelConverter,
         intConverter,
         memberConverter,
+        mentionableConverter,
         roleConverter,
         snowflakeConverter,
         stageVoiceChannelConverter,
@@ -42,5 +44,5 @@ export 'src/errors.dart'
         ParsingException,
         UncaughtException;
 export 'src/group.dart' show Group, GroupMixin;
-export 'src/util.dart' show Choices, Description, Name, convertToKebabCase;
+export 'src/util.dart' show Choices, Description, Name, UseConverter, convertToKebabCase, mentionOr;
 export 'src/view.dart' show StringView;

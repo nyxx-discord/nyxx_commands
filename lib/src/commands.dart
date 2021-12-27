@@ -33,8 +33,10 @@ class CommandsOptions {
   /// [CommandsPlugin.onCommandError].
   final bool logErrors;
 
-  /// Whether to automatically acknowledge slash command interactions upon receiving them. If you
-  /// set this to false, you *must* respond to the interaction yourself, or the command will fail.
+  /// Whether to automatically acknowledge slash command interactions if they are not acknowledged
+  /// or responded to within 2s of command invocation.
+  ///
+  /// If you set this to false, you *must* respond to the interaction yourself, or the command will fail.
   final bool autoAcknowledgeInteractions;
 
   /// Whether to process commands coming from bot users on Discord.
@@ -49,6 +51,11 @@ class CommandsOptions {
   /// A custom [InteractionBackend] to use when creating the [IInteractions] instance.
   final InteractionBackend? backend;
 
+  /// Whether to set the EPHEMERAL flag in the original response to interaction events.
+  ///
+  /// This only has an effect is [autoAcknowledgeInteractions] is set to `true`.
+  final bool hideOriginalResponse;
+
   /// Create a new [CommandsOptions] instance.
   const CommandsOptions({
     this.logErrors = true,
@@ -56,6 +63,7 @@ class CommandsOptions {
     this.acceptBotCommands = false,
     this.acceptSelfCommands = false,
     this.backend,
+    this.hideOriginalResponse = true,
   });
 }
 
@@ -176,11 +184,19 @@ class CommandsPlugin extends BasePlugin with GroupMixin {
     Command command,
   ) async {
     try {
-      if (options.autoAcknowledgeInteractions) {
-        await interactionEvent.acknowledge();
-      }
-
       Context context = await _interactionContext(interactionEvent, command);
+
+      if (options.autoAcknowledgeInteractions) {
+        Timer(Duration(seconds: 2), () async {
+          try {
+            await interactionEvent.acknowledge(
+              hidden: context.command.hideOriginalResponse ?? options.hideOriginalResponse,
+            );
+          } on AlreadyRespondedError {
+            // ignore: command has responded itself
+          }
+        });
+      }
 
       _commandsLogger.fine('Invoking command ${context.command.name} '
           'from interaction ${interactionEvent.interaction.token}');

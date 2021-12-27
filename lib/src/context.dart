@@ -59,6 +59,7 @@ abstract class Context {
   });
 
   /// Send a message to this context's [channel].
+  @Deprecated('Use context.respond(), or context.channel.sendMessage() instead')
   Future<IMessage> send(MessageBuilder builder) => channel.sendMessage(builder);
 
   /// Send a response to the command. This is the same as [send] but it references the original
@@ -100,10 +101,25 @@ class MessageContext extends Context {
           client: client,
         );
 
+  /// Send a response to the command. This is the same as [send] but it references the original
+  /// command.
+  ///
+  /// You can set [mention] to `false` to prevent the reply from mentionning the user.
+  /// If [MessageBuilder.allowedMentions] is not `null` on [builder], [mention] will be ignored. If
+  /// not, the allowed mentions for [builder] will be set to allow all, with the exception of reply
+  /// mentions being set to [mention].
   @override
-  Future<IMessage> respond(MessageBuilder builder) async {
+  Future<IMessage> respond(MessageBuilder builder, {bool mention = true}) async {
     try {
-      return await channel.sendMessage(builder..replyBuilder = ReplyBuilder.fromMessage(message));
+      return await channel.sendMessage(builder
+        ..replyBuilder = ReplyBuilder.fromMessage(message)
+        ..allowedMentions ??= (AllowedMentions()
+          ..allow(
+            reply: mention,
+            everyone: true,
+            roles: true,
+            users: true,
+          )));
     } on IHttpResponseError {
       return channel.sendMessage(builder..replyBuilder = null);
     }
@@ -146,8 +162,59 @@ class InteractionContext extends Context {
           client: client,
         );
 
+  bool _hasCorrectlyAcked = false;
+  late bool _originalAckHidden = commands.options.hideOriginalResponse;
+
+  /// Send a response to the command. This is the same as [send] but it references the original
+  /// command.
+  ///
+  /// You can set [hidden] to `true` to send an ephemeral response. Setting [hidden] to a value
+  /// different that [CommandsOptions.hideOriginalResponse] will result in unusual behaviour if this
+  /// method is invoked more than two seconds after command execution starts.
+  /// Calling [acknowledge] less than two seconds after command execution starts with the same value
+  /// for `hidden` as this invocation will prevent this unusual behaviour from happening.
   @override
-  Future<IMessage> respond(MessageBuilder builder) => interactionEvent.sendFollowup(builder);
+  Future<IMessage> respond(MessageBuilder builder, {bool hidden = false}) async {
+    if (_hasCorrectlyAcked) {
+      return interactionEvent.sendFollowup(builder, hidden: hidden);
+    } else {
+      _hasCorrectlyAcked = true;
+      try {
+        await interactionEvent.acknowledge(hidden: hidden);
+      } on AlreadyRespondedError {
+        // interaction was already ACKed by timeout or [acknowledge], hidden state of ACK might not
+        // be what we expect
+        if (_originalAckHidden != hidden) {
+          await interactionEvent
+              .sendFollowup(MessageBuilder.content(MessageBuilder.clearCharacter));
+          if (!_originalAckHidden) {
+            // If original response was hidden, we can't delete it
+            await interactionEvent.deleteOriginalResponse();
+          }
+        }
+      }
+      return interactionEvent.sendFollowup(builder, hidden: hidden);
+    }
+  }
+
+  /// Acknowledge the underlying [interactionEvent].
+  ///
+  /// This allows you to acknowledge the interaction with a different hidden state that
+  /// [CommandsOptions.hideOriginalResponse].
+  ///
+  /// If unspecified, [hidden] will be set to [CommandsOptions.hideOriginalResponse].
+  ///
+  /// Prefer using this method over calling [ISlashCommandInteractionEvent.acknowledge] on
+  /// [interactionEvent] as this method will fix any unusual behaviour with [respond].
+  ///
+  /// If called within 2 seconds of command execution, this will override the auto-acknowledge
+  /// induced by [CommandsOptions.autoAcknowledgeInteractions].
+  /// If called  after 2 seconds, an [AlreadyRespondedError] will be thrown as nyxx_commands will
+  /// automatically responded to avoid a token timeout.
+  Future<void> acknowledge({bool? hidden}) async {
+    await interactionEvent.acknowledge(hidden: hidden ?? commands.options.hideOriginalResponse);
+    _originalAckHidden = hidden ?? commands.options.hideOriginalResponse;
+  }
 
   @override
   String toString() =>

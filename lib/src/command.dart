@@ -83,6 +83,13 @@ class Command with GroupMixin {
   /// Similar to [checks] but only applies to this command.
   final List<AbstractCheck> singleChecks = [];
 
+  /// Whether to set the EPHEMERAL flag in the original response to interaction events.
+  ///
+  /// Has no effect for [CommandType.textOnly] commands.
+  /// If [CommandsOptions.autoAcknowledgeInteractions] is `true`, this will override
+  /// [CommandsOptions.hideOriginalResponse].
+  final bool? hideOriginalResponse;
+
   late final MethodMirror _mirror;
   late final Iterable<ParameterMirror> _arguments;
   late final int _requiredArguments;
@@ -91,6 +98,7 @@ class Command with GroupMixin {
   final Map<String, ParameterMirror> _mappedArgumentMirrors = {};
   final Map<String, Description> _mappedDescriptions = {};
   final Map<String, Choices> _mappedChoices = {};
+  final Map<String, UseConverter> _mappedConverterOverrides = {};
 
   /// Create a new [Command].
   ///
@@ -105,6 +113,7 @@ class Command with GroupMixin {
     Iterable<GroupMixin> children = const [],
     Iterable<AbstractCheck> checks = const [],
     Iterable<AbstractCheck> singleChecks = const [],
+    bool? hideOriginalResponse,
   }) : this._(
           name,
           description,
@@ -115,6 +124,7 @@ class Command with GroupMixin {
           children: children,
           checks: checks,
           singleChecks: singleChecks,
+          hideOriginalResponse: hideOriginalResponse,
         );
 
   /// Create a new text-only [Command].
@@ -129,6 +139,7 @@ class Command with GroupMixin {
     Iterable<GroupMixin> children = const [],
     Iterable<AbstractCheck> checks = const [],
     Iterable<AbstractCheck> singleChecks = const [],
+    bool? hideOriginalResponse,
   }) : this._(
           name,
           description,
@@ -139,6 +150,7 @@ class Command with GroupMixin {
           children: children,
           checks: checks,
           singleChecks: singleChecks,
+          hideOriginalResponse: hideOriginalResponse,
         );
 
   /// Create a new slash-only [Command].
@@ -153,6 +165,7 @@ class Command with GroupMixin {
     Iterable<GroupMixin> children = const [],
     Iterable<AbstractCheck> checks = const [],
     Iterable<AbstractCheck> singleChecks = const [],
+    bool? hideOriginalResponse,
   }) : this._(
           name,
           description,
@@ -163,6 +176,7 @@ class Command with GroupMixin {
           children: children,
           checks: checks,
           singleChecks: singleChecks,
+          hideOriginalResponse: hideOriginalResponse,
         );
 
   Command._(
@@ -175,6 +189,7 @@ class Command with GroupMixin {
     Iterable<GroupMixin> children = const [],
     Iterable<AbstractCheck> checks = const [],
     Iterable<AbstractCheck> singleChecks = const [],
+    this.hideOriginalResponse,
   }) {
     if (!commandNameRegexp.hasMatch(name) || name != name.toLowerCase()) {
       throw CommandRegistrationError('Invalid command name "$name"');
@@ -240,6 +255,10 @@ class Command with GroupMixin {
         throw CommandRegistrationError(
             'Command callback parameters must not have more than one Name annotation');
       }
+      if (parametrer.metadata.where((element) => element.reflectee is UseConverter).length > 1) {
+        throw CommandRegistrationError(
+            'Command callback parameters must not have more than one UseConverter annotation');
+      }
     }
 
     for (final argument in _arguments) {
@@ -293,6 +312,21 @@ class Command with GroupMixin {
         _mappedChoices[argumentName] = choices.first;
       }
 
+      Iterable<UseConverter> converterOverrides = argument.metadata
+          .where((element) => element.reflectee is UseConverter)
+          .map((useConverterMirror) => useConverterMirror.reflectee)
+          .cast<UseConverter>();
+
+      if (converterOverrides.isNotEmpty) {
+        UseConverter converterOverride = converterOverrides.first;
+
+        if (!reflectType(converterOverride.converter.output).isAssignableTo(argument.type)) {
+          throw CommandRegistrationError('Invalid converter override');
+        }
+
+        _mappedConverterOverrides[argumentName] = converterOverride;
+      }
+
       _mappedDescriptions[argumentName] = description;
       _mappedArgumentTypes[argumentName] = argument.type.reflectedType;
       _mappedArgumentMirrors[argumentName] = argument;
@@ -313,7 +347,7 @@ class Command with GroupMixin {
   /// string representations or will not be parsed at all if the type received from the API is
   /// correct.
   Future<void> invoke(CommandsPlugin commands, Context context) async {
-    List<dynamic> arguments = [];
+    List<Future<dynamic>> arguments = [];
 
     if (context is MessageContext) {
       StringView argumentsView = StringView(context.rawArguments);
@@ -325,7 +359,13 @@ class Command with GroupMixin {
 
         Type expectedType = _mappedArgumentTypes[argumentName]!;
 
-        arguments.add(await parse(commands, context, argumentsView, expectedType));
+        arguments.add(parse(
+          commands,
+          context,
+          argumentsView,
+          expectedType,
+          converterOverride: _mappedConverterOverrides[argumentName]?.converter,
+        ));
       }
 
       if (arguments.length < _requiredArguments) {
@@ -334,7 +374,8 @@ class Command with GroupMixin {
     } else if (context is InteractionContext) {
       for (final argumentName in _orderedArgumentNames) {
         if (!context.rawArguments.containsKey(argumentName)) {
-          arguments.add(_mappedArgumentMirrors[argumentName]!.defaultValue?.reflectee);
+          arguments
+              .add(Future.value(_mappedArgumentMirrors[argumentName]!.defaultValue?.reflectee));
           continue;
         }
 
@@ -342,16 +383,21 @@ class Command with GroupMixin {
         Type expectedType = _mappedArgumentTypes[argumentName]!;
 
         if (reflect(rawArgument).type.isAssignableTo(reflectType(expectedType))) {
-          arguments.add(rawArgument);
+          arguments.add(Future.value(rawArgument));
           continue;
         }
 
-        arguments
-            .add(await parse(commands, context, StringView(rawArgument.toString()), expectedType));
+        arguments.add(parse(
+          commands,
+          context,
+          StringView(rawArgument.toString()),
+          expectedType,
+          converterOverride: _mappedConverterOverrides[argumentName]?.converter,
+        ));
       }
     }
 
-    context.arguments = arguments;
+    context.arguments = await Future.wait(arguments);
 
     for (final check in [...checks, ...singleChecks]) {
       if (!await check.check(context)) {
@@ -362,7 +408,7 @@ class Command with GroupMixin {
     preCallController.add(context);
 
     try {
-      Function.apply(execute, [context, ...arguments]);
+      Function.apply(execute, [context, ...context.arguments]);
     } on Exception catch (e) {
       throw UncaughtException(e, context);
     }
@@ -390,12 +436,17 @@ class Command with GroupMixin {
           name = convertToKebabCase(rawArgumentName);
         }
 
+        Converter<dynamic>? argumentConverter = _mappedConverterOverrides[name]?.converter ??
+            commands.converterFor(mirror.type.reflectedType);
+
         Iterable<ArgChoiceBuilder>? choices = _mappedChoices[name]?.builders;
 
-        choices ??= commands.converterFor(mirror.type.reflectedType)?.choices;
+        choices ??= argumentConverter?.choices;
 
         options.add(CommandOptionBuilder(
-          discordTypes[mirror.type.reflectedType] ?? CommandOptionType.string,
+          argumentConverter?.type ??
+              discordTypes[mirror.type.reflectedType] ??
+              CommandOptionType.string,
           name,
           _mappedDescriptions[name]!.value,
           required: !mirror.isOptional,
