@@ -279,6 +279,7 @@ double? convertDouble(StringView view, Context context) => double.tryParse(view.
 /// This attempts to parse the next quoted word in the input as a base-10 decimal number.
 const Converter<double> doubleConverter = Converter<double>(
   convertDouble,
+  type: CommandOptionType.number,
 );
 
 bool? convertBool(StringView view, Context context) {
@@ -695,6 +696,19 @@ const Converter<IRole> roleConverter = FallbackConverter<IRole>(
   type: CommandOptionType.role,
 );
 
+/// Converter to convert input to [Mentionable]s.
+///
+/// This uses multiple strategiiees to look up mentionables, in the order below:
+/// - Member lookup, see [memberConverter] for details
+/// - Role lookup, see [roleConverter] for details.
+const Converter<Mentionable> mentionableConverter = FallbackConverter(
+  [
+    memberConverter,
+    roleConverter,
+  ],
+  type: CommandOptionType.mentionable,
+);
+
 /// Attempt to parse a single argument from an argument view.
 ///
 /// [commands] is the [CommandsPlugin] used for retrieving the converters for a specific [Type]. If
@@ -740,5 +754,6 @@ void registerDefaultConverters(CommandsPlugin commands) {
     ..addConverter(textGuildChannelConverter)
     ..addConverter(voiceGuildChannelConverter)
     ..addConverter(stageVoiceChannelConverter)
-    ..addConverter(roleConverter);
+    ..addConverter(roleConverter)
+    ..addConverter(mentionableConverter);
 }

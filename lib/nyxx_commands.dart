@@ -20,6 +20,7 @@ export 'src/converter.dart'
         guildChannelConverter,
         intConverter,
         memberConverter,
+        mentionableConverter,
         roleConverter,
         snowflakeConverter,
         stageVoiceChannelConverter,
