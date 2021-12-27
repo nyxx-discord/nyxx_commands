@@ -300,7 +300,7 @@ bool? convertBool(StringView view, Context context) {
 /// Converter to convert input to [bool]s.
 ///
 /// This checks two lists of truthy/falsy values, listed below:
-/// - Tuthy: `['y', 'yes', '+', '1', 'true']`
+/// - Truthy: `['y', 'yes', '+', '1', 'true']`
 /// - Falsy: `['n', 'no', '-', '0', 'false']`
 ///
 /// This converter is case insensitive.
