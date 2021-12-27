@@ -9,6 +9,7 @@ __New features__:
 - Added a new `mention` parameter to `MessageContext.respond` that allows you to specify whether the reply to the command should mention the user or not
 - Added a new `UseConverter` decorator that allows you to override the converter used to parse a specific argument
 - Added converters for `double`s and `Mentionable`s
+- Added a new global `mentionOr` function that can be used in `CommandsPlugin.prefix` to allow mention prefixes
 
 __Miscellaneous__:
 - `autoAcknowledgeInteractions` no longer immediately acknowledges interactions upon receiving them, allowing ephemeral responses to be correctly sent
