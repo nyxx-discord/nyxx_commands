@@ -1,3 +1,24 @@
+## 3.1.0
+__New features__:
+- Default choices for `CombineConverter`s and `FallbackConverter`s can now be specified in the `choices` parameter
+- You can now specify the Discord slash command option type to use in `Converter`, `CombineConverter` and `FallbackConverter`s with the `type` parameter
+- Added a new `hideOriginalResponse` option to `CommandsOptions` that allows you to hide the automatic acknowledgement of interactions with `autoAcknowledgeInteractions`
+- Added a new `acknowledge` method to `InteractionContetxt` that allows you to override `hideOriginalResponse`
+- Added a new `hideOriginalResponse` parameter to `Command` constructors that allows you to override `CommandsOptions.hideOriginalResponse` on a per-command basis
+- Added a new `hidden` parameter to `InteractionContext.respond` that allows you to send an ephemeral response. The hidden state of the response sent is guaranteed to match the `hidden` parameter, however to avoid strange behaviour it is recommended to acknowledge the interaction with `InteractionContext.acknowledge` if the response is delayed
+- Added a new `mention` parameter to `MessageContext.respond` that allows you to specify whether the reply to the command should mention the user or not
+- Added a new `UseConverter` decorator that allows you to override the converter used to parse a specific argument
+- Added converters for `double`s and `Mentionable`s
+
+__Miscellaneous__:
+- `autoAcknowledgeInteractions` no longer immediately acknowledges interactions upon receiving them, allowing ephemeral responses to be correctly sent
+- Bumped `nyxx_interactions` to 3.1.0
+- Argument parsing is now done in parallel, making commands with multiple arguments faster to invoke
+
+__Deprecations__:
+- Setting the Discord slash command option type to use for a Dart `Type` via the `discordTypes` map is now deprecated. Use the `type` parameter in converter consutrctors instead
+- `Context.send` is now deprecated as `Context.respond` is more appropriate for most cases. If `Context.send` was really what you wanted, use `Context.channel.sendMessage` instead
+
 ## 3.0.0
 __Breaking changes__:
 - The base `Bot` class has been replaced with a `CommandsPlugin` class that can be used as a plugin with nyxx `3.0.0`
