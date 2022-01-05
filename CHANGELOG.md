@@ -1,3 +1,7 @@
+## 3.1.1
+__Bug fixes__:
+- Fixed an issue where `Check.all`, `Check.any` and `Check.deny` would not accept `AbstractCheck`s as arguments.
+
 ## 3.1.0
 __New features__:
 - Default choices for `CombineConverter`s and `FallbackConverter`s can now be specified in the `choices` parameter
