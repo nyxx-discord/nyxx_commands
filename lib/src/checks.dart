@@ -67,11 +67,11 @@ class Check extends AbstractCheck {
   Check(this._check, [String name = 'Check']) : super(name);
 
   /// Creates a new [Check] that succeeds if at least one of the supplied checks succeed.
-  factory Check.any(Iterable<Check> checks, [String? name]) => _AnyCheck(checks, name);
+  factory Check.any(Iterable<AbstractCheck> checks, [String? name]) => _AnyCheck(checks, name);
 
   /// Creates a new [Check] that inverts the result of the supplied check. Use this to allow use of
   /// commands by default but deny it for certain users.
-  factory Check.deny(Check check, [String? name]) => _DenyCheck(check, name);
+  factory Check.deny(AbstractCheck check, [String? name]) => _DenyCheck(check, name);
 
   /// Creates a new [Check] that succeeds if all of the supplied checks succeeds, and fails
   /// otherwise.
@@ -80,7 +80,7 @@ class Check extends AbstractCheck {
   /// be used to group common patterns of checks together.
   ///
   /// Stateful checks in [checks] will share their state for all uses of this check group.
-  factory Check.all(Iterable<Check> checks, [String? name]) => _GroupCheck(checks, name);
+  factory Check.all(Iterable<AbstractCheck> checks, [String? name]) => _GroupCheck(checks, name);
 
   @override
   FutureOr<bool> check(Context context) => _check(context);
@@ -96,7 +96,7 @@ class Check extends AbstractCheck {
 }
 
 class _AnyCheck extends Check {
-  Iterable<Check> checks;
+  Iterable<AbstractCheck> checks;
 
   _AnyCheck(this.checks, [String? name])
       : super((context) async {
@@ -132,7 +132,7 @@ class _AnyCheck extends Check {
 }
 
 class _DenyCheck extends Check {
-  final Check source;
+  final AbstractCheck source;
 
   _DenyCheck(this.source, [String? name])
       : super((context) async => !(await source.check(context)), name ?? 'Denied ${source.name}');
@@ -157,7 +157,7 @@ class _DenyCheck extends Check {
 }
 
 class _GroupCheck extends Check {
-  final Iterable<Check> checks;
+  final Iterable<AbstractCheck> checks;
 
   _GroupCheck(this.checks, [String? name])
       : super((context) async {
