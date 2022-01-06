@@ -408,7 +408,7 @@ class Command with GroupMixin {
     preCallController.add(context);
 
     try {
-      Function.apply(execute, [context, ...context.arguments]);
+      await Function.apply(execute, [context, ...context.arguments]);
     } on Exception catch (e) {
       throw UncaughtException(e, context);
     }
