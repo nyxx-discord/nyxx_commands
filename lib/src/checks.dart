@@ -14,12 +14,15 @@
 
 import 'dart:async';
 
+import 'package:logging/logging.dart';
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/nyxx_commands.dart';
 import 'package:nyxx_commands/src/commands.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import 'context.dart';
+
+final Logger _logger = Logger('Commands');
 
 /// Represents a check executed on a [Command].
 ///
@@ -72,6 +75,10 @@ class Check extends AbstractCheck {
 
   /// Creates a new [Check] that inverts the result of the supplied check. Use this to allow use of
   /// commands by default but deny it for certain users.
+  ///
+  /// Passing custom checks directly implementing [AbstractCheck] should be done with care, as pre-
+  /// and post- call hooks will be called if the internal check *fails*, and uncalled if the
+  /// internal check *succeeds*.
   factory Check.deny(AbstractCheck check, [String? name]) => _DenyCheck(check, name);
 
   /// Creates a new [Check] that succeeds if all of the supplied checks succeeds, and fails
@@ -96,21 +103,37 @@ class Check extends AbstractCheck {
   Iterable<void Function(Context context)> get preCallHooks => [];
 }
 
-class _AnyCheck extends Check {
+// TODO Stop implementing check. Breaking change so will have to wait
+class _AnyCheck extends AbstractCheck implements Check {
+  @override
+  // ignore: prefer_function_declarations_over_variables
+  final FutureOr<bool> Function(Context) _check = (_) => false;
+
   Iterable<AbstractCheck> checks;
 
+  final Expando<AbstractCheck> _succesfulChecks = Expando();
+
   _AnyCheck(this.checks, [String? name])
-      : super((context) async {
-          Iterable<FutureOr<bool>> results = checks.map((e) => e.check(context));
-
-          Iterable<Future<bool>> asyncResults = results.whereType<Future<bool>>();
-          Iterable<bool> syncResults = results.whereType<bool>();
-
-          return syncResults.any((v) => v) || (await Future.wait(asyncResults)).any((v) => v);
-        }, name ?? 'Any of [${checks.map((e) => e.name).join(', ')}]') {
+      : super(name ?? 'Any of [${checks.map((e) => e.name).join(', ')}]') {
     if (checks.isEmpty) {
       throw Exception('Cannot check any of no checks');
     }
+  }
+
+  @override
+  FutureOr<bool> check(Context context) async {
+    for (final check in checks) {
+      FutureOr<bool> result = check.check(context);
+
+      if (result is bool && result) {
+        _succesfulChecks[context] = check;
+        return true;
+      } else if (await result) {
+        _succesfulChecks[context] = check;
+        return true;
+      }
+    }
+    return false;
   }
 
   @override
@@ -130,6 +153,38 @@ class _AnyCheck extends Check {
               )),
     );
   }
+
+  @override
+  Iterable<void Function(Context)> get preCallHooks => [
+        (context) {
+          AbstractCheck? actualCheck = _succesfulChecks[context];
+
+          if (actualCheck == null) {
+            _logger.warning("Context $context shouldn't have passed checks; actualCheck is null");
+            return;
+          }
+
+          for (final hook in actualCheck.preCallHooks) {
+            hook(context);
+          }
+        }
+      ];
+
+  @override
+  Iterable<void Function(Context)> get postCallHooks => [
+        (context) {
+          AbstractCheck? actualCheck = _succesfulChecks[context];
+
+          if (actualCheck == null) {
+            _logger.warning("Context $context shouldn't have passed checks; actualCheck is null");
+            return;
+          }
+
+          for (final hook in actualCheck.postCallHooks) {
+            hook(context);
+          }
+        }
+      ];
 }
 
 class _DenyCheck extends Check {
@@ -155,6 +210,15 @@ class _DenyCheck extends Check {
           .map((e) => CommandPermissionBuilderAbstract.user(e.id, hasPermission: !e.hasPermission)),
     ];
   }
+
+  // It may seem counterintuitive to call the success hooks if the source check failed, and this is
+  // a situation where there is no proper solution. Here, we assume that the source check will
+  // reset its state on failure after failure, so calling the hooks is desireable.
+  @override
+  Iterable<void Function(Context)> get preCallHooks => source.preCallHooks;
+
+  @override
+  Iterable<void Function(Context)> get postCallHooks => source.postCallHooks;
 }
 
 class _GroupCheck extends Check {
@@ -177,6 +241,14 @@ class _GroupCheck extends Check {
       )))
           .fold([],
               (acc, element) => (acc as List<CommandPermissionBuilderAbstract>)..addAll(element));
+
+  @override
+  Iterable<void Function(Context)> get preCallHooks =>
+      checks.map((e) => e.preCallHooks).expand((_) => _);
+
+  @override
+  Iterable<void Function(Context)> get postCallHooks =>
+      checks.map((e) => e.postCallHooks).expand((_) => _);
 }
 
 /// A [Check] thats checks for a specific role or roles.
