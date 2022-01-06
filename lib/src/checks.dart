@@ -74,6 +74,10 @@ class Check extends AbstractCheck {
 
   /// Creates a new [Check] that inverts the result of the supplied check. Use this to allow use of
   /// commands by default but deny it for certain users.
+  ///
+  /// Passing custom checks directly implementing [AbstractCheck] should be done with care, as pre-
+  /// and post- call hooks will be called if the internal check *fails*, and uncalled if the
+  /// internal check *succeeds*.
   factory Check.deny(AbstractCheck check, [String? name]) => _DenyCheck(check, name);
 
   /// Creates a new [Check] that succeeds if all of the supplied checks succeeds, and fails
