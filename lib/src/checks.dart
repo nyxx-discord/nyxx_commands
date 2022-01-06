@@ -357,7 +357,12 @@ class CooldownType extends IEnum<int> {
 
   const CooldownType(int value) : super(value);
 
+  /// Combines two [CooldownType]s.
   CooldownType operator |(CooldownType other) => CooldownType(value | other.value);
+
+  /// Returns `true` if all the types in [instance] are present in [check].
+  static bool applies(CooldownType instance, CooldownType check) =>
+      instance.value & check.value == check.value;
 }
 
 class _BucketEntry {
@@ -439,7 +444,7 @@ class CooldownCheck extends AbstractCheck {
   int getKey(Context context) {
     List<int> keys = [];
 
-    if (type.value & CooldownType.category.value != 0) {
+    if (CooldownType.applies(type, CooldownType.category)) {
       if (context.guild != null) {
         keys.add((context.channel as IGuildChannel).parentChannel?.id.id ?? context.channel.id.id);
       } else {
@@ -447,15 +452,15 @@ class CooldownCheck extends AbstractCheck {
       }
     }
 
-    if (type.value & CooldownType.channel.value != 0) {
+    if (CooldownType.applies(type, CooldownType.channel)) {
       keys.add(context.channel.id.id);
     }
 
-    if (type.value & CooldownType.command.value != 0) {
+    if (CooldownType.applies(type, CooldownType.command)) {
       keys.add(context.command.hashCode);
     }
 
-    if (type.value & CooldownType.global.value != 0) {
+    if (CooldownType.applies(type, CooldownType.global)) {
       keys.add(0);
     }
 
@@ -463,7 +468,7 @@ class CooldownCheck extends AbstractCheck {
       keys.add(context.guild?.id.id ?? context.user.id.id);
     }
 
-    if (type.value & CooldownType.role.value != 0) {
+    if (CooldownType.applies(type, CooldownType.role)) {
       if (context.member != null) {
         if (context.member!.roles.isNotEmpty) {
           keys.add(PermissionsUtils.getMemberHighestRole(context.member!).id.id);
@@ -475,7 +480,7 @@ class CooldownCheck extends AbstractCheck {
       }
     }
 
-    if (type.value & CooldownType.user.value != 0) {
+    if (CooldownType.applies(type, CooldownType.user)) {
       keys.add(context.user.id.id);
     }
 
