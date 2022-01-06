@@ -64,7 +64,12 @@ abstract class Context {
 
   /// Send a response to the command. This is the same as [send] but it references the original
   /// command.
-  Future<IMessage> respond(MessageBuilder builder);
+  ///
+  /// Setting `private` to true will ensure only the user that invoked the command sees the
+  /// response:
+  /// - For message contexts, a DM is sent to the invoking user;
+  /// - For interaction contexts, an ephemeral response is used.
+  Future<IMessage> respond(MessageBuilder builder, {bool private = false});
 }
 
 /// Represents a [Context] triggered by a message sent in a text channel.
@@ -109,19 +114,24 @@ class MessageContext extends Context {
   /// not, the allowed mentions for [builder] will be set to allow all, with the exception of reply
   /// mentions being set to [mention].
   @override
-  Future<IMessage> respond(MessageBuilder builder, {bool mention = true}) async {
-    try {
-      return await channel.sendMessage(builder
-        ..replyBuilder = ReplyBuilder.fromMessage(message)
-        ..allowedMentions ??= (AllowedMentions()
-          ..allow(
-            reply: mention,
-            everyone: true,
-            roles: true,
-            users: true,
-          )));
-    } on IHttpResponseError {
-      return channel.sendMessage(builder..replyBuilder = null);
+  Future<IMessage> respond(MessageBuilder builder,
+      {bool mention = true, bool private = false}) async {
+    if (private) {
+      return await user.sendMessage(builder);
+    } else {
+      try {
+        return await channel.sendMessage(builder
+          ..replyBuilder = ReplyBuilder.fromMessage(message)
+          ..allowedMentions ??= (AllowedMentions()
+            ..allow(
+              reply: mention,
+              everyone: true,
+              roles: true,
+              users: true,
+            )));
+      } on IHttpResponseError {
+        return channel.sendMessage(builder..replyBuilder = null);
+      }
     }
   }
 
@@ -172,9 +182,13 @@ class InteractionContext extends Context {
   /// different that [CommandsOptions.hideOriginalResponse] will result in unusual behaviour if this
   /// method is invoked more than two seconds after command execution starts.
   /// Calling [acknowledge] less than two seconds after command execution starts with the same value
-  /// for `hidden` as this invocation will prevent this unusual behaviour from happening.
+  /// for [hidden] as this invocation will prevent this unusual behaviour from happening.
+  ///
+  /// [hidden] will override the value of [private] if both are provided.
   @override
-  Future<IMessage> respond(MessageBuilder builder, {bool hidden = false}) async {
+  Future<IMessage> respond(MessageBuilder builder, {bool private = false, bool? hidden}) async {
+    hidden ??= private;
+
     if (_hasCorrectlyAcked) {
       return interactionEvent.sendFollowup(builder, hidden: hidden);
     } else {
