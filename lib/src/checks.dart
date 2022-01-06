@@ -363,6 +363,29 @@ class CooldownType extends IEnum<int> {
   /// Returns `true` if all the types in [instance] are present in [check].
   static bool applies(CooldownType instance, CooldownType check) =>
       instance.value & check.value == check.value;
+
+  @override
+  String toString() {
+    List<String> components = [];
+
+    Map<CooldownType, String> names = {
+      category: 'Category',
+      channel: 'Channel',
+      command: 'Command',
+      global: 'Global',
+      guild: 'Guild',
+      role: 'Role',
+      user: 'User',
+    };
+
+    for (final key in names.keys) {
+      if (applies(this, key)) {
+        components.add(names[key]!);
+      }
+    }
+
+    return 'CooldownType[${components.join(', ')}]';
+  }
 }
 
 class _BucketEntry {
