@@ -382,6 +382,13 @@ class CooldownCheck extends AbstractCheck {
   // previous periods need to be stored.
 
   /// Create a new [CooldownCheck] with a specific type, period and token count.
+  ///
+  /// [type] can be any combination of [CooldownType]s. For example, to have a cooldown per command
+  /// per user per guild, use the following type:
+  /// `CooldownType.command | CooldownType.user | CooldownType.guild`
+  ///
+  /// Placing this check on the root [CommandsPlugin] will result in each command registered on the
+  /// bot to apply an individual cooldown for each user in each guild.
   CooldownCheck(this.type, this.duration, [this.tokensPer = 1, String? name])
       : super(name ?? 'Cooldown Check on $type');
 
