@@ -15,6 +15,7 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
+import 'package:nyxx_commands/nyxx_commands.dart';
 import 'package:nyxx_commands/src/commands.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
@@ -305,7 +306,7 @@ class GuildCheck extends Check {
 }
 
 /// Represents different types of cooldown
-enum CooldownType {
+class CooldownType extends IEnum<int> {
   /// Cooldown is per category.
   ///
   /// If the command is executed in a guild channel belonging to a category, the cooldown is set for
@@ -313,33 +314,33 @@ enum CooldownType {
   ///
   /// If the channel does not belong to a category or is not a guild channel, the cooldown works in
   /// the same way as [channel].
-  category,
+  static const CooldownType category = CooldownType(1 << 0);
 
   /// Cooldown is per channel.
   ///
   /// If the command is executed in a channel, then the cooldown is set for all users in that
   /// channel.
-  channel,
+  static const CooldownType channel = CooldownType(1 << 1);
 
   /// Cooldown is per command.
   ///
   /// If the command is executed, then the cooldown is set for all users in all channels for that
   /// command.
-  command,
+  static const CooldownType command = CooldownType(1 << 2);
 
   /// Cooldown is global.
   ///
   /// Generally works in the same was as [command], but if the same [CooldownCheck] instance is used
   /// in multiple commands' [GroupMixin.checks] or [Command.singleChecks] then the cooldown will be
   /// set for all users in all channels for the commands sharing the [CooldownCheck] instance.
-  global,
+  static const CooldownType global = CooldownType(1 << 3);
 
   /// Cooldown is per guild.
   ///
   /// If the command is executed in a guild, then the cooldown is set for all users in all channels
   /// in that guild. If the command is executed outside of a guild, then the cooldown works in the
   /// same way as [channel].
-  guild,
+  static const CooldownType guild = CooldownType(1 << 4);
 
   /// Cooldown is per role.
   ///
@@ -347,12 +348,44 @@ enum CooldownType {
   /// for all members with the same highest role as the member. If the command is executed by a
   /// member with no roles, the cooldown is set for all members with no roles. If the command is
   /// executed outside of a guild, the cooldown works in the same way as [channel].
-  role,
+  static const CooldownType role = CooldownType(1 << 5);
 
   /// Cooldown is per user.
   ///
   /// If the command is executed by a user, then the cooldown is set for all channels for that user.
-  user,
+  static const CooldownType user = CooldownType(1 << 6);
+
+  const CooldownType(int value) : super(value);
+
+  /// Combines two [CooldownType]s.
+  CooldownType operator |(CooldownType other) => CooldownType(value | other.value);
+
+  /// Returns `true` if all the types in [instance] are present in [check].
+  static bool applies(CooldownType instance, CooldownType check) =>
+      instance.value & check.value == check.value;
+
+  @override
+  String toString() {
+    List<String> components = [];
+
+    Map<CooldownType, String> names = {
+      category: 'Category',
+      channel: 'Channel',
+      command: 'Command',
+      global: 'Global',
+      guild: 'Guild',
+      role: 'Role',
+      user: 'User',
+    };
+
+    for (final key in names.keys) {
+      if (applies(this, key)) {
+        components.add(names[key]!);
+      }
+    }
+
+    return 'CooldownType[${components.join(', ')}]';
+  }
 }
 
 class _BucketEntry {
@@ -377,6 +410,13 @@ class CooldownCheck extends AbstractCheck {
   // previous periods need to be stored.
 
   /// Create a new [CooldownCheck] with a specific type, period and token count.
+  ///
+  /// [type] can be any combination of [CooldownType]s. For example, to have a cooldown per command
+  /// per user per guild, use the following type:
+  /// `CooldownType.command | CooldownType.user | CooldownType.guild`
+  ///
+  /// Placing this check on the root [CommandsPlugin] will result in each command registered on the
+  /// bot to apply an individual cooldown for each user in each guild.
   CooldownCheck(this.type, this.duration, [this.tokensPer = 1, String? name])
       : super(name ?? 'Cooldown Check on $type');
 
@@ -425,33 +465,49 @@ class CooldownCheck extends AbstractCheck {
 
   /// Get a key representing a [Context] depending on [type].
   int getKey(Context context) {
-    switch (type) {
-      case CooldownType.category:
-        if (context.guild != null) {
-          if ((context.channel as IGuildChannel).parentChannel != null) {
-            return (context.channel as IGuildChannel).parentChannel!.id.id;
-          }
-        }
-        return context.channel.id.id;
-      case CooldownType.channel:
-        return context.channel.id.id;
-      case CooldownType.command:
-        return context.command.hashCode;
-      case CooldownType.global:
-        return 0;
-      case CooldownType.guild:
-        return context.guild?.id.id ?? context.user.id.id;
-      case CooldownType.role:
-        if (context.member != null) {
-          if (context.member!.roles.isNotEmpty) {
-            return PermissionsUtils.getMemberHighestRole(context.member!).id.id;
-          }
-          return context.guild!.everyoneRole.id.id;
-        }
-        return context.channel.id.id;
-      case CooldownType.user:
-        return context.user.id.id;
+    List<int> keys = [];
+
+    if (CooldownType.applies(type, CooldownType.category)) {
+      if (context.guild != null) {
+        keys.add((context.channel as IGuildChannel).parentChannel?.id.id ?? context.channel.id.id);
+      } else {
+        keys.add(context.channel.id.id);
+      }
     }
+
+    if (CooldownType.applies(type, CooldownType.channel)) {
+      keys.add(context.channel.id.id);
+    }
+
+    if (CooldownType.applies(type, CooldownType.command)) {
+      keys.add(context.command.hashCode);
+    }
+
+    if (CooldownType.applies(type, CooldownType.global)) {
+      keys.add(0);
+    }
+
+    if (type.value & CooldownType.guild.value != 0) {
+      keys.add(context.guild?.id.id ?? context.user.id.id);
+    }
+
+    if (CooldownType.applies(type, CooldownType.role)) {
+      if (context.member != null) {
+        if (context.member!.roles.isNotEmpty) {
+          keys.add(PermissionsUtils.getMemberHighestRole(context.member!).id.id);
+        } else {
+          keys.add(context.guild!.everyoneRole.id.id);
+        }
+      } else {
+        keys.add(context.user.id.id);
+      }
+    }
+
+    if (CooldownType.applies(type, CooldownType.user)) {
+      keys.add(context.user.id.id);
+    }
+
+    return Object.hashAll(keys);
   }
 
   @override
