@@ -205,6 +205,15 @@ class _DenyCheck extends Check {
           .map((e) => CommandPermissionBuilderAbstract.user(e.id, hasPermission: !e.hasPermission)),
     ];
   }
+
+  // It may seem counterintuitive to call the success hooks if the source check failed, and this is
+  // a situation where there is no proper solution. Here, we assume that the source check will
+  // reset its state on failure after failure, so calling the hooks is desireable.
+  @override
+  Iterable<void Function(Context)> get preCallHooks => source.preCallHooks;
+
+  @override
+  Iterable<void Function(Context)> get postCallHooks => source.postCallHooks;
 }
 
 class _GroupCheck extends Check {
