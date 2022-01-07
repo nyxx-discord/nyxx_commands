@@ -14,6 +14,7 @@
 
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/src/converter.dart';
+import 'package:nyxx_commands/src/view.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 /// The function used to convert camelCase identifiers to Discord compatible kebab-case names
@@ -166,5 +167,22 @@ String Function(IMessage) mentionOr(String Function(IMessage) defaultPrefix) {
     }
 
     return defaultPrefix(message);
+  };
+}
+
+/// A Function that can be used  as an input to [CommandsPlugin.prefix] to allow users to optionally
+/// omit the prefix if the command is ran in a DM with the bot.
+///
+/// The [defaultPrefix] parameter will be used if the message was sent in a guild or if the message
+/// starts with the prefix returned anyways.
+String Function(IMessage) dmOr(String Function(IMessage) defaultPrefix) {
+  return (message) {
+    String found = defaultPrefix(message);
+
+    if (message.guild != null || StringView(message.content).skipString(found)) {
+      return found;
+    }
+
+    return '';
   };
 }
