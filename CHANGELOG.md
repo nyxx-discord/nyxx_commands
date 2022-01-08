@@ -1,3 +1,13 @@
+## 3.2.0
+__Bug fixes__:
+- Exceptions are now correctly caught for commands with async `execute` functions.
+- Check hooks are now correctly called when using `Check.all`, `Check.any` or `Check.deny`
+
+__New features__:
+- Added a new `private` option to `Context.respond` that allows users to send private responses to commands
+- Added the ability to combine `CooldownTypes` using the binary OR (`|`) operator
+- Added a new `dmOr` function that can be used in `CommandsPlugin.prefix` to allow users to omit the bot prefix in DMs
+
 ## 3.1.1
 __Bug fixes__:
 - Fixed an issue where `Check.all`, `Check.any` and `Check.deny` would not accept `AbstractCheck`s as arguments.
