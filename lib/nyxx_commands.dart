@@ -44,5 +44,6 @@ export 'src/errors.dart'
         ParsingException,
         UncaughtException;
 export 'src/group.dart' show Group, GroupMixin;
-export 'src/util.dart' show Choices, Description, Name, UseConverter, convertToKebabCase, mentionOr;
+export 'src/util.dart'
+    show Choices, Description, Name, UseConverter, convertToKebabCase, mentionOr, dmOr;
 export 'src/view.dart' show StringView;
