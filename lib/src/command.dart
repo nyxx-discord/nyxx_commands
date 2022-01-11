@@ -198,7 +198,7 @@ class Command with GroupMixin {
     _loadArguments(execute, contextType);
 
     for (final child in children) {
-      registerChild(child);
+      addCommand(child);
     }
 
     for (final check in checks) {
@@ -462,14 +462,14 @@ class Command with GroupMixin {
   }
 
   @override
-  void registerChild(GroupMixin child) {
+  void addCommand(GroupMixin command) {
     if (type != CommandType.textOnly) {
-      if (child.hasSlashCommand || (child is Command && child.type != CommandType.textOnly)) {
+      if (command.hasSlashCommand || (command is Command && command.type != CommandType.textOnly)) {
         throw CommandRegistrationError('Cannot nest Slash commands!');
       }
     }
 
-    super.registerChild(child);
+    super.addCommand(command);
   }
 
   /// Add a check to this commands [singleChecks].

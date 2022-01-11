@@ -43,7 +43,7 @@ void main() {
     },
   );
 
-  commands.registerChild(ping);
+  commands.addCommand(ping);
 
   Group throwGroup = Group(
     'throw',
@@ -62,7 +62,7 @@ void main() {
     ],
   );
 
-  throwGroup.registerChild(Command(
+  throwGroup.addCommand(Command(
     'die',
     'Throw a die',
     (Context context) {
@@ -72,7 +72,7 @@ void main() {
     },
   ));
 
-  commands.registerChild(throwGroup);
+  commands.addCommand(throwGroup);
 
   Command say = Command(
     'say',
@@ -82,7 +82,7 @@ void main() {
     },
   );
 
-  commands.registerChild(say);
+  commands.addCommand(say);
 
   Command nick = Command(
     'nick',
@@ -99,7 +99,7 @@ void main() {
     },
   );
 
-  commands.registerChild(nick);
+  commands.addCommand(nick);
 
   Converter<Shape> shapeConverter = Converter<Shape>(
     (view, context) {
@@ -172,7 +172,7 @@ void main() {
     },
   );
 
-  commands.registerChild(favouriteShape);
+  commands.addCommand(favouriteShape);
 
   Command favouriteFruit = Command(
     'favourite-fruit',
@@ -182,7 +182,7 @@ void main() {
     },
   );
 
-  commands.registerChild(favouriteFruit);
+  commands.addCommand(favouriteFruit);
 
   Command alphabet = Command(
     'alphabet',
@@ -198,7 +198,7 @@ void main() {
     ],
   );
 
-  commands.registerChild(alphabet);
+  commands.addCommand(alphabet);
 
   const Converter<String> nonEmptyStringConverter = CombineConverter(stringConverter, filterInput);
 
@@ -213,7 +213,7 @@ void main() {
     },
   );
 
-  commands.registerChild(betterSay);
+  commands.addCommand(betterSay);
 }
 
 enum Shape {
