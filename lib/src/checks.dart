@@ -17,10 +17,7 @@ import 'dart:async';
 import 'package:logging/logging.dart';
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/nyxx_commands.dart';
-import 'package:nyxx_commands/src/commands.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
-
-import 'context.dart';
 
 final Logger _logger = Logger('Commands');
 
