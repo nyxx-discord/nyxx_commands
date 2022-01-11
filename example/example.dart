@@ -138,8 +138,8 @@ void main() {
   );
 
   // Once we've created our command, we need to add it to our bot:
-  commands.registerChild(ping);
-  // The name `registerChild` might seem a bit weird as a name for adding a command to our bot, but
+  commands.addCommand(ping);
+  // The name `addCommand` might seem a bit weird as a name for adding a command to our bot, but
   // it makes sense if you imagine each bot as "owning" a command:
   //
   // client
@@ -194,9 +194,9 @@ void main() {
     ],
   );
 
-  // The other way to add a command to a group is using the `Group`'s `registerChild` method,
+  // The other way to add a command to a group is using the `Group`'s `addCommand` method,
   // similarly to how we added the `ping` command to the bot earlie.
-  throwGroup.registerChild(Command(
+  throwGroup.addCommand(Command(
     'die',
     'Throw a die',
     (Context context) {
@@ -207,7 +207,7 @@ void main() {
   ));
 
   // Finally, just like the `ping` command, we need to add our command group to the bot:
-  commands.registerChild(throwGroup);
+  commands.addCommand(throwGroup);
 
   // At this point, if you run this file, a new command should have appeared in the slash command
   // menu on Discord: `throw`. Selecting it will let you choose from two sub-commands: `coin` or
@@ -243,7 +243,7 @@ void main() {
   );
 
   // As usual, we need to register the command to our bot.
-  commands.registerChild(say);
+  commands.addCommand(say);
 
   // At this point, if you run this file your command structure will look like this:
   //
@@ -307,7 +307,7 @@ void main() {
     },
   );
 
-  commands.registerChild(nick);
+  commands.addCommand(nick);
 
   // At this point, if you run the file your command structure will look like this:
   //
@@ -467,7 +467,7 @@ void main() {
     },
   );
 
-  commands.registerChild(favouriteShape);
+  commands.addCommand(favouriteShape);
 
   // At this point, if you run the file you will see that the `favourite-shape` command has been
   // added to the slash command menu.
@@ -511,7 +511,7 @@ void main() {
     },
   );
 
-  commands.registerChild(favouriteFruit);
+  commands.addCommand(favouriteFruit);
 
   // At this point, if you run the file you will be able to use the `favourite-fruit` command. Once
   // you've selected the command in the slash command menu, you'll be given an option to provide a
@@ -549,7 +549,7 @@ void main() {
     ],
   );
 
-  commands.registerChild(alphabet);
+  commands.addCommand(alphabet);
 
   // At this point, if you run the file you will get an `alphabet` command appear in the slash
   // command menu. Executing it once will run fine, however trying to execute it again less that 30
@@ -587,7 +587,7 @@ void main() {
     },
   );
 
-  commands.registerChild(betterSay);
+  commands.addCommand(betterSay);
 
   // At this point, if you run the file, a new command `better-say` will have been added to the bot.
   // Attempting to invoke it with an empty string (`!better-say  ""`) will cause the argument to

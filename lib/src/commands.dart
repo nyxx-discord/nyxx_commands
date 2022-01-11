@@ -415,8 +415,8 @@ class CommandsPlugin extends BasePlugin with GroupMixin {
   }
 
   @override
-  void registerChild(GroupMixin child) {
-    super.registerChild(child);
+  void addCommand(GroupMixin command) {
+    super.addCommand(command);
 
     if (client?.ready ?? false) {
       _commandsLogger
@@ -425,8 +425,8 @@ class CommandsPlugin extends BasePlugin with GroupMixin {
       interactions.sync();
     }
 
-    for (final command in child.walkCommands()) {
-      _commandsLogger.info('Registered command "${command.fullName}"');
+    for (final child in command.walkCommands()) {
+      _commandsLogger.info('Registered command "${child.fullName}"');
     }
   }
 

@@ -139,19 +139,20 @@ mixin GroupMixin {
   /// [CommandRegistrationError] is thrown.
   ///
   /// If [child] already has a parent, an [CommandRegistrationError] is thrown.
-  void registerChild(GroupMixin child) {
-    if (childrenMap.containsKey(child.name)) {
-      throw CommandRegistrationError('Command with name "$fullName ${child.name}" already exists');
+  void addCommand(GroupMixin command) {
+    if (childrenMap.containsKey(command.name)) {
+      throw CommandRegistrationError(
+          'Command with name "$fullName ${command.name}" already exists');
     }
 
-    for (final alias in child.aliases) {
+    for (final alias in command.aliases) {
       if (childrenMap.containsKey(alias)) {
         throw CommandRegistrationError('Command with alias "$fullName $alias" already exists');
       }
     }
 
-    if (child._parent != null) {
-      throw CommandRegistrationError('Cannot register command "${child.fullName}" again');
+    if (command._parent != null) {
+      throw CommandRegistrationError('Cannot register command "${command.fullName}" again');
     }
 
     if (_parent != null) {
@@ -159,16 +160,25 @@ mixin GroupMixin {
           'commands to have incomplete definitions');
     }
 
-    child._parent = this;
+    command._parent = this;
 
-    childrenMap[child.name] = child;
-    for (final alias in child.aliases) {
-      childrenMap[alias] = child;
+    childrenMap[command.name] = command;
+    for (final alias in command.aliases) {
+      childrenMap[alias] = command;
     }
 
-    child.onPreCall.listen(preCallController.add);
-    child.onPostCall.listen(postCallController.add);
+    command.onPreCall.listen(preCallController.add);
+    command.onPostCall.listen(postCallController.add);
   }
+
+  /// Add a child to this group.
+  ///
+  /// If any of its name or aliases confict with already registered commands, a
+  /// [CommandRegistrationError] is thrown.
+  ///
+  /// If [child] already has a parent, an [CommandRegistrationError] is thrown.
+  @Deprecated('Use addCommand() instead')
+  void registerChild(GroupMixin child) => addCommand(child);
 
   /// Iterate over all the commands in this group and any subgroups.
   Iterable<Command> walkCommands() sync* {
@@ -245,7 +255,7 @@ class Group with GroupMixin {
     }
 
     for (final child in children) {
-      registerChild(child);
+      addCommand(child);
     }
 
     for (final check in checks) {
