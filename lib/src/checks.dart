@@ -583,18 +583,11 @@ class CooldownCheck extends AbstractCheck {
   ///
   /// If the context is not on cooldown, [Duration.zero] is returned.
   Duration remaining(Context context) {
-    DateTime now = DateTime.now();
-
-    if (now.isAfter(_currentStart.add(duration))) {
-      _previousBucket = _currentBucket;
-      _currentBucket = {};
-
-      _currentStart = DateTime.now();
-    }
-
     if (check(context) as bool) {
       return Duration.zero;
     }
+
+    DateTime now = DateTime.now();
 
     int key = getKey(context);
     if (_currentBucket.containsKey(key)) {
