@@ -1,3 +1,10 @@
+## 3.3.0
+__New features__:
+- Added a `remaining()` method to `CooldownCheck` to get the remaining cooldown for a context
+
+__Deprecations__:
+- `registerChild` has been deprecated, users should prefer the better named `addCommand` method
+
 ## 3.2.0
 __Bug fixes__:
 - Exceptions are now correctly caught for commands with async `execute` functions.
@@ -41,7 +48,7 @@ __Breaking changes__:
 - `BotOptions` has been renamed to `CommandsOptions` and no longer supports the options found in `ClientOptions`. Create two seperate instances and pass them to `NyxxFactory.createNyxx...` and `CommandsPlugin` respectively, in the `options` named parameter
 - The `bot` field on `Context` has been replaced with a `client` field pointing to the `INyxx` instance and a `commands` field pointing to the `CommandsPlugin` instance.
 
-## 2.0.0:
+## 2.0.0
 __Breaking changes__:
 - Messages sent by bot users will no longer be executed by default, see `BotOptions.acceptBotCommands` and `BotOptions.acceptSelfCommands`
 
