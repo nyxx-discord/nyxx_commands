@@ -139,8 +139,7 @@ void main() {
 
   // Once we've created our command, we need to add it to our bot:
   commands.addCommand(ping);
-  // The name `addCommand` might seem a bit weird as a name for adding a command to our bot, but
-  // it makes sense if you imagine each bot as "owning" a command:
+  // The commands on a bot can be represented with a parent-child tree that looks like this:
   //
   // client
   // ┗━ ping
