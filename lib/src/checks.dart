@@ -579,6 +579,38 @@ class CooldownCheck extends AbstractCheck {
     return Object.hashAll(keys);
   }
 
+  /// Get the remaining cooldown time for a context.
+  ///
+  /// If the context is not on cooldown, [Duration.zero] is returned.
+  Duration remaining(Context context) {
+    if (DateTime.now().isAfter(_currentStart.add(duration))) {
+      _previousBucket = _currentBucket;
+      _currentBucket = {};
+
+      _currentStart = DateTime.now();
+    }
+
+    if (check(context) as bool) {
+      return Duration.zero;
+    }
+
+    int key = getKey(context);
+
+    if (_currentBucket.containsKey(key)) {
+      DateTime end = _currentBucket[key]!.start.add(duration);
+
+      return end.difference(DateTime.now());
+    }
+
+    if (_previousBucket.containsKey(key)) {
+      DateTime end = _previousBucket[key]!.start.add(duration);
+
+      return end.difference(DateTime.now());
+    }
+
+    return Duration.zero;
+  }
+
   @override
   late Iterable<void Function(Context)> preCallHooks = [
     (context) {
