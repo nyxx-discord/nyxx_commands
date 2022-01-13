@@ -67,25 +67,27 @@ class Check extends AbstractCheck {
   /// It should not throw.
   Check(this._check, [String name = 'Check']) : super(name);
 
-  /// Creates a new [Check] that succeeds if at least one of the supplied checks succeed.
-  factory Check.any(Iterable<AbstractCheck> checks, [String? name]) => _AnyCheck(checks, name);
+  /// Creates a new [AbstractCheck] that succeeds if at least one of the supplied checks succeed.
+  static AbstractCheck any(Iterable<AbstractCheck> checks, [String? name]) =>
+      _AnyCheck(checks, name);
 
-  /// Creates a new [Check] that inverts the result of the supplied check. Use this to allow use of
+  /// Creates a new [AbstractCheck] that inverts the result of the supplied check. Use this to allow use of
   /// commands by default but deny it for certain users.
   ///
   /// Passing custom checks directly implementing [AbstractCheck] should be done with care, as pre-
   /// and post- call hooks will be called if the internal check *fails*, and uncalled if the
   /// internal check *succeeds*.
-  factory Check.deny(AbstractCheck check, [String? name]) => _DenyCheck(check, name);
+  static AbstractCheck deny(AbstractCheck check, [String? name]) => _DenyCheck(check, name);
 
-  /// Creates a new [Check] that succeeds if all of the supplied checks succeeds, and fails
+  /// Creates a new [AbstractCheck] that succeeds if all of the supplied checks succeeds, and fails
   /// otherwise.
   ///
   /// This effectively functions the same as [GroupMixin.checks] and [Command.singleChecks], but can
   /// be used to group common patterns of checks together.
   ///
   /// Stateful checks in [checks] will share their state for all uses of this check group.
-  factory Check.all(Iterable<AbstractCheck> checks, [String? name]) => _GroupCheck(checks, name);
+  static AbstractCheck all(Iterable<AbstractCheck> checks, [String? name]) =>
+      _GroupCheck(checks, name);
 
   @override
   FutureOr<bool> check(Context context) => _check(context);
@@ -100,12 +102,7 @@ class Check extends AbstractCheck {
   Iterable<void Function(Context context)> get preCallHooks => [];
 }
 
-// TODO Stop implementing check. Breaking change so will have to wait
-class _AnyCheck extends AbstractCheck implements Check {
-  @override
-  // ignore: prefer_function_declarations_over_variables
-  final FutureOr<bool> Function(Context) _check = (_) => false;
-
+class _AnyCheck extends AbstractCheck {
   Iterable<AbstractCheck> checks;
 
   final Expando<AbstractCheck> _succesfulChecks = Expando();

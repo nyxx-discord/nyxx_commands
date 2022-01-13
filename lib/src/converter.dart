@@ -22,33 +22,6 @@ import 'context.dart';
 import 'errors.dart';
 import 'view.dart';
 
-/// Mapping of Dart [Type]s to their Discord API equivalents.
-///
-/// Adding new types to this map will cause slash commands to use the specified [CommandOptionType]
-/// when that type is needed. The result can then be processed again on the bot, unless the type
-/// returned by the API is already assignable to the required argument type.
-@Deprecated("Specify types in Converter constructors")
-final Map<Type, CommandOptionType> discordTypes = {
-  // Basic types
-  bool: CommandOptionType.boolean,
-  int: CommandOptionType.integer,
-  String: CommandOptionType.string,
-
-  // User types
-  IMember: CommandOptionType.user,
-  IUser: CommandOptionType.user,
-
-  // Channel types
-  IGuildChannel: CommandOptionType.channel,
-  ITextGuildChannel: CommandOptionType.channel,
-  ICategoryGuildChannel: CommandOptionType.channel,
-  IVoiceGuildChannel: CommandOptionType.channel,
-  IStageVoiceGuildChannel: CommandOptionType.channel,
-
-  // Role types
-  IRole: CommandOptionType.role,
-};
-
 /// Object used to convert raw argument strings to the type required by the
 /// command using them.
 class Converter<T> {

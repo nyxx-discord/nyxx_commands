@@ -444,9 +444,7 @@ class Command with GroupMixin {
         choices ??= argumentConverter?.choices;
 
         options.add(CommandOptionBuilder(
-          argumentConverter?.type ??
-              discordTypes[mirror.type.reflectedType] ??
-              CommandOptionType.string,
+          argumentConverter?.type ?? CommandOptionType.string,
           name,
           _mappedDescriptions[name]!.value,
           required: !mirror.isOptional,
