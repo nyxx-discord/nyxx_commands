@@ -54,4 +54,7 @@ class UserContext extends Context with InteractionContext {
     required this.interaction,
     required this.interactionEvent,
   });
+
+  @override
+  String toString() => 'UserContext[interaction=${interaction.token}, target=$targetUser]';
 }
