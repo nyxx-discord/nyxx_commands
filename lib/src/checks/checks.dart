@@ -21,9 +21,9 @@ import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 final Logger _logger = Logger('Commands');
 
-/// Represents a check executed on a [Command].
+/// Represents a check executed on a [SlashCommand].
 ///
-/// All checks must succeed in order for a [Command] to be executed.
+/// All checks must succeed in order for a [SlashCommand] to be executed.
 abstract class AbstractCheck {
   /// The name of the check
   final String name;
@@ -40,14 +40,14 @@ abstract class AbstractCheck {
   Future<Iterable<CommandPermissionBuilderAbstract>> get permissions;
 
   /// An Iterable of pre-call hooks that will be called when a command this check is on emits to
-  /// [Command.onPreCall].
+  /// [SlashCommand.onPreCall].
   ///
   /// Should be used by checks that have internal state to update that state, instead of updating it
   /// in [check].
   Iterable<void Function(Context)> get preCallHooks;
 
   /// An Iterable of post-call hooks that will be called when a command this check is on emits to
-  /// [Command.onPostCall].
+  /// [SlashCommand.onPostCall].
   ///
   /// Should be used by checks that have internal state to update that state, instead of updating it
   /// in [check].
@@ -82,7 +82,7 @@ class Check extends AbstractCheck {
   /// Creates a new [AbstractCheck] that succeeds if all of the supplied checks succeeds, and fails
   /// otherwise.
   ///
-  /// This effectively functions the same as [GroupMixin.checks] and [Command.singleChecks], but can
+  /// This effectively functions the same as [GroupMixin.checks] and [SlashCommand.singleChecks], but can
   /// be used to group common patterns of checks together.
   ///
   /// Stateful checks in [checks] will share their state for all uses of this check group.
@@ -397,7 +397,7 @@ class CooldownType extends IEnum<int> {
   /// Cooldown is global.
   ///
   /// Generally works in the same was as [command], but if the same [CooldownCheck] instance is used
-  /// in multiple commands' [GroupMixin.checks] or [Command.singleChecks] then the cooldown will be
+  /// in multiple commands' [GroupMixin.checks] or [SlashCommand.singleChecks] then the cooldown will be
   /// set for all users in all channels for the commands sharing the [CooldownCheck] instance.
   static const CooldownType global = CooldownType(1 << 3);
 
@@ -461,7 +461,7 @@ class _BucketEntry {
   _BucketEntry(this.start);
 }
 
-/// A [Check] that checks that a [Command] is not on cooldown.
+/// A [Check] that checks that a [SlashCommand] is not on cooldown.
 class CooldownCheck extends AbstractCheck {
   // Implementation of a cooldown system that does not store last-used times forever, does not use
   // [Timer]s and does not perform a filtering pass on the entire data set.
@@ -624,7 +624,7 @@ class CooldownCheck extends AbstractCheck {
   Iterable<void Function(Context p1)> get postCallHooks => [];
 }
 
-/// A [Check] that checks that a [Command] is invoked from an [InteractionEvent].
+/// A [Check] that checks that a [SlashCommand] is invoked from an [InteractionEvent].
 ///
 /// If you just want to restrict command usage to slash commands, use [Command.slashOnly] instead.
 /// This class is meant to be used with [Check.any] and other checks to allow interaction commands
@@ -635,7 +635,7 @@ class InteractionCheck extends Check {
       : super((context) => context is InteractionContext, name ?? 'Interaction Check');
 }
 
-/// A [Check] that checks that a [Command] is invoked from a text message.
+/// A [Check] that checks that a [SlashCommand] is invoked from a text message.
 ///
 /// If you want to restrict command usage to text-only, use [Command.textOnly] instead. This class
 /// is meant to be used with [Check.any] and other checks to allow text commands to bypass checks.

@@ -21,7 +21,7 @@ import 'package:nyxx_commands/src/options.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import 'checks/checks.dart';
-import 'commands/command.dart';
+import 'commands/slash_command.dart';
 import 'commands/group.dart';
 import 'context/context.dart';
 import 'converters/converter.dart';
@@ -192,7 +192,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
 
   Future<void> _processInteraction(
     ISlashCommandInteractionEvent interactionEvent,
-    Command command,
+    SlashCommand command,
   ) async {
     try {
       Context context = await _interactionContext(interactionEvent, command);
@@ -219,7 +219,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
   }
 
   Future<Context> _messageContext(IMessage message, StringView contentView, String prefix) async {
-    Command command = getCommand(contentView) ?? (throw CommandNotFoundException(contentView));
+    SlashCommand command = getCommand(contentView) ?? (throw CommandNotFoundException(contentView));
 
     ITextChannel channel = await message.channel.getOrDownload();
 
@@ -250,7 +250,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
   }
 
   Future<Context> _interactionContext(
-      ISlashCommandInteractionEvent interactionEvent, Command command) async {
+      ISlashCommandInteractionEvent interactionEvent, SlashCommand command) async {
     ISlashCommandInteraction interaction = interactionEvent.interaction;
 
     IMember? member = interaction.memberAuthor;
@@ -285,7 +285,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     List<SlashCommandBuilder> builders = [];
 
     for (final child in children) {
-      if (child.hasSlashCommand || (child is Command && child.type != CommandType.textOnly)) {
+      if (child.hasSlashCommand || (child is SlashCommand && child.type != CommandType.textOnly)) {
         Map<Snowflake, CommandPermissionBuilderAbstract> uniquePermissions = {};
 
         for (final check in child.checks) {
@@ -344,7 +344,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
             guild: guildId ?? guild,
           );
 
-          if (child is Command) {
+          if (child is SlashCommand) {
             builder.registerHandler((interaction) => _processInteraction(interaction, child));
           }
 
@@ -363,7 +363,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     for (final builder in options) {
       if (builder.type == CommandOptionType.subCommand) {
         builder.registerHandler((interaction) =>
-            _processInteraction(interaction, current.childrenMap[builder.name] as Command));
+            _processInteraction(interaction, current.childrenMap[builder.name] as SlashCommand));
       } else if (builder.type == CommandOptionType.subCommandGroup) {
         _processHandlerRegistration(builder.options!, current.childrenMap[builder.name]!);
       }

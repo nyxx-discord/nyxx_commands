@@ -23,11 +23,11 @@ import '../commands.dart';
 import '../context/context.dart';
 import '../errors.dart';
 import '../util/view.dart';
-import 'command.dart';
+import 'slash_command.dart';
 
 /// A [Group] is a collection of commands. This mixin implements that functionality.
 ///
-/// All [Group]s, [Command]s and [CommandsPlugin]s use this mixin to enable nesting and registration
+/// All [Group]s, [SlashCommand]s and [CommandsPlugin]s use this mixin to enable nesting and registration
 /// of commands.
 mixin GroupMixin {
   /// A mapping of child names to children.
@@ -63,10 +63,10 @@ mixin GroupMixin {
   final StreamController<Context> postCallController = StreamController.broadcast();
 
   /// A [Stream] of [Context]s that emits after the checks have succeeded, but before
-  /// [Command.execute] is called.
+  /// [SlashCommand.execute] is called.
   late final Stream<Context> onPreCall = preCallController.stream;
 
-  /// A [Stream] of [Context]s that emits after [Command.execute] has successfully been called (no
+  /// A [Stream] of [Context]s that emits after [SlashCommand.execute] has successfully been called (no
   /// exceptions were thrown).
   late final Stream<Context> onPostCall = postCallController.stream;
 
@@ -76,7 +76,7 @@ mixin GroupMixin {
   /// These are called before command invocation and can cause it to fail.
   ///
   /// If you only want to apply a check to a specific command and not all descendants, see
-  /// [Command.singleChecks]
+  /// [SlashCommand.singleChecks]
   Iterable<AbstractCheck> get checks => [...?_parent?.checks, ..._checks];
 
   /// The full name of this group.
@@ -97,7 +97,7 @@ mixin GroupMixin {
   /// return true.
   bool get hasSlashCommand {
     return children.any((child) {
-      if (child is Command) {
+      if (child is SlashCommand) {
         return child.type != CommandType.textOnly || child.hasSlashCommand;
       }
       return child.hasSlashCommand;
@@ -106,18 +106,18 @@ mixin GroupMixin {
 
   final Logger _logger = Logger('Commands');
 
-  /// Get a [Command] based off a [StringView].
+  /// Get a [SlashCommand] based off a [StringView].
   ///
   /// This is usually used to obtain the command being executed in a message, after the prefix has
   /// been skipped in the view.
-  Command? getCommand(StringView view) {
+  SlashCommand? getCommand(StringView view) {
     String name = view.getWord();
 
     if (childrenMap.containsKey(name)) {
       GroupMixin child = childrenMap[name]!;
 
-      if (child is Command && child.type != CommandType.slashOnly) {
-        Command? found = child.getCommand(view);
+      if (child is SlashCommand && child.type != CommandType.slashOnly) {
+        SlashCommand? found = child.getCommand(view);
 
         if (found == null) {
           return child;
@@ -181,9 +181,9 @@ mixin GroupMixin {
   void registerChild(GroupMixin child) => addCommand(child);
 
   /// Iterate over all the commands in this group and any subgroups.
-  Iterable<Command> walkCommands() sync* {
-    if (this is Command) {
-      yield this as Command;
+  Iterable<SlashCommand> walkCommands() sync* {
+    if (this is SlashCommand) {
+      yield this as SlashCommand;
     }
 
     for (final child in children) {
@@ -203,7 +203,7 @@ mixin GroupMixin {
           child.description,
           options: List.of(child.getOptions(commands)),
         ));
-      } else if (child is Command && child.type != CommandType.textOnly) {
+      } else if (child is SlashCommand && child.type != CommandType.textOnly) {
         options.add(CommandOptionBuilder(
           CommandOptionType.subCommand,
           child.name,
@@ -232,7 +232,7 @@ mixin GroupMixin {
 
 /// A [Group] is a simple class that allows [GroupMixin]s to be instanciated.
 ///
-/// This allows [GroupMixin] functionality to be used without the additional bloat of a [Command] or
+/// This allows [GroupMixin] functionality to be used without the additional bloat of a [SlashCommand] or
 /// [CommandsPlugin]
 class Group with GroupMixin {
   @override

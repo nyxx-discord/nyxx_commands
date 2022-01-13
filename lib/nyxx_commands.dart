@@ -5,7 +5,7 @@ library nyxx_commands;
 export 'src/checks/checks.dart'
     show AbstractCheck, Check, GuildCheck, RoleCheck, UserCheck, CooldownCheck, CooldownType;
 export 'src/commands.dart' show CommandsPlugin;
-export 'src/commands/command.dart' show Command, CommandType, commandNameRegexp;
+export 'src/commands/slash_command.dart' show SlashCommand, CommandType, commandNameRegexp;
 export 'src/commands/group.dart' show Group, GroupMixin;
 export 'src/context/context.dart' show Context, InteractionContext, MessageContext;
 export 'src/converters/converter.dart'

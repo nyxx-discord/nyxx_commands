@@ -16,7 +16,7 @@ import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands.dart';
-import '../commands/command.dart';
+import '../commands/slash_command.dart';
 
 /// Contains data about a command's execution context.
 abstract class Context {
@@ -42,7 +42,7 @@ abstract class Context {
   final IUser user;
 
   /// The command triggered in this context.
-  final Command command;
+  final SlashCommand command;
 
   /// The [INyxx] client from which this command was dispatched
   final INyxx client;
@@ -76,7 +76,7 @@ class MessageContext extends Context {
   final IMessage message;
 
   /// The raw [String] that was used to parse this context's arguments, i.e the [message]s content
-  /// with prefix and command [Command.fullName] stripped.
+  /// with prefix and command [SlashCommand.fullName] stripped.
   final String rawArguments;
 
   /// Construct a new [MessageContext]
@@ -86,7 +86,7 @@ class MessageContext extends Context {
     required ITextChannel channel,
     required IMember? member,
     required IUser user,
-    required Command command,
+    required SlashCommand command,
     required INyxx client,
     required this.prefix,
     required this.message,
@@ -152,7 +152,7 @@ class InteractionContext extends Context {
     required ITextChannel channel,
     required IMember? member,
     required IUser user,
-    required Command command,
+    required SlashCommand command,
     required INyxx client,
     required this.interaction,
     required this.rawArguments,
