@@ -27,6 +27,103 @@ import '../util/util.dart';
 import '../util/view.dart';
 import 'group.dart';
 
+/// A [SlashCommand] is a function bound to a name and arguments.
+///
+/// [SlashCommand]s can be text-only (meaning they can only be executed through sending a message with
+/// the bot's prefix) or slash-only (meaning they can only be executed through the means of a slash
+/// command). They can also be both, meaning they can be used both as a text and as a slash command.
+///
+/// Note that text-only commands can be [Group]s containing slash commands and vice versa, but slash
+/// commands cannot be groups containing other slash commands due to
+/// [limitations on Discord](https://discord.com/developers/docs/interactions/application-commands#subcommands-and-subcommand-groups).
+// TODO: Find better name for SlashCommand (as it can also be a text command)
+abstract class SlashCommand with GroupMixin implements Command {
+  /// The type of the command.
+  ///
+  /// A command's type indicates how it can be invoked; text-only commands can only be executed by
+  /// sending a text message on Discord and slash commands can only be invoked by executing a slash
+  /// command on Discord.
+  ///
+  /// Note that a command's type does not influence what type of children a command can have.
+  CommandType get type;
+
+  /// Similar to [checks] but only applies to this command.
+  ///
+  /// Normally checks are inherited from parent to child, but [singleChecks] will only ever apply to
+  /// this command and not its children.
+  Iterable<AbstractCheck> get singleChecks;
+
+  /// Create a new [SlashCommand]. This must then be registered with [CommandsPlugin.addCommand] or
+  /// [GroupMixin.addCommand] before it can be used.
+  factory SlashCommand(
+    String name,
+    String description,
+    Function execute, {
+    List<String> aliases = const [],
+    CommandType type = CommandType.all,
+    Iterable<GroupMixin> children = const [],
+    Iterable<AbstractCheck> checks = const [],
+    Iterable<AbstractCheck> singleChecks = const [],
+  }) =>
+      SlashCommandImpl(
+        name,
+        description,
+        execute,
+        Context,
+        aliases: aliases,
+        type: type,
+        children: children,
+        checks: checks,
+        singleChecks: singleChecks,
+      );
+
+  /// Create a new text-only [SlashCommand]. This must then be registered with
+  /// [CommandsPlugin.addCommand] or [GroupMixin.addCommand] before it can be used.
+  factory SlashCommand.textOnly(
+    String name,
+    String description,
+    Function execute, {
+    List<String> aliases = const [],
+    Iterable<GroupMixin> children = const [],
+    Iterable<AbstractCheck> checks = const [],
+    Iterable<AbstractCheck> singleChecks = const [],
+  }) =>
+      SlashCommandImpl(
+        name,
+        description,
+        execute,
+        MessageContext,
+        aliases: aliases,
+        type: CommandType.textOnly,
+        children: children,
+        checks: checks,
+        singleChecks: singleChecks,
+      );
+
+  /// Create a new slash-only [SlashCommand]. This must then be registered with
+  /// [CommandsPlugin.addCommand] or [GroupMixin.addCommand] before it can be used.
+  factory SlashCommand.slashOnly(
+    String name,
+    String description,
+    Function execute, {
+    List<String> aliases = const [],
+    Iterable<GroupMixin> children = const [],
+    Iterable<AbstractCheck> checks = const [],
+    Iterable<AbstractCheck> singleChecks = const [],
+  }) =>
+      SlashCommandImpl(
+        name,
+        description,
+        execute,
+        InteractionContext,
+        aliases: aliases,
+        type: CommandType.slashOnly,
+        children: children,
+        checks: checks,
+        singleChecks: singleChecks,
+      );
+}
+
 /// An enum used to specify how a [SlashCommand] can be executed.
 enum CommandType {
   /// Only allow execution by message.
@@ -44,52 +141,23 @@ enum CommandType {
 /// A [RegExp] that all command names must match
 final RegExp commandNameRegexp = RegExp(r'^[\w-]{1,32}$', unicode: true);
 
-/// A [SlashCommand] is a function bound to a name and arguments.
-///
-/// [SlashCommand]s can be text-only (meaning they can only be executed through sending a message with
-/// the bot's prefix) or slash-only (meaning they can only be executed through the means of a slash
-/// command). They can also be both, meaning they can be used both as a text and as a slash command.
-///
-/// Note that text-only commands can be [Group]s containing slash commands and vice versa, but slash
-/// commands cannot be groups containing other slash commands due to
-/// [limitations on Discord](https://discord.com/developers/docs/interactions/application-commands#subcommands-and-subcommand-groups).
-class SlashCommand with GroupMixin implements Command {
-  /// The short name of this command, i.e without parent names.
+class SlashCommandImpl with GroupMixin implements SlashCommand {
   @override
   final String name;
 
-  /// A [Iterable] of short names this command is aliased to.
   @override
   final Iterable<String> aliases;
 
-  /// A description of this command.
   @override
   final String description;
 
-  /// The type of the command.
-  ///
-  /// A command's type indicates how it can be invoked; text-only commands can only be executed by
-  /// sending a text message on Discord and slash commands can only be invoked by executing a slash
-  /// command on Discord.
-  ///
-  /// Note that a command's type does not influence what type of children a command can have.
+  @override
   final CommandType type;
-
-  /// The [Function] that is called when this command is invoked.
-  ///
-  /// Any uncaught [Exception]s thrown from this function will be caught and sent to the relevant
-  /// bot's [CommandsPlugin.onCommandError].
+  @override
   final Function execute;
 
-  /// Similar to [checks] but only applies to this command.
+  @override
   final List<AbstractCheck> singleChecks = [];
-
-  /// Whether to set the EPHEMERAL flag in the original response to interaction events.
-  ///
-  /// Has no effect for [CommandType.textOnly] commands.
-  /// If [CommandsOptions.autoAcknowledgeInteractions] is `true`, this will override
-  /// [CommandsOptions.hideOriginalResponse].
-  final bool? hideOriginalResponse;
 
   late final MethodMirror _mirror;
   late final Iterable<ParameterMirror> _arguments;
@@ -101,86 +169,7 @@ class SlashCommand with GroupMixin implements Command {
   final Map<String, Choices> _mappedChoices = {};
   final Map<String, UseConverter> _mappedConverterOverrides = {};
 
-  /// Create a new [SlashCommand].
-  ///
-  /// [name] must match [commandNameRegexp] or an [CommandRegistrationError] will be thrown.
-  /// [execute] must be a function whose first parameter must be of type [Context].
-  SlashCommand(
-    String name,
-    String description,
-    Function execute, {
-    List<String> aliases = const [],
-    CommandType type = CommandType.all,
-    Iterable<GroupMixin> children = const [],
-    Iterable<AbstractCheck> checks = const [],
-    Iterable<AbstractCheck> singleChecks = const [],
-    bool? hideOriginalResponse,
-  }) : this._(
-          name,
-          description,
-          execute,
-          Context,
-          aliases: aliases,
-          type: type,
-          children: children,
-          checks: checks,
-          singleChecks: singleChecks,
-          hideOriginalResponse: hideOriginalResponse,
-        );
-
-  /// Create a new text-only [SlashCommand].
-  ///
-  /// [name] must match [commandNameRegexp] or an [CommandRegistrationError] will be thrown.
-  /// [execute] must be a function whose first parameter must be of type [MessageContext].
-  SlashCommand.textOnly(
-    String name,
-    String description,
-    Function execute, {
-    List<String> aliases = const [],
-    Iterable<GroupMixin> children = const [],
-    Iterable<AbstractCheck> checks = const [],
-    Iterable<AbstractCheck> singleChecks = const [],
-    bool? hideOriginalResponse,
-  }) : this._(
-          name,
-          description,
-          execute,
-          MessageContext,
-          aliases: aliases,
-          type: CommandType.textOnly,
-          children: children,
-          checks: checks,
-          singleChecks: singleChecks,
-          hideOriginalResponse: hideOriginalResponse,
-        );
-
-  /// Create a new slash-only [SlashCommand].
-  ///
-  /// [name] must match [commandNameRegexp] or an [CommandRegistrationError] will be thrown.
-  /// [execute] must be a function whose first parameter must be of type [InteractionContext].
-  SlashCommand.slashOnly(
-    String name,
-    String description,
-    Function execute, {
-    List<String> aliases = const [],
-    Iterable<GroupMixin> children = const [],
-    Iterable<AbstractCheck> checks = const [],
-    Iterable<AbstractCheck> singleChecks = const [],
-    bool? hideOriginalResponse,
-  }) : this._(
-          name,
-          description,
-          execute,
-          InteractionContext,
-          aliases: aliases,
-          type: CommandType.slashOnly,
-          children: children,
-          checks: checks,
-          singleChecks: singleChecks,
-          hideOriginalResponse: hideOriginalResponse,
-        );
-
-  SlashCommand._(
+  SlashCommandImpl(
     this.name,
     this.description,
     this.execute,
@@ -190,7 +179,6 @@ class SlashCommand with GroupMixin implements Command {
     Iterable<GroupMixin> children = const [],
     Iterable<AbstractCheck> checks = const [],
     Iterable<AbstractCheck> singleChecks = const [],
-    this.hideOriginalResponse,
   }) {
     if (!commandNameRegexp.hasMatch(name) || name != name.toLowerCase()) {
       throw CommandRegistrationError('Invalid command name "$name"');
@@ -347,7 +335,8 @@ class SlashCommand with GroupMixin implements Command {
   /// If the context is an [InteractionContext], the arguments will either be parsed from their raw
   /// string representations or will not be parsed at all if the type received from the API is
   /// correct.
-  Future<void> invoke(CommandsPlugin commands, Context context) async {
+  @override
+  Future<void> invoke(Context context) async {
     List<Future<dynamic>> arguments = [];
 
     if (context is MessageContext) {
@@ -361,7 +350,7 @@ class SlashCommand with GroupMixin implements Command {
         Type expectedType = _mappedArgumentTypes[argumentName]!;
 
         arguments.add(parse(
-          commands,
+          context.commands,
           context,
           argumentsView,
           expectedType,
@@ -389,7 +378,7 @@ class SlashCommand with GroupMixin implements Command {
         }
 
         arguments.add(parse(
-          commands,
+          context.commands,
           context,
           StringView(rawArgument.toString()),
           expectedType,

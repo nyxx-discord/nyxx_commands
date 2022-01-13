@@ -90,13 +90,12 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
   @override
   final String Function(IMessage) prefix;
 
-  final StreamController<CommandsException> _onCommandErrorController =
-      StreamController.broadcast();
+  final StreamController<CommandsException> onCommandErrorController = StreamController.broadcast();
 
   @override
-  late final Stream<CommandsException> onCommandError = _onCommandErrorController.stream;
+  late final Stream<CommandsException> onCommandError = onCommandErrorController.stream;
 
-  final Map<Type, Converter<dynamic>> _converters = {};
+  final Map<Type, Converter<dynamic>> converters = {};
 
   @override
   late final IInteractions interactions;
@@ -138,7 +137,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     client = nyxx;
 
     if (nyxx is INyxxWebsocket) {
-      nyxx.eventsWs.onMessageReceived.listen((event) => _processMessage(event.message));
+      nyxx.eventsWs.onMessageReceived.listen((event) => processMessage(event.message));
 
       interactions = IInteractions.create(options.backend ?? WebsocketInteractionBackend(nyxx));
     } else {
@@ -149,14 +148,14 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     }
 
     if (nyxx.ready) {
-      for (final builder in await _getSlashBuilders()) {
+      for (final builder in await getSlashBuilders()) {
         interactions.registerSlashCommand(builder);
       }
 
       interactions.sync();
     } else {
       nyxx.onReady.listen((event) async {
-        for (final builder in await _getSlashBuilders()) {
+        for (final builder in await getSlashBuilders()) {
           interactions.registerSlashCommand(builder);
         }
 
@@ -165,7 +164,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     }
   }
 
-  Future<void> _processMessage(IMessage message) async {
+  Future<void> processMessage(IMessage message) async {
     if (message.author.bot && !options.acceptBotCommands) {
       return;
     }
@@ -179,29 +178,29 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
       StringView view = StringView(message.content);
 
       if (view.skipString(prefix)) {
-        Context context = await _messageContext(message, view, prefix);
+        Context context = await messageContext(message, view, prefix);
 
         logger.fine('Invoking command ${context.command.name} from message $message');
 
-        await context.command.invoke(this, context);
+        await context.command.invoke(context);
       }
     } on CommandsException catch (e) {
-      _onCommandErrorController.add(e);
+      onCommandErrorController.add(e);
     }
   }
 
-  Future<void> _processInteraction(
+  Future<void> processInteraction(
     ISlashCommandInteractionEvent interactionEvent,
     SlashCommand command,
   ) async {
     try {
-      Context context = await _interactionContext(interactionEvent, command);
+      Context context = await interactionContext(interactionEvent, command);
 
       if (options.autoAcknowledgeInteractions) {
         Timer(Duration(seconds: 2), () async {
           try {
             await interactionEvent.acknowledge(
-              hidden: context.command.hideOriginalResponse ?? options.hideOriginalResponse,
+              hidden: options.hideOriginalResponse,
             );
           } on AlreadyRespondedError {
             // ignore: command has responded itself
@@ -212,13 +211,13 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
       logger.fine('Invoking command ${context.command.name} '
           'from interaction ${interactionEvent.interaction.token}');
 
-      await context.command.invoke(this, context);
+      await context.command.invoke(context);
     } on CommandsException catch (e) {
-      _onCommandErrorController.add(e);
+      onCommandErrorController.add(e);
     }
   }
 
-  Future<Context> _messageContext(IMessage message, StringView contentView, String prefix) async {
+  Future<Context> messageContext(IMessage message, StringView contentView, String prefix) async {
     SlashCommand command = getCommand(contentView) ?? (throw CommandNotFoundException(contentView));
 
     ITextChannel channel = await message.channel.getOrDownload();
@@ -249,7 +248,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     );
   }
 
-  Future<Context> _interactionContext(
+  Future<Context> interactionContext(
       ISlashCommandInteractionEvent interactionEvent, SlashCommand command) async {
     ISlashCommandInteraction interaction = interactionEvent.interaction;
 
@@ -281,7 +280,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     );
   }
 
-  Future<Iterable<SlashCommandBuilder>> _getSlashBuilders() async {
+  Future<Iterable<SlashCommandBuilder>> getSlashBuilders() async {
     List<SlashCommandBuilder> builders = [];
 
     for (final child in children) {
@@ -335,7 +334,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
             child.name,
             child.description,
             List.of(
-              _processHandlerRegistration(child.getOptions(this), child),
+              processHandlerRegistration(child.getOptions(this), child),
             ),
             defaultPermissions: uniquePermissions[Snowflake.zero()]?.hasPermission ?? true,
             permissions: List.of(
@@ -345,7 +344,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
           );
 
           if (child is SlashCommand) {
-            builder.registerHandler((interaction) => _processInteraction(interaction, child));
+            builder.registerHandler((interaction) => processInteraction(interaction, child));
           }
 
           builders.add(builder);
@@ -356,16 +355,16 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     return builders;
   }
 
-  Iterable<CommandOptionBuilder> _processHandlerRegistration(
+  Iterable<CommandOptionBuilder> processHandlerRegistration(
     Iterable<CommandOptionBuilder> options,
     GroupMixin current,
   ) {
     for (final builder in options) {
       if (builder.type == CommandOptionType.subCommand) {
         builder.registerHandler((interaction) =>
-            _processInteraction(interaction, current.childrenMap[builder.name] as SlashCommand));
+            processInteraction(interaction, current.childrenMap[builder.name] as SlashCommand));
       } else if (builder.type == CommandOptionType.subCommandGroup) {
-        _processHandlerRegistration(builder.options!, current.childrenMap[builder.name]!);
+        processHandlerRegistration(builder.options!, current.childrenMap[builder.name]!);
       }
     }
     return options;
@@ -373,13 +372,13 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
 
   @override
   void addConverter<T>(Converter<T> converter) {
-    _converters[T] = converter;
+    converters[T] = converter;
   }
 
   @override
   Converter<dynamic>? getConverter(Type type, {bool logWarn = true}) {
-    if (_converters.containsKey(type)) {
-      return _converters[type]!;
+    if (converters.containsKey(type)) {
+      return converters[type]!;
     }
 
     TypeMirror targetMirror = reflectType(type);
@@ -387,13 +386,13 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     List<Converter<dynamic>> assignable = [];
     List<Converter<dynamic>> superClasses = [];
 
-    for (final key in _converters.keys) {
+    for (final key in converters.keys) {
       TypeMirror keyMirror = reflectType(key);
 
       if (keyMirror.isAssignableTo(targetMirror)) {
-        assignable.add(_converters[key]!);
+        assignable.add(converters[key]!);
       } else if (targetMirror.isAssignableTo(keyMirror)) {
-        superClasses.add(_converters[key]!);
+        superClasses.add(converters[key]!);
       }
     }
 
@@ -436,5 +435,5 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
 
   @override
   String toString() =>
-      'CommandsPlugin[commands=${List.of(walkCommands())}, converters=${List.of(_converters.values)}]';
+      'CommandsPlugin[commands=${List.of(walkCommands())}, converters=${List.of(converters.values)}]';
 }

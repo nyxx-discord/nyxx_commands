@@ -1,4 +1,5 @@
 import 'package:nyxx_commands/src/checks/checks.dart';
+import 'package:nyxx_commands/src/context/context.dart';
 
 /// The base command class. All commands created by `nyxx_commands`, whether they be slash, user,
 /// message or text commands inherit from this class.
@@ -22,4 +23,7 @@ abstract class Command {
   /// additional parameter and optional parameter, but user and message commands may not have
   /// additional parameter.
   Function get execute;
+
+  /// The function called to invoke the command.
+  Future<void> invoke(Context context);
 }
