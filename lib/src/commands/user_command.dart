@@ -9,6 +9,13 @@ import 'package:nyxx_commands/src/errors.dart';
 abstract class UserCommand implements Command {
   @override
   Function(UserContext) get execute;
+
+  factory UserCommand(
+    String name,
+    Function(UserContext) execute, {
+    Iterable<AbstractCheck> checks = const [],
+  }) =>
+      UserCommandImpl(name, execute, checks: checks);
 }
 
 class UserCommandImpl implements UserCommand {
