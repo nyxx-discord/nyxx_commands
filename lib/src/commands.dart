@@ -23,7 +23,7 @@ import 'package:nyxx_interactions/nyxx_interactions.dart';
 import 'checks/checks.dart';
 import 'commands/group.dart';
 import 'commands/slash_command.dart';
-import 'context/context.dart';
+import 'context/slash_context.dart';
 import 'converters/converter.dart';
 import 'errors.dart';
 import 'util/view.dart';
@@ -178,7 +178,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
       StringView view = StringView(message.content);
 
       if (view.skipString(prefix)) {
-        Context context = await messageContext(message, view, prefix);
+        SlashContext context = await messageContext(message, view, prefix);
 
         logger.fine('Invoking command ${context.command.name} from message $message');
 
@@ -194,7 +194,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     SlashCommand command,
   ) async {
     try {
-      Context context = await interactionContext(interactionEvent, command);
+      SlashContext context = await interactionContext(interactionEvent, command);
 
       if (options.autoAcknowledgeInteractions) {
         Timer(Duration(seconds: 2), () async {
@@ -217,7 +217,8 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     }
   }
 
-  Future<Context> messageContext(IMessage message, StringView contentView, String prefix) async {
+  Future<SlashContext> messageContext(
+      IMessage message, StringView contentView, String prefix) async {
     SlashCommand command = getCommand(contentView) ?? (throw CommandNotFoundException(contentView));
 
     ITextChannel channel = await message.channel.getOrDownload();
@@ -248,7 +249,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     );
   }
 
-  Future<Context> interactionContext(
+  Future<SlashContext> interactionContext(
       ISlashCommandInteractionEvent interactionEvent, SlashCommand command) async {
     ISlashCommandInteraction interaction = interactionEvent.interaction;
 

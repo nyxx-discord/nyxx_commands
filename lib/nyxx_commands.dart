@@ -7,7 +7,7 @@ export 'src/checks/checks.dart'
 export 'src/commands.dart' show CommandsPlugin;
 export 'src/commands/slash_command.dart' show SlashCommand, CommandType, commandNameRegexp;
 export 'src/commands/group.dart' show Group, GroupMixin;
-export 'src/context/context.dart' show Context, InteractionContext, MessageContext;
+export 'src/context/slash_context.dart' show SlashContext, InteractionContext, MessageContext;
 export 'src/converters/converter.dart'
     show
         Converter,

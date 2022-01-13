@@ -19,7 +19,7 @@ import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../checks/checks.dart';
 import '../commands.dart';
-import '../context/context.dart';
+import '../context/slash_context.dart';
 import '../errors.dart';
 import '../util/view.dart';
 import 'slash_command.dart';
@@ -55,19 +55,19 @@ mixin GroupMixin {
 
   @protected
   // ignore: public_member_api_docs
-  final StreamController<Context> preCallController = StreamController.broadcast();
+  final StreamController<SlashContext> preCallController = StreamController.broadcast();
 
   @protected
   // ignore: public_member_api_docs
-  final StreamController<Context> postCallController = StreamController.broadcast();
+  final StreamController<SlashContext> postCallController = StreamController.broadcast();
 
-  /// A [Stream] of [Context]s that emits after the checks have succeeded, but before
+  /// A [Stream] of [SlashContext]s that emits after the checks have succeeded, but before
   /// [SlashCommand.execute] is called.
-  late final Stream<Context> onPreCall = preCallController.stream;
+  late final Stream<SlashContext> onPreCall = preCallController.stream;
 
-  /// A [Stream] of [Context]s that emits after [SlashCommand.execute] has successfully been called (no
+  /// A [Stream] of [SlashContext]s that emits after [SlashCommand.execute] has successfully been called (no
   /// exceptions were thrown).
-  late final Stream<Context> onPostCall = postCallController.stream;
+  late final Stream<SlashContext> onPostCall = postCallController.stream;
 
   final List<AbstractCheck> _checks = [];
 

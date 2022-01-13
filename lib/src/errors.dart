@@ -13,7 +13,7 @@
 //  limitations under the License.
 
 import 'checks/checks.dart';
-import 'context/context.dart';
+import 'context/slash_context.dart';
 import 'util/view.dart';
 
 /// Base class for exceptions thrown by this library.
@@ -33,7 +33,7 @@ class CommandsException implements Exception {
 /// Base class for exceptions thrown during command invocation.
 class CommandInvocationException extends CommandsException {
   /// The context in which the exception occurred.
-  final Context context;
+  final SlashContext context;
 
   /// Create a new [CommandInvocationException] with a specific message and context.
   CommandInvocationException(String message, this.context) : super(message);
@@ -47,7 +47,7 @@ class UncaughtException extends CommandInvocationException {
   final Exception exception;
 
   /// Create a new [UncaughtException] with a specific exception and context.
-  UncaughtException(this.exception, Context context) : super(exception.toString(), context);
+  UncaughtException(this.exception, SlashContext context) : super(exception.toString(), context);
 }
 
 /// Base class for exceptions thrown during argument parsing.
@@ -55,7 +55,7 @@ class UncaughtException extends CommandInvocationException {
 /// A raw [BadInputException] is thrown when a [Converter] fails to parse an argument.
 class BadInputException extends CommandInvocationException {
   /// Create a new [BadInputException] with a specific message and context.
-  BadInputException(String message, Context context) : super(message, context);
+  BadInputException(String message, SlashContext context) : super(message, context);
 }
 
 /// Exception thrown when a command is invoked without the minimum amount of arguments required.
@@ -75,7 +75,7 @@ class CheckFailedException extends CommandInvocationException {
   final AbstractCheck failed;
 
   /// Create a new [CheckFailedException] with a specific check and context.
-  CheckFailedException(this.failed, Context context)
+  CheckFailedException(this.failed, SlashContext context)
       : super('Check "${failed.name}" failed', context);
 }
 
@@ -85,7 +85,7 @@ class NoConverterException extends CommandInvocationException {
   final Type expectedType;
 
   /// Create a new [NoConverterException] with a specific expected type and context.
-  NoConverterException(this.expectedType, Context context)
+  NoConverterException(this.expectedType, SlashContext context)
       : super('No converter found for type "$expectedType"', context);
 }
 

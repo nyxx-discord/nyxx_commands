@@ -20,7 +20,7 @@ import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../checks/checks.dart';
 import '../commands.dart';
-import '../context/context.dart';
+import '../context/slash_context.dart';
 import '../converters/converter.dart';
 import '../errors.dart';
 import '../util/util.dart';
@@ -69,7 +69,7 @@ abstract class SlashCommand with GroupMixin implements Command {
         name,
         description,
         execute,
-        Context,
+        SlashContext,
         aliases: aliases,
         type: type,
         children: children,
@@ -336,7 +336,7 @@ class SlashCommandImpl with GroupMixin implements SlashCommand {
   /// string representations or will not be parsed at all if the type received from the API is
   /// correct.
   @override
-  Future<void> invoke(Context context) async {
+  Future<void> invoke(SlashContext context) async {
     List<Future<dynamic>> arguments = [];
 
     if (context is MessageContext) {
