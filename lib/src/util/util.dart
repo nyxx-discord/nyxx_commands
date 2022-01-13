@@ -186,3 +186,6 @@ String Function(IMessage) dmOr(String Function(IMessage) defaultPrefix) {
     return '';
   };
 }
+
+/// A [RegExp] that all command names must match
+final RegExp commandNameRegexp = RegExp(r'^[\w-]{1,32}$', unicode: true);

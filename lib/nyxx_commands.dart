@@ -5,9 +5,9 @@ library nyxx_commands;
 export 'src/checks/checks.dart'
     show AbstractCheck, Check, GuildCheck, RoleCheck, UserCheck, CooldownCheck, CooldownType;
 export 'src/commands.dart' show CommandsPlugin;
-export 'src/commands/chat_command.dart' show ChatCommand, CommandType, commandNameRegexp;
+export 'src/commands/chat_command.dart' show ChatCommand, CommandType;
 export 'src/commands/group.dart' show Group, GroupMixin;
-export 'src/context/chat_context.dart' show ChatContext, InteractionContext, MessageChatContext;
+export 'src/context/chat_context.dart' show ChatContext, InteractionChatContext, MessageChatContext;
 export 'src/converters/converter.dart'
     show
         Converter,
@@ -44,5 +44,13 @@ export 'src/errors.dart'
         UncaughtException;
 export 'src/options.dart' show CommandsOptions;
 export 'src/util/util.dart'
-    show Choices, Description, Name, UseConverter, convertToKebabCase, mentionOr, dmOr;
+    show
+        Choices,
+        Description,
+        Name,
+        UseConverter,
+        convertToKebabCase,
+        mentionOr,
+        dmOr,
+        commandNameRegexp;
 export 'src/util/view.dart' show StringView;

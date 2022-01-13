@@ -15,6 +15,7 @@
 import 'dart:async';
 
 import 'package:meta/meta.dart';
+import 'package:nyxx_commands/src/util/util.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../checks/checks.dart';
