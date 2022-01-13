@@ -16,7 +16,7 @@ class UserCommandImpl implements UserCommand {
   final String name;
 
   @override
-  final String description;
+  String get description => '';
 
   @override
   final Function(UserContext) execute;
@@ -35,7 +35,6 @@ class UserCommandImpl implements UserCommand {
 
   UserCommandImpl(
     this.name,
-    this.description,
     this.execute, {
     Iterable<AbstractCheck> checks = const [],
   }) {
