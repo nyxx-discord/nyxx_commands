@@ -16,6 +16,7 @@ import 'dart:async';
 import 'dart:mirrors';
 
 import 'package:nyxx_commands/src/commands/command.dart';
+import 'package:nyxx_commands/src/context/context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../checks/checks.dart';
@@ -336,7 +337,11 @@ class SlashCommandImpl with GroupMixin implements SlashCommand {
   /// string representations or will not be parsed at all if the type received from the API is
   /// correct.
   @override
-  Future<void> invoke(SlashContext context) async {
+  Future<void> invoke(Context context) async {
+    if (context is! SlashContext) {
+      return;
+    }
+
     List<Future<dynamic>> arguments = [];
 
     if (context is MessageContext) {
