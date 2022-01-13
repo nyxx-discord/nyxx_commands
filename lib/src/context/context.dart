@@ -112,7 +112,7 @@ class MessageContext extends Context {
   Future<IMessage> respond(MessageBuilder builder,
       {bool mention = true, bool private = false}) async {
     if (private) {
-      return await user.sendMessage(builder);
+      return user.sendMessage(builder);
     } else {
       try {
         return await channel.sendMessage(builder
