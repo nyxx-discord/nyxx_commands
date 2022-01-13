@@ -17,6 +17,9 @@ import 'dart:mirrors';
 
 import 'package:logging/logging.dart';
 import 'package:nyxx/nyxx.dart';
+import 'package:nyxx_commands/src/commands/command.dart';
+import 'package:nyxx_commands/src/commands/user_command.dart';
+import 'package:nyxx_commands/src/context/user_context.dart';
 import 'package:nyxx_commands/src/options.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
@@ -75,6 +78,9 @@ abstract class CommandsPlugin extends BasePlugin with GroupMixin {
   /// If this occurs and [logWarn] is set to false, a warning will be issued.
   Converter<dynamic>? getConverter(Type target, {bool logWarn = false});
 
+  @override
+  void addCommand(CommandComponent command);
+
   /// Create a new instance of [CommandsPlugin] to be used as a plugin on [INyxx] instances.
   factory CommandsPlugin({
     required String Function(IMessage) prefix,
@@ -115,6 +121,8 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
   String get description => throw UnsupportedError('get description');
   @override
   Iterable<String> get aliases => throw UnsupportedError('get aliases');
+
+  final Map<String, Command> userCommands = {};
 
   CommandsPluginImpl({
     required this.prefix,
@@ -178,7 +186,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
       StringView view = StringView(message.content);
 
       if (view.skipString(prefix)) {
-        ChatContext context = await messageContext(message, view, prefix);
+        ChatContext context = await messageChatContext(message, view, prefix);
 
         logger.fine('Invoking command ${context.command.name} from message $message');
 
@@ -189,12 +197,12 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     }
   }
 
-  Future<void> processInteraction(
+  Future<void> processChatInteraction(
     ISlashCommandInteractionEvent interactionEvent,
     ChatCommand command,
   ) async {
     try {
-      ChatContext context = await interactionContext(interactionEvent, command);
+      ChatContext context = await interactionChatContext(interactionEvent, command);
 
       if (options.autoAcknowledgeInteractions) {
         Timer(Duration(seconds: 2), () async {
@@ -217,7 +225,33 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     }
   }
 
-  Future<ChatContext> messageContext(
+  Future<void> processUserInteraction(
+      ISlashCommandInteractionEvent interactionEvent, UserCommand command) async {
+    try {
+      UserContext context = await interactionUserContext(interactionEvent, command);
+
+      if (options.autoAcknowledgeInteractions) {
+        Timer(Duration(seconds: 2), () async {
+          try {
+            await interactionEvent.acknowledge(
+              hidden: options.hideOriginalResponse,
+            );
+          } on AlreadyRespondedError {
+            // ignore: command has responded itself
+          }
+        });
+      }
+
+      logger.fine('Invoking command ${context.command.name} '
+          'from interaction ${interactionEvent.interaction.token}');
+
+      await context.command.invoke(context);
+    } on CommandsException catch (e) {
+      onCommandErrorController.add(e);
+    }
+  }
+
+  Future<ChatContext> messageChatContext(
       IMessage message, StringView contentView, String prefix) async {
     ChatCommand command = getCommand(contentView) ?? (throw CommandNotFoundException(contentView));
 
@@ -249,7 +283,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     );
   }
 
-  Future<ChatContext> interactionContext(
+  Future<ChatContext> interactionChatContext(
       ISlashCommandInteractionEvent interactionEvent, ChatCommand command) async {
     ISlashCommandInteraction interaction = interactionEvent.interaction;
 
@@ -281,72 +315,111 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     );
   }
 
+  Future<UserContext> interactionUserContext(
+      ISlashCommandInteractionEvent interactionEvent, UserCommand command) async {
+    ISlashCommandInteraction interaction = interactionEvent.interaction;
+
+    IMember? member = interaction.memberAuthor;
+    IUser user;
+    if (member != null) {
+      user = await member.user.getOrDownload();
+    } else {
+      user = interaction.userAuthor!;
+    }
+
+    IUser targetUser = client!.users[interaction.targetId] ??
+        await client!.httpEndpoints.fetchUser(interaction.targetId!);
+
+    IGuild? guild = await interaction.guild?.getOrDownload();
+
+    return UserContext(
+      commands: this,
+      client: client!,
+      interactionEvent: interactionEvent,
+      interaction: interaction,
+      command: command,
+      channel: await interaction.channel.getOrDownload(),
+      member: member,
+      user: user,
+      guild: guild,
+      targetUser: targetUser,
+      targetMember: guild?.members[targetUser.id] ?? await guild?.fetchMember(targetUser.id),
+    );
+  }
+
   Future<Iterable<SlashCommandBuilder>> getSlashBuilders() async {
     List<SlashCommandBuilder> builders = [];
 
-    for (final child in children) {
-      if (child.hasSlashCommand || (child is ChatCommand && child.type != CommandType.textOnly)) {
-        Map<Snowflake, CommandPermissionBuilderAbstract> uniquePermissions = {};
-
-        for (final check in child.checks) {
-          Iterable<CommandPermissionBuilderAbstract> checkPermissions = await check.permissions;
-
-          for (final permission in checkPermissions) {
-            if (uniquePermissions.containsKey(permission.id) &&
-                uniquePermissions[permission.id]!.hasPermission != permission.hasPermission) {
-              logger.warning(
-                'Check "${check.name}" is in conflict with a previous check on '
-                'permissions for '
-                '${permission.id.id == 0 ? 'the default permission' : 'id ${permission.id}'}. '
-                'Permission has been set to false to prevent unintended usage.',
-              );
-
-              if (permission is RoleCommandPermissionBuilder) {
-                uniquePermissions[permission.id] =
-                    CommandPermissionBuilderAbstract.role(permission.id, hasPermission: false);
-              } else {
-                uniquePermissions[permission.id] =
-                    CommandPermissionBuilderAbstract.user(permission.id, hasPermission: false);
-              }
-
-              continue;
-            }
-
-            uniquePermissions[permission.id] = permission;
-          }
+    for (final command in [...super.children, ...userCommands.values]) {
+      if (command is GroupMixin) {
+        if (command is ChatCommand && command.type == CommandType.textOnly) {
+          continue;
         }
 
-        if (uniquePermissions.length == 1 && uniquePermissions.containsKey(Snowflake.zero())) {
-          if (uniquePermissions[Snowflake.zero()]!.hasPermission == false) {
-            continue;
-          }
+        if (!command.hasSlashCommand && command is! ChatCommand) {
+          continue;
         }
+      }
 
-        Iterable<GuildCheck> guilds = child.checks.whereType<GuildCheck>();
+      Iterable<CommandPermissionBuilderAbstract> permissions = await getPermissions(command);
 
-        if (guilds.length > 1) {
-          throw Exception('Cannot have more than one Guild Check per Command');
+      if (permissions.length == 1 &&
+          permissions.first.id == Snowflake.zero() &&
+          !permissions.first.hasPermission) {
+        continue;
+      }
+
+      bool defaultPermission = true;
+      for (final permission in permissions) {
+        if (permission.id == Snowflake.zero()) {
+          defaultPermission = permission.hasPermission;
+          break;
         }
+      }
 
-        Iterable<Snowflake?> guildIds = guilds.isNotEmpty ? guilds.first.guildIds : [null];
+      Iterable<GuildCheck> guildChecks = command.checks.whereType<GuildCheck>();
 
-        for (final guildId in guildIds) {
+      if (guildChecks.length > 1) {
+        throw Exception('Cannot have more than one Guild Check per Command');
+      }
+
+      Iterable<Snowflake?> guildIds = guildChecks.isNotEmpty ? guildChecks.first.guildIds : [null];
+
+      for (final guildId in guildIds) {
+        if (command is GroupMixin) {
           SlashCommandBuilder builder = SlashCommandBuilder(
-            child.name,
-            child.description,
+            command.name,
+            command.description,
             List.of(
-              processHandlerRegistration(child.getOptions(this), child),
+              processHandlerRegistration(command.getOptions(this), command),
             ),
-            defaultPermissions: uniquePermissions[Snowflake.zero()]?.hasPermission ?? true,
+            defaultPermissions: defaultPermission,
             permissions: List.of(
-              uniquePermissions.values.where((permission) => permission.id != Snowflake.zero()),
+              permissions.where((permission) => permission.id != Snowflake.zero()),
             ),
             guild: guildId ?? guild,
+            type: SlashCommandType.chat,
           );
 
-          if (child is ChatCommand) {
-            builder.registerHandler((interaction) => processInteraction(interaction, child));
+          if (command is ChatCommand) {
+            builder.registerHandler((interaction) => processChatInteraction(interaction, command));
           }
+
+          builders.add(builder);
+        } else if (command is UserCommand) {
+          SlashCommandBuilder builder = SlashCommandBuilder(
+            command.name,
+            null,
+            [],
+            defaultPermissions: defaultPermission,
+            permissions: List.of(
+              permissions.where((permission) => permission.id != Snowflake.zero()),
+            ),
+            guild: guildId ?? guild,
+            type: SlashCommandType.user,
+          );
+
+          builder.registerHandler((interaction) => processUserInteraction(interaction, command));
 
           builders.add(builder);
         }
@@ -356,6 +429,41 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     return builders;
   }
 
+  Future<Iterable<CommandPermissionBuilderAbstract>> getPermissions(
+      CommandComponent command) async {
+    Map<Snowflake, CommandPermissionBuilderAbstract> uniquePermissions = {};
+
+    for (final check in command.checks) {
+      Iterable<CommandPermissionBuilderAbstract> checkPermissions = await check.permissions;
+
+      for (final permission in checkPermissions) {
+        if (uniquePermissions.containsKey(permission.id) &&
+            uniquePermissions[permission.id]!.hasPermission != permission.hasPermission) {
+          logger.warning(
+            'Check "${check.name}" is in conflict with a previous check on '
+            'permissions for '
+            '${permission.id.id == 0 ? 'the default permission' : 'id ${permission.id}'}. '
+            'Permission has been set to false to prevent unintended usage.',
+          );
+
+          if (permission is RoleCommandPermissionBuilder) {
+            uniquePermissions[permission.id] =
+                CommandPermissionBuilderAbstract.role(permission.id, hasPermission: false);
+          } else {
+            uniquePermissions[permission.id] =
+                CommandPermissionBuilderAbstract.user(permission.id, hasPermission: false);
+          }
+
+          continue;
+        }
+
+        uniquePermissions[permission.id] = permission;
+      }
+    }
+
+    return uniquePermissions.values;
+  }
+
   Iterable<CommandOptionBuilder> processHandlerRegistration(
     Iterable<CommandOptionBuilder> options,
     GroupMixin current,
@@ -363,7 +471,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     for (final builder in options) {
       if (builder.type == CommandOptionType.subCommand) {
         builder.registerHandler((interaction) =>
-            processInteraction(interaction, current.childrenMap[builder.name] as ChatCommand));
+            processChatInteraction(interaction, current.childrenMap[builder.name] as ChatCommand));
       } else if (builder.type == CommandOptionType.subCommandGroup) {
         processHandlerRegistration(builder.options!, current.childrenMap[builder.name]!);
       }
@@ -420,17 +528,32 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
   }
 
   @override
-  void addCommand(GroupMixin command) {
-    super.addCommand(command);
+  void addCommand(CommandComponent command) {
+    if (command is GroupMixin) {
+      super.addCommand(command);
+
+      for (final child in command.walkCommands()) {
+        logger.info('Registered command "${child.fullName}"');
+      }
+    } else if (command is UserCommand) {
+      if (userCommands.containsKey(command.name)) {
+        throw CommandRegistrationError(
+            'User Command with name "$fullName ${command.name}" already exists');
+      }
+
+      userCommands[command.name] = command;
+
+      logger.info('Registered User Command "${command.name}"');
+
+      // TODO: hook commands' pre- and post- call streams to this plugin's
+    } else {
+      logger.warning('Unknown command type "${command.runtimeType}"');
+    }
 
     if (client?.ready ?? false) {
       logger.warning('Registering commands after bot is ready might cause global commands to be '
           'deleted');
       interactions.sync();
-    }
-
-    for (final child in command.walkCommands()) {
-      logger.info('Registered command "${child.fullName}"');
     }
   }
 

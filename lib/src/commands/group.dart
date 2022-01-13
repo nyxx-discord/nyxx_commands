@@ -15,6 +15,8 @@
 import 'dart:async';
 
 import 'package:meta/meta.dart';
+import 'package:nyxx_commands/src/commands/command.dart';
+import 'package:nyxx_commands/src/util/util.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../checks/checks.dart';
@@ -28,7 +30,7 @@ import 'chat_command.dart';
 ///
 /// All [Group]s, [ChatCommand]s and [CommandsPlugin]s use this mixin to enable nesting and registration
 /// of commands.
-mixin GroupMixin {
+mixin GroupMixin implements CommandComponent {
   /// A mapping of child names to children.
   ///
   /// Used for easier lookup of children based on both [name] and [aliases].
@@ -61,12 +63,10 @@ mixin GroupMixin {
   // ignore: public_member_api_docs
   final StreamController<ChatContext> postCallController = StreamController.broadcast();
 
-  /// A [Stream] of [ChatContext]s that emits after the checks have succeeded, but before
-  /// [ChatCommand.execute] is called.
+  @override
   late final Stream<ChatContext> onPreCall = preCallController.stream;
 
-  /// A [Stream] of [ChatContext]s that emits after [ChatCommand.execute] has successfully been called (no
-  /// exceptions were thrown).
+  @override
   late final Stream<ChatContext> onPostCall = postCallController.stream;
 
   final List<AbstractCheck> _checks = [];
@@ -213,7 +213,6 @@ mixin GroupMixin {
     return options;
   }
 
-  /// Add a check to this groups [checks].
   void check(AbstractCheck check) {
     _checks.add(check);
 

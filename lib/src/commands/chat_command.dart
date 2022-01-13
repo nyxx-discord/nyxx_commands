@@ -138,9 +138,6 @@ enum CommandType {
   all,
 }
 
-/// A [RegExp] that all command names must match
-final RegExp commandNameRegexp = RegExp(r'^[\w-]{1,32}$', unicode: true);
-
 class SlashCommandImpl with GroupMixin implements ChatCommand {
   @override
   final String name;
@@ -153,6 +150,7 @@ class SlashCommandImpl with GroupMixin implements ChatCommand {
 
   @override
   final CommandType type;
+
   @override
   final Function execute;
 
