@@ -17,7 +17,9 @@ import 'dart:async';
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/nyxx_commands.dart';
 import 'package:nyxx_commands/src/commands.dart';
+import 'package:nyxx_commands/src/context/chat_context.dart';
 import 'package:nyxx_commands/src/context/context.dart';
+import 'package:nyxx_commands/src/context/interaction_context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 /// Represents a check executed on a [ChatCommand].
@@ -631,7 +633,7 @@ class CooldownCheck extends AbstractCheck {
 class InteractionCheck extends Check {
   /// Create a new [InteractionCheck]
   InteractionCheck([String? name])
-      : super((context) => context is InteractionContext, name ?? 'Interaction Check');
+      : super((context) => context is InteractionChatContext, name ?? 'Interaction Check');
 }
 
 /// A [Check] that checks that a [ChatCommand] is invoked from a text message.
@@ -643,7 +645,7 @@ class InteractionCheck extends Check {
 class MessageCheck extends Check {
   /// Create a new [MessageCheck]
   MessageCheck([String? name])
-      : super((context) => context is MessageContext, name ?? 'Message Check');
+      : super((context) => context is MessageChatContext, name ?? 'Message Check');
 
   @override
   Future<Iterable<CommandPermissionBuilderAbstract>> get permissions => Future.value(

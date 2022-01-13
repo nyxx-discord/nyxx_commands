@@ -4,38 +4,28 @@ import 'package:nyxx_commands/src/commands/command.dart';
 
 abstract class Context {
   /// The [CommandsPlugin] that triggered this context's execution.
-  final CommandsPlugin commands;
+  CommandsPlugin get commands;
 
   /// The [IGuild] in which this context was executed, if any.
-  final IGuild? guild;
+  IGuild? get guild;
 
   /// The channel in which this context was executed.
-  final ITextChannel channel;
+  ITextChannel get channel;
 
   /// The member that triggered this context's execution, if any.
   ///
   /// This will notably be null when a command is run in a DM channel.
   /// If [guild] is not null, this is guaranteed to also be not null.
-  final IMember? member;
+  IMember? get member;
 
   /// The user that triggered this context's execution.
-  final IUser user;
+  IUser get user;
 
   /// The command triggered in this context.
-  final Command command;
+  Command get command;
 
   /// The [INyxx] client from which this command was dispatched
-  final INyxx client;
-
-  Context({
-    required this.commands,
-    required this.guild,
-    required this.channel,
-    required this.member,
-    required this.user,
-    required this.command,
-    required this.client,
-  });
+  INyxx get client;
 
   /// Send a response to the command.
   ///

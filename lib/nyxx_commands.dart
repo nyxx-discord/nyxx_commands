@@ -7,7 +7,7 @@ export 'src/checks/checks.dart'
 export 'src/commands.dart' show CommandsPlugin;
 export 'src/commands/chat_command.dart' show ChatCommand, CommandType, commandNameRegexp;
 export 'src/commands/group.dart' show Group, GroupMixin;
-export 'src/context/chat_context.dart' show ChatContext, InteractionContext, MessageContext;
+export 'src/context/chat_context.dart' show ChatContext, InteractionContext, MessageChatContext;
 export 'src/converters/converter.dart'
     show
         Converter,

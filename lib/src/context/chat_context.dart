@@ -14,42 +14,24 @@
 
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/src/context/context.dart';
+import 'package:nyxx_commands/src/context/interaction_context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands.dart';
 import '../commands/chat_command.dart';
 
-/// Contains data about a command's execution context.
-abstract class ChatContext extends Context {
+/// Represents a [Context] in which a [ChatCommand] was executed.
+abstract class ChatContext implements Context {
   /// The list of arguments parsed from this context.
-  late final Iterable<dynamic> arguments;
+  Iterable<dynamic> get arguments;
+  set arguments(Iterable<dynamic> value);
 
   @override
-  // ignore: overridden_fields
-  final ChatCommand command;
-
-  /// Construct a new [ChatContext]
-  ChatContext({
-    required CommandsPlugin commands,
-    required IGuild? guild,
-    required ITextChannel channel,
-    required IMember? member,
-    required IUser user,
-    required this.command,
-    required INyxx client,
-  }) : super(
-          commands: commands,
-          guild: guild,
-          channel: channel,
-          member: member,
-          user: user,
-          command: command,
-          client: client,
-        );
+  ChatCommand get command;
 }
 
 /// Represents a [ChatContext] triggered by a message sent in a text channel.
-class MessageContext extends ChatContext {
+class MessageChatContext extends ChatContext {
   /// The prefix that triggered this context's execution.
   final String prefix;
 
@@ -60,30 +42,49 @@ class MessageContext extends ChatContext {
   /// with prefix and command [ChatCommand.fullName] stripped.
   final String rawArguments;
 
-  /// Construct a new [MessageContext]
-  MessageContext({
-    required CommandsPlugin commands,
-    required IGuild? guild,
-    required ITextChannel channel,
-    required IMember? member,
-    required IUser user,
-    required ChatCommand command,
-    required INyxx client,
+  @override
+  late final Iterable<dynamic> arguments;
+
+  @override
+  final ITextChannel channel;
+
+  @override
+  final INyxx client;
+
+  @override
+  final ChatCommand command;
+
+  @override
+  final CommandsPlugin commands;
+
+  @override
+  final IGuild? guild;
+
+  @override
+  final IMember? member;
+
+  @override
+  final IUser user;
+
+  MessageChatContext({
     required this.prefix,
     required this.message,
     required this.rawArguments,
-  }) : super(
-          commands: commands,
-          guild: guild,
-          channel: channel,
-          member: member,
-          user: user,
-          command: command,
-          client: client,
-        );
+    required this.channel,
+    required this.client,
+    required this.command,
+    required this.commands,
+    required this.guild,
+    required this.member,
+    required this.user,
+  });
 
-  /// Send a response to the command. This is the same as [send] but it references the original
-  /// command.
+  /// Send a response to the command.
+  ///
+  /// Setting `private` to true will ensure only the user that invoked the command sees the
+  /// response:
+  /// - For message contexts, a DM is sent to the invoking user;
+  /// - For interaction contexts, an ephemeral response is used.
   ///
   /// You can set [mention] to `false` to prevent the reply from mentionning the user.
   /// If [MessageBuilder.allowedMentions] is not `null` on [builder], [mention] will be ignored. If
@@ -116,95 +117,52 @@ class MessageContext extends ChatContext {
 }
 
 /// Represents a [ChatContext] triggered by a slash command ([ISlashCommandInteraction]).
-class InteractionContext extends ChatContext {
-  /// The [ISlashCommandInteraction] that triggered this context's execution.
+class InteractionChatContext extends ChatContext with InteractionContext {
+  /// The raw arguments received from the API, mapped by name to value.
+  final Map<String, dynamic> rawArguments;
+
+  @override
+  late final Iterable<dynamic> arguments;
+
+  @override
+  final ITextChannel channel;
+
+  @override
+  final INyxx client;
+
+  @override
+  final ChatCommand command;
+
+  @override
+  final CommandsPlugin commands;
+
+  @override
+  final IGuild? guild;
+
+  @override
   final ISlashCommandInteraction interaction;
 
-  /// The [ISlashCommandInteractionEvent] that triggered this context's exeecution.
+  @override
   final ISlashCommandInteractionEvent interactionEvent;
 
-  /// The raw arguments received from the API, mapped by name to value.
-  Map<String, dynamic> rawArguments;
-
-  /// Construct a new [InteractionContext]
-  InteractionContext({
-    required CommandsPlugin commands,
-    required IGuild? guild,
-    required ITextChannel channel,
-    required IMember? member,
-    required IUser user,
-    required ChatCommand command,
-    required INyxx client,
-    required this.interaction,
-    required this.rawArguments,
-    required this.interactionEvent,
-  }) : super(
-          commands: commands,
-          guild: guild,
-          channel: channel,
-          member: member,
-          user: user,
-          command: command,
-          client: client,
-        );
-
-  bool _hasCorrectlyAcked = false;
-  late bool _originalAckHidden = commands.options.hideOriginalResponse;
-
-  /// Send a response to the command. This is the same as [send] but it references the original
-  /// command.
-  ///
-  /// You can set [hidden] to `true` to send an ephemeral response. Setting [hidden] to a value
-  /// different that [CommandsOptions.hideOriginalResponse] will result in unusual behaviour if this
-  /// method is invoked more than two seconds after command execution starts.
-  /// Calling [acknowledge] less than two seconds after command execution starts with the same value
-  /// for [hidden] as this invocation will prevent this unusual behaviour from happening.
-  ///
-  /// [hidden] will override the value of [private] if both are provided.
   @override
-  Future<IMessage> respond(MessageBuilder builder, {bool private = false, bool? hidden}) async {
-    hidden ??= private;
+  final IMember? member;
 
-    if (_hasCorrectlyAcked) {
-      return interactionEvent.sendFollowup(builder, hidden: hidden);
-    } else {
-      _hasCorrectlyAcked = true;
-      try {
-        await interactionEvent.acknowledge(hidden: hidden);
-      } on AlreadyRespondedError {
-        // interaction was already ACKed by timeout or [acknowledge], hidden state of ACK might not
-        // be what we expect
-        if (_originalAckHidden != hidden) {
-          await interactionEvent
-              .sendFollowup(MessageBuilder.content(MessageBuilder.clearCharacter));
-          if (!_originalAckHidden) {
-            // If original response was hidden, we can't delete it
-            await interactionEvent.deleteOriginalResponse();
-          }
-        }
-      }
-      return interactionEvent.sendFollowup(builder, hidden: hidden);
-    }
-  }
+  @override
+  final IUser user;
 
-  /// Acknowledge the underlying [interactionEvent].
-  ///
-  /// This allows you to acknowledge the interaction with a different hidden state that
-  /// [CommandsOptions.hideOriginalResponse].
-  ///
-  /// If unspecified, [hidden] will be set to [CommandsOptions.hideOriginalResponse].
-  ///
-  /// Prefer using this method over calling [ISlashCommandInteractionEvent.acknowledge] on
-  /// [interactionEvent] as this method will fix any unusual behaviour with [respond].
-  ///
-  /// If called within 2 seconds of command execution, this will override the auto-acknowledge
-  /// induced by [CommandsOptions.autoAcknowledgeInteractions].
-  /// If called  after 2 seconds, an [AlreadyRespondedError] will be thrown as nyxx_commands will
-  /// automatically responded to avoid a token timeout.
-  Future<void> acknowledge({bool? hidden}) async {
-    await interactionEvent.acknowledge(hidden: hidden ?? commands.options.hideOriginalResponse);
-    _originalAckHidden = hidden ?? commands.options.hideOriginalResponse;
-  }
+  InteractionChatContext({
+    required this.rawArguments,
+    required this.channel,
+    required this.client,
+    required this.command,
+    required this.commands,
+    required this.guild,
+    required this.interaction,
+    required this.interactionEvent,
+    required this.member,
+    required this.user,
+  });
 
   @override
   String toString() =>

@@ -63,7 +63,7 @@ class BadInputException extends CommandInvocationException {
 /// Exception thrown when a command is invoked without the minimum amount of arguments required.
 class NotEnoughArgumentsException extends BadInputException {
   /// Create a new [NotEnoughArgumentsException] with a specific context.
-  NotEnoughArgumentsException(MessageContext context)
+  NotEnoughArgumentsException(MessageChatContext context)
       : super(
           'Not enough arguments for command "${context.command.fullName}": '
           '"${context.rawArguments}"',

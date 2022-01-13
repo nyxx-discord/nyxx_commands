@@ -92,7 +92,7 @@ abstract class ChatCommand with GroupMixin implements Command {
         name,
         description,
         execute,
-        MessageContext,
+        MessageChatContext,
         aliases: aliases,
         type: CommandType.textOnly,
         children: children,
@@ -115,7 +115,7 @@ abstract class ChatCommand with GroupMixin implements Command {
         name,
         description,
         execute,
-        InteractionContext,
+        InteractionChatContext,
         aliases: aliases,
         type: CommandType.slashOnly,
         children: children,
@@ -329,7 +329,7 @@ class SlashCommandImpl with GroupMixin implements ChatCommand {
   /// data after all optional and non-optional arguments have been parsed is discarded.
   /// If an exception is thrown from [execute], it is caught and rethrown as an [UncaughtException].
   ///
-  /// The arguments, if the context is a [MessageContext], will be parsed using the relevant
+  /// The arguments, if the context is a [MessageChatContext], will be parsed using the relevant
   /// converter on the [commands]. If no converter is found, the command execution will fail.
   ///
   /// If the context is an [InteractionContext], the arguments will either be parsed from their raw
@@ -343,7 +343,7 @@ class SlashCommandImpl with GroupMixin implements ChatCommand {
 
     List<Future<dynamic>> arguments = [];
 
-    if (context is MessageContext) {
+    if (context is MessageChatContext) {
       StringView argumentsView = StringView(context.rawArguments);
 
       for (final argumentName in _orderedArgumentNames) {
@@ -365,7 +365,7 @@ class SlashCommandImpl with GroupMixin implements ChatCommand {
       if (arguments.length < _requiredArguments) {
         throw NotEnoughArgumentsException(context);
       }
-    } else if (context is InteractionContext) {
+    } else if (context is InteractionChatContext) {
       for (final argumentName in _orderedArgumentNames) {
         if (!context.rawArguments.containsKey(argumentName)) {
           arguments

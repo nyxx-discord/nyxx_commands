@@ -235,7 +235,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
       user = message.author as IUser;
     }
 
-    return MessageContext(
+    return MessageChatContext(
       commands: this,
       guild: guild,
       channel: channel,
@@ -267,7 +267,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
       rawArguments[option.name] = option.value;
     }
 
-    return InteractionContext(
+    return InteractionChatContext(
       commands: this,
       guild: await interaction.guild?.getOrDownload(),
       channel: await interaction.channel.getOrDownload(),
