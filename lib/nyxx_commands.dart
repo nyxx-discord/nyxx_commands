@@ -45,3 +45,4 @@ export 'src/commands/group.dart' show Group, GroupMixin;
 export 'src/util/util.dart'
     show Choices, Description, Name, UseConverter, convertToKebabCase, mentionOr, dmOr;
 export 'src/util/view.dart' show StringView;
+export 'src/options.dart' show CommandsOptions;
