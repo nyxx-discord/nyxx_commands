@@ -117,7 +117,7 @@ class MessageChatContext extends ChatContext {
 }
 
 /// Represents a [ChatContext] triggered by a slash command ([ISlashCommandInteraction]).
-class InteractionChatContext extends ChatContext with InteractionContext {
+class InteractionChatContext with InteractionContext implements ChatContext {
   /// The raw arguments received from the API, mapped by name to value.
   final Map<String, dynamic> rawArguments;
 
