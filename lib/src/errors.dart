@@ -12,6 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+import 'package:nyxx_commands/src/context/context.dart';
+
 import 'checks/checks.dart';
 import 'context/slash_context.dart';
 import 'util/view.dart';
@@ -33,7 +35,7 @@ class CommandsException implements Exception {
 /// Base class for exceptions thrown during command invocation.
 class CommandInvocationException extends CommandsException {
   /// The context in which the exception occurred.
-  final SlashContext context;
+  final Context context;
 
   /// Create a new [CommandInvocationException] with a specific message and context.
   CommandInvocationException(String message, this.context) : super(message);
@@ -47,7 +49,7 @@ class UncaughtException extends CommandInvocationException {
   final Exception exception;
 
   /// Create a new [UncaughtException] with a specific exception and context.
-  UncaughtException(this.exception, SlashContext context) : super(exception.toString(), context);
+  UncaughtException(this.exception, Context context) : super(exception.toString(), context);
 }
 
 /// Base class for exceptions thrown during argument parsing.
@@ -75,7 +77,7 @@ class CheckFailedException extends CommandInvocationException {
   final AbstractCheck failed;
 
   /// Create a new [CheckFailedException] with a specific check and context.
-  CheckFailedException(this.failed, SlashContext context)
+  CheckFailedException(this.failed, Context context)
       : super('Check "${failed.name}" failed', context);
 }
 
