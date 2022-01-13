@@ -19,13 +19,13 @@ import 'package:logging/logging.dart';
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
-import 'checks.dart';
-import 'command.dart';
-import 'context.dart';
-import 'converter.dart';
+import 'checks/checks.dart';
+import 'commands/command.dart';
+import 'context/context.dart';
+import 'converters/converter.dart';
 import 'errors.dart';
-import 'group.dart';
-import 'view.dart';
+import 'commands/group.dart';
+import 'util/view.dart';
 
 /// Optional commands options.
 class CommandsOptions {

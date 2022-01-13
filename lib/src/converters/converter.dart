@@ -17,10 +17,10 @@ import 'dart:async';
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
-import 'commands.dart';
-import 'context.dart';
-import 'errors.dart';
-import 'view.dart';
+import '../commands.dart';
+import '../context/context.dart';
+import '../errors.dart';
+import '../util/view.dart';
 
 /// Object used to convert raw argument strings to the type required by the
 /// command using them.

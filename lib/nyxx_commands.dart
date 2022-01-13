@@ -2,12 +2,12 @@
 /// [nyxx](https://pub.dev/packages/nyxx) library.
 library nyxx_commands;
 
-export 'src/checks.dart'
+export 'src/checks/checks.dart'
     show AbstractCheck, Check, GuildCheck, RoleCheck, UserCheck, CooldownCheck, CooldownType;
-export 'src/command.dart' show Command, CommandType, commandNameRegexp;
+export 'src/commands/command.dart' show Command, CommandType, commandNameRegexp;
 export 'src/commands.dart' show CommandsPlugin, CommandsOptions;
-export 'src/context.dart' show Context, InteractionContext, MessageContext;
-export 'src/converter.dart'
+export 'src/context/context.dart' show Context, InteractionContext, MessageContext;
+export 'src/converters/converter.dart'
     show
         Converter,
         CombineConverter,
@@ -41,7 +41,7 @@ export 'src/errors.dart'
         NotEnoughArgumentsException,
         ParsingException,
         UncaughtException;
-export 'src/group.dart' show Group, GroupMixin;
-export 'src/util.dart'
+export 'src/commands/group.dart' show Group, GroupMixin;
+export 'src/util/util.dart'
     show Choices, Description, Name, UseConverter, convertToKebabCase, mentionOr, dmOr;
-export 'src/view.dart' show StringView;
+export 'src/util/view.dart' show StringView;

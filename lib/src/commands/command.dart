@@ -17,14 +17,14 @@ import 'dart:mirrors';
 
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
-import 'checks.dart';
-import 'commands.dart';
-import 'context.dart';
-import 'converter.dart';
-import 'errors.dart';
+import '../checks/checks.dart';
+import '../commands.dart';
+import '../context/context.dart';
+import '../converters/converter.dart';
+import '../errors.dart';
 import 'group.dart';
-import 'util.dart';
-import 'view.dart';
+import '../util/util.dart';
+import '../util/view.dart';
 
 /// An enum used to specify how a [Command] can be executed.
 enum CommandType {

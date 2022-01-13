@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-import 'errors.dart';
+import '../errors.dart';
 
 const Map<String, String> _quotes = {
   '"': '"',

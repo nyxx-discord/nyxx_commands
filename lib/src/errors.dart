@@ -12,9 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-import 'checks.dart';
-import 'context.dart';
-import 'view.dart';
+import 'checks/checks.dart';
+import 'context/context.dart';
+import 'util/view.dart';
 
 /// Base class for exceptions thrown by this library.
 ///

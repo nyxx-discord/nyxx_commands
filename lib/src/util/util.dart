@@ -13,8 +13,8 @@
 //  limitations under the License.
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/converter.dart';
-import 'package:nyxx_commands/src/view.dart';
+import 'package:nyxx_commands/src/converters/converter.dart';
+import 'package:nyxx_commands/src/util/view.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 /// The function used to convert camelCase identifiers to Discord compatible kebab-case names
