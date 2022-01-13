@@ -21,8 +21,8 @@ import 'package:nyxx_commands/src/options.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import 'checks/checks.dart';
-import 'commands/slash_command.dart';
 import 'commands/group.dart';
+import 'commands/slash_command.dart';
 import 'context/context.dart';
 import 'converters/converter.dart';
 import 'errors.dart';
@@ -84,6 +84,8 @@ abstract class CommandsPlugin extends BasePlugin with GroupMixin {
       CommandsPluginImpl(prefix: prefix, guild: guild, options: options);
 }
 
+final Logger logger = Logger('Commands');
+
 class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsPlugin {
   @override
   final String Function(IMessage) prefix;
@@ -101,8 +103,6 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
 
   @override
   final CommandsOptions options;
-
-  final Logger _commandsLogger = Logger('Commands');
 
   @override
   Snowflake? guild;
@@ -126,7 +126,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
 
     if (options.logErrors) {
       onCommandError.listen((error) {
-        _commandsLogger
+        logger
           ..warning('Uncaught exception in command')
           ..shout(error);
       });
@@ -181,7 +181,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
       if (view.skipString(prefix)) {
         Context context = await _messageContext(message, view, prefix);
 
-        _commandsLogger.fine('Invoking command ${context.command.name} from message $message');
+        logger.fine('Invoking command ${context.command.name} from message $message');
 
         await context.command.invoke(this, context);
       }
@@ -209,7 +209,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
         });
       }
 
-      _commandsLogger.fine('Invoking command ${context.command.name} '
+      logger.fine('Invoking command ${context.command.name} '
           'from interaction ${interactionEvent.interaction.token}');
 
       await context.command.invoke(this, context);
@@ -294,7 +294,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
           for (final permission in checkPermissions) {
             if (uniquePermissions.containsKey(permission.id) &&
                 uniquePermissions[permission.id]!.hasPermission != permission.hasPermission) {
-              _commandsLogger.warning(
+              logger.warning(
                 'Check "${check.name}" is in conflict with a previous check on '
                 'permissions for '
                 '${permission.id.id == 0 ? 'the default permission' : 'id ${permission.id}'}. '
@@ -410,10 +410,9 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
 
     if (assignable.isNotEmpty) {
       if (logWarn) {
-        _commandsLogger
-            .warning('Using assembled converter for type $type. If this is intentional, you '
-                'should register a custom converter for that type using '
-                '`addConverter(converterFor($type, logWarn: false) as Converter<$type>)`');
+        logger.warning('Using assembled converter for type $type. If this is intentional, you '
+            'should register a custom converter for that type using '
+            '`addConverter(converterFor($type, logWarn: false) as Converter<$type>)`');
       }
       return FallbackConverter(assignable);
     }
@@ -425,14 +424,13 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     super.addCommand(command);
 
     if (client?.ready ?? false) {
-      _commandsLogger
-          .warning('Registering commands after bot is ready might cause global commands to be '
-              'deleted');
+      logger.warning('Registering commands after bot is ready might cause global commands to be '
+          'deleted');
       interactions.sync();
     }
 
     for (final child in command.walkCommands()) {
-      _commandsLogger.info('Registered command "${child.fullName}"');
+      logger.info('Registered command "${child.fullName}"');
     }
   }
 

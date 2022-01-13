@@ -14,12 +14,10 @@
 
 import 'dart:async';
 
-import 'package:logging/logging.dart';
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/nyxx_commands.dart';
+import 'package:nyxx_commands/src/commands.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
-
-final Logger _logger = Logger('Commands');
 
 /// Represents a check executed on a [SlashCommand].
 ///
@@ -154,7 +152,7 @@ class _AnyCheck extends AbstractCheck {
           AbstractCheck? actualCheck = _succesfulChecks[context];
 
           if (actualCheck == null) {
-            _logger.warning("Context $context shouldn't have passed checks; actualCheck is null");
+            logger.warning("Context $context shouldn't have passed checks; actualCheck is null");
             return;
           }
 
@@ -170,7 +168,7 @@ class _AnyCheck extends AbstractCheck {
           AbstractCheck? actualCheck = _succesfulChecks[context];
 
           if (actualCheck == null) {
-            _logger.warning("Context $context shouldn't have passed checks; actualCheck is null");
+            logger.warning("Context $context shouldn't have passed checks; actualCheck is null");
             return;
           }
 

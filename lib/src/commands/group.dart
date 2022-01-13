@@ -14,7 +14,6 @@
 
 import 'dart:async';
 
-import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
@@ -104,8 +103,6 @@ mixin GroupMixin {
     });
   }
 
-  final Logger _logger = Logger('Commands');
-
   /// Get a [SlashCommand] based off a [StringView].
   ///
   /// This is usually used to obtain the command being executed in a message, after the prefix has
@@ -156,7 +153,7 @@ mixin GroupMixin {
     }
 
     if (_parent != null) {
-      _logger.warning('Registering commands to a group after it is registered might cause slash '
+      logger.warning('Registering commands to a group after it is registered might cause slash '
           'commands to have incomplete definitions');
     }
 
