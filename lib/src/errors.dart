@@ -15,7 +15,7 @@
 import 'package:nyxx_commands/src/context/context.dart';
 
 import 'checks/checks.dart';
-import 'context/slash_context.dart';
+import 'context/chat_context.dart';
 import 'util/view.dart';
 
 /// Base class for exceptions thrown by this library.
@@ -57,7 +57,7 @@ class UncaughtException extends CommandInvocationException {
 /// A raw [BadInputException] is thrown when a [Converter] fails to parse an argument.
 class BadInputException extends CommandInvocationException {
   /// Create a new [BadInputException] with a specific message and context.
-  BadInputException(String message, SlashContext context) : super(message, context);
+  BadInputException(String message, ChatContext context) : super(message, context);
 }
 
 /// Exception thrown when a command is invoked without the minimum amount of arguments required.
@@ -87,7 +87,7 @@ class NoConverterException extends CommandInvocationException {
   final Type expectedType;
 
   /// Create a new [NoConverterException] with a specific expected type and context.
-  NoConverterException(this.expectedType, SlashContext context)
+  NoConverterException(this.expectedType, ChatContext context)
       : super('No converter found for type "$expectedType"', context);
 }
 

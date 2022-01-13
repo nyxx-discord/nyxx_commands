@@ -22,8 +22,8 @@ import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import 'checks/checks.dart';
 import 'commands/group.dart';
-import 'commands/slash_command.dart';
-import 'context/slash_context.dart';
+import 'commands/chat_command.dart';
+import 'context/chat_context.dart';
 import 'converters/converter.dart';
 import 'errors.dart';
 import 'util/view.dart';
@@ -178,7 +178,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
       StringView view = StringView(message.content);
 
       if (view.skipString(prefix)) {
-        SlashContext context = await messageContext(message, view, prefix);
+        ChatContext context = await messageContext(message, view, prefix);
 
         logger.fine('Invoking command ${context.command.name} from message $message');
 
@@ -191,10 +191,10 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
 
   Future<void> processInteraction(
     ISlashCommandInteractionEvent interactionEvent,
-    SlashCommand command,
+    ChatCommand command,
   ) async {
     try {
-      SlashContext context = await interactionContext(interactionEvent, command);
+      ChatContext context = await interactionContext(interactionEvent, command);
 
       if (options.autoAcknowledgeInteractions) {
         Timer(Duration(seconds: 2), () async {
@@ -217,9 +217,9 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     }
   }
 
-  Future<SlashContext> messageContext(
+  Future<ChatContext> messageContext(
       IMessage message, StringView contentView, String prefix) async {
-    SlashCommand command = getCommand(contentView) ?? (throw CommandNotFoundException(contentView));
+    ChatCommand command = getCommand(contentView) ?? (throw CommandNotFoundException(contentView));
 
     ITextChannel channel = await message.channel.getOrDownload();
 
@@ -249,8 +249,8 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     );
   }
 
-  Future<SlashContext> interactionContext(
-      ISlashCommandInteractionEvent interactionEvent, SlashCommand command) async {
+  Future<ChatContext> interactionContext(
+      ISlashCommandInteractionEvent interactionEvent, ChatCommand command) async {
     ISlashCommandInteraction interaction = interactionEvent.interaction;
 
     IMember? member = interaction.memberAuthor;
@@ -285,7 +285,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     List<SlashCommandBuilder> builders = [];
 
     for (final child in children) {
-      if (child.hasSlashCommand || (child is SlashCommand && child.type != CommandType.textOnly)) {
+      if (child.hasSlashCommand || (child is ChatCommand && child.type != CommandType.textOnly)) {
         Map<Snowflake, CommandPermissionBuilderAbstract> uniquePermissions = {};
 
         for (final check in child.checks) {
@@ -344,7 +344,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
             guild: guildId ?? guild,
           );
 
-          if (child is SlashCommand) {
+          if (child is ChatCommand) {
             builder.registerHandler((interaction) => processInteraction(interaction, child));
           }
 
@@ -363,7 +363,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     for (final builder in options) {
       if (builder.type == CommandOptionType.subCommand) {
         builder.registerHandler((interaction) =>
-            processInteraction(interaction, current.childrenMap[builder.name] as SlashCommand));
+            processInteraction(interaction, current.childrenMap[builder.name] as ChatCommand));
       } else if (builder.type == CommandOptionType.subCommandGroup) {
         processHandlerRegistration(builder.options!, current.childrenMap[builder.name]!);
       }

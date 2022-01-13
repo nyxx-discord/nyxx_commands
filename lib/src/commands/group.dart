@@ -19,14 +19,14 @@ import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../checks/checks.dart';
 import '../commands.dart';
-import '../context/slash_context.dart';
+import '../context/chat_context.dart';
 import '../errors.dart';
 import '../util/view.dart';
-import 'slash_command.dart';
+import 'chat_command.dart';
 
 /// A [Group] is a collection of commands. This mixin implements that functionality.
 ///
-/// All [Group]s, [SlashCommand]s and [CommandsPlugin]s use this mixin to enable nesting and registration
+/// All [Group]s, [ChatCommand]s and [CommandsPlugin]s use this mixin to enable nesting and registration
 /// of commands.
 mixin GroupMixin {
   /// A mapping of child names to children.
@@ -55,19 +55,19 @@ mixin GroupMixin {
 
   @protected
   // ignore: public_member_api_docs
-  final StreamController<SlashContext> preCallController = StreamController.broadcast();
+  final StreamController<ChatContext> preCallController = StreamController.broadcast();
 
   @protected
   // ignore: public_member_api_docs
-  final StreamController<SlashContext> postCallController = StreamController.broadcast();
+  final StreamController<ChatContext> postCallController = StreamController.broadcast();
 
-  /// A [Stream] of [SlashContext]s that emits after the checks have succeeded, but before
-  /// [SlashCommand.execute] is called.
-  late final Stream<SlashContext> onPreCall = preCallController.stream;
+  /// A [Stream] of [ChatContext]s that emits after the checks have succeeded, but before
+  /// [ChatCommand.execute] is called.
+  late final Stream<ChatContext> onPreCall = preCallController.stream;
 
-  /// A [Stream] of [SlashContext]s that emits after [SlashCommand.execute] has successfully been called (no
+  /// A [Stream] of [ChatContext]s that emits after [ChatCommand.execute] has successfully been called (no
   /// exceptions were thrown).
-  late final Stream<SlashContext> onPostCall = postCallController.stream;
+  late final Stream<ChatContext> onPostCall = postCallController.stream;
 
   final List<AbstractCheck> _checks = [];
 
@@ -75,7 +75,7 @@ mixin GroupMixin {
   /// These are called before command invocation and can cause it to fail.
   ///
   /// If you only want to apply a check to a specific command and not all descendants, see
-  /// [SlashCommand.singleChecks]
+  /// [ChatCommand.singleChecks]
   Iterable<AbstractCheck> get checks => [...?_parent?.checks, ..._checks];
 
   /// The full name of this group.
@@ -96,25 +96,25 @@ mixin GroupMixin {
   /// return true.
   bool get hasSlashCommand {
     return children.any((child) {
-      if (child is SlashCommand) {
+      if (child is ChatCommand) {
         return child.type != CommandType.textOnly || child.hasSlashCommand;
       }
       return child.hasSlashCommand;
     });
   }
 
-  /// Get a [SlashCommand] based off a [StringView].
+  /// Get a [ChatCommand] based off a [StringView].
   ///
   /// This is usually used to obtain the command being executed in a message, after the prefix has
   /// been skipped in the view.
-  SlashCommand? getCommand(StringView view) {
+  ChatCommand? getCommand(StringView view) {
     String name = view.getWord();
 
     if (childrenMap.containsKey(name)) {
       GroupMixin child = childrenMap[name]!;
 
-      if (child is SlashCommand && child.type != CommandType.slashOnly) {
-        SlashCommand? found = child.getCommand(view);
+      if (child is ChatCommand && child.type != CommandType.slashOnly) {
+        ChatCommand? found = child.getCommand(view);
 
         if (found == null) {
           return child;
@@ -178,9 +178,9 @@ mixin GroupMixin {
   void registerChild(GroupMixin child) => addCommand(child);
 
   /// Iterate over all the commands in this group and any subgroups.
-  Iterable<SlashCommand> walkCommands() sync* {
-    if (this is SlashCommand) {
-      yield this as SlashCommand;
+  Iterable<ChatCommand> walkCommands() sync* {
+    if (this is ChatCommand) {
+      yield this as ChatCommand;
     }
 
     for (final child in children) {
@@ -200,7 +200,7 @@ mixin GroupMixin {
           child.description,
           options: List.of(child.getOptions(commands)),
         ));
-      } else if (child is SlashCommand && child.type != CommandType.textOnly) {
+      } else if (child is ChatCommand && child.type != CommandType.textOnly) {
         options.add(CommandOptionBuilder(
           CommandOptionType.subCommand,
           child.name,
@@ -229,7 +229,7 @@ mixin GroupMixin {
 
 /// A [Group] is a simple class that allows [GroupMixin]s to be instanciated.
 ///
-/// This allows [GroupMixin] functionality to be used without the additional bloat of a [SlashCommand] or
+/// This allows [GroupMixin] functionality to be used without the additional bloat of a [ChatCommand] or
 /// [CommandsPlugin]
 class Group with GroupMixin {
   @override

@@ -21,24 +21,23 @@ import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../checks/checks.dart';
 import '../commands.dart';
-import '../context/slash_context.dart';
+import '../context/chat_context.dart';
 import '../converters/converter.dart';
 import '../errors.dart';
 import '../util/util.dart';
 import '../util/view.dart';
 import 'group.dart';
 
-/// A [SlashCommand] is a function bound to a name and arguments.
+/// A [ChatCommand] is a function bound to a name and arguments.
 ///
-/// [SlashCommand]s can be text-only (meaning they can only be executed through sending a message with
+/// [ChatCommand]s can be text-only (meaning they can only be executed through sending a message with
 /// the bot's prefix) or slash-only (meaning they can only be executed through the means of a slash
 /// command). They can also be both, meaning they can be used both as a text and as a slash command.
 ///
 /// Note that text-only commands can be [Group]s containing slash commands and vice versa, but slash
 /// commands cannot be groups containing other slash commands due to
 /// [limitations on Discord](https://discord.com/developers/docs/interactions/application-commands#subcommands-and-subcommand-groups).
-// TODO: Find better name for SlashCommand (as it can also be a text command)
-abstract class SlashCommand with GroupMixin implements Command {
+abstract class ChatCommand with GroupMixin implements Command {
   /// The type of the command.
   ///
   /// A command's type indicates how it can be invoked; text-only commands can only be executed by
@@ -54,9 +53,9 @@ abstract class SlashCommand with GroupMixin implements Command {
   /// this command and not its children.
   Iterable<AbstractCheck> get singleChecks;
 
-  /// Create a new [SlashCommand]. This must then be registered with [CommandsPlugin.addCommand] or
+  /// Create a new [ChatCommand]. This must then be registered with [CommandsPlugin.addCommand] or
   /// [GroupMixin.addCommand] before it can be used.
-  factory SlashCommand(
+  factory ChatCommand(
     String name,
     String description,
     Function execute, {
@@ -70,7 +69,7 @@ abstract class SlashCommand with GroupMixin implements Command {
         name,
         description,
         execute,
-        SlashContext,
+        ChatContext,
         aliases: aliases,
         type: type,
         children: children,
@@ -78,9 +77,9 @@ abstract class SlashCommand with GroupMixin implements Command {
         singleChecks: singleChecks,
       );
 
-  /// Create a new text-only [SlashCommand]. This must then be registered with
+  /// Create a new text-only [ChatCommand]. This must then be registered with
   /// [CommandsPlugin.addCommand] or [GroupMixin.addCommand] before it can be used.
-  factory SlashCommand.textOnly(
+  factory ChatCommand.textOnly(
     String name,
     String description,
     Function execute, {
@@ -101,9 +100,9 @@ abstract class SlashCommand with GroupMixin implements Command {
         singleChecks: singleChecks,
       );
 
-  /// Create a new slash-only [SlashCommand]. This must then be registered with
+  /// Create a new slash-only [ChatCommand]. This must then be registered with
   /// [CommandsPlugin.addCommand] or [GroupMixin.addCommand] before it can be used.
-  factory SlashCommand.slashOnly(
+  factory ChatCommand.slashOnly(
     String name,
     String description,
     Function execute, {
@@ -125,7 +124,7 @@ abstract class SlashCommand with GroupMixin implements Command {
       );
 }
 
-/// An enum used to specify how a [SlashCommand] can be executed.
+/// An enum used to specify how a [ChatCommand] can be executed.
 enum CommandType {
   /// Only allow execution by message.
   ///
@@ -142,7 +141,7 @@ enum CommandType {
 /// A [RegExp] that all command names must match
 final RegExp commandNameRegexp = RegExp(r'^[\w-]{1,32}$', unicode: true);
 
-class SlashCommandImpl with GroupMixin implements SlashCommand {
+class SlashCommandImpl with GroupMixin implements ChatCommand {
   @override
   final String name;
 
@@ -338,7 +337,7 @@ class SlashCommandImpl with GroupMixin implements SlashCommand {
   /// correct.
   @override
   Future<void> invoke(Context context) async {
-    if (context is! SlashContext) {
+    if (context is! ChatContext) {
       return;
     }
 
@@ -458,7 +457,7 @@ class SlashCommandImpl with GroupMixin implements SlashCommand {
   void addCommand(GroupMixin command) {
     if (type != CommandType.textOnly) {
       if (command.hasSlashCommand ||
-          (command is SlashCommand && command.type != CommandType.textOnly)) {
+          (command is ChatCommand && command.type != CommandType.textOnly)) {
         throw CommandRegistrationError('Cannot nest Slash commands!');
       }
     }

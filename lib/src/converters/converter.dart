@@ -15,7 +15,7 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/context/slash_context.dart';
+import 'package:nyxx_commands/src/context/chat_context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands.dart';
@@ -689,7 +689,7 @@ const Converter<Mentionable> mentionableConverter = FallbackConverter(
 /// no converter for [expectedType] is found, a [NoConverterException] is thrown.
 Future<dynamic> parse(
   CommandsPlugin commands,
-  SlashContext context,
+  ChatContext context,
   StringView toParse,
   Type expectedType, {
   Converter<dynamic>? converterOverride,

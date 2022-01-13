@@ -17,19 +17,19 @@ import 'package:nyxx_commands/src/context/context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands.dart';
-import '../commands/slash_command.dart';
+import '../commands/chat_command.dart';
 
 /// Contains data about a command's execution context.
-abstract class SlashContext extends Context {
+abstract class ChatContext extends Context {
   /// The list of arguments parsed from this context.
   late final Iterable<dynamic> arguments;
 
   @override
   // ignore: overridden_fields
-  final SlashCommand command;
+  final ChatCommand command;
 
-  /// Construct a new [SlashContext]
-  SlashContext({
+  /// Construct a new [ChatContext]
+  ChatContext({
     required CommandsPlugin commands,
     required IGuild? guild,
     required ITextChannel channel,
@@ -48,8 +48,8 @@ abstract class SlashContext extends Context {
         );
 }
 
-/// Represents a [SlashContext] triggered by a message sent in a text channel.
-class MessageContext extends SlashContext {
+/// Represents a [ChatContext] triggered by a message sent in a text channel.
+class MessageContext extends ChatContext {
   /// The prefix that triggered this context's execution.
   final String prefix;
 
@@ -57,7 +57,7 @@ class MessageContext extends SlashContext {
   final IMessage message;
 
   /// The raw [String] that was used to parse this context's arguments, i.e the [message]s content
-  /// with prefix and command [SlashCommand.fullName] stripped.
+  /// with prefix and command [ChatCommand.fullName] stripped.
   final String rawArguments;
 
   /// Construct a new [MessageContext]
@@ -67,7 +67,7 @@ class MessageContext extends SlashContext {
     required ITextChannel channel,
     required IMember? member,
     required IUser user,
-    required SlashCommand command,
+    required ChatCommand command,
     required INyxx client,
     required this.prefix,
     required this.message,
@@ -115,8 +115,8 @@ class MessageContext extends SlashContext {
   String toString() => 'MessageContext[message=$message, message.content=${message.content}]';
 }
 
-/// Represents a [SlashContext] triggered by a slash command ([ISlashCommandInteraction]).
-class InteractionContext extends SlashContext {
+/// Represents a [ChatContext] triggered by a slash command ([ISlashCommandInteraction]).
+class InteractionContext extends ChatContext {
   /// The [ISlashCommandInteraction] that triggered this context's execution.
   final ISlashCommandInteraction interaction;
 
@@ -133,7 +133,7 @@ class InteractionContext extends SlashContext {
     required ITextChannel channel,
     required IMember? member,
     required IUser user,
-    required SlashCommand command,
+    required ChatCommand command,
     required INyxx client,
     required this.interaction,
     required this.rawArguments,
