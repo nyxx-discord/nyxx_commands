@@ -28,35 +28,78 @@ import 'errors.dart';
 import 'commands/group.dart';
 import 'util/view.dart';
 
-/// The base plugin class. This is used to listen to and register commands.
+/// The base plugin class. Add this to your [INyxx] instance with [INyxx.registerPlugin] to use
+/// `nyxx_commands`.
 ///
-/// Note that although this class uses [GroupMixin], attempting to access [name], [description],
-/// [aliases] or any operation dependant on these will result in an [UnsupportedError] being thrown.
-class CommandsPlugin extends BasePlugin with GroupMixin {
-  /// This bot's prefix function
+/// Although this class mixes [GroupMixin], not all properties of [GroupMixin] are availible and
+/// will throw an [UnsupportedError] upon being accessed or called.
+abstract class CommandsPlugin extends BasePlugin with GroupMixin {
+  /// The current prefix for this [CommandsPlugin].
+  ///
+  /// This is called for each message sent in any of [client]'s Guilds or Direct Messages to
+  /// determine the prefix that message has to match to be parsed and interpreted as a command.
+  String Function(IMessage) get prefix;
+
+  /// A [Stream] of [CommandsException]s that are emitted during execution of a command.
+  Stream<CommandsException> get onCommandError;
+
+  /// The [IInteractions] instance that this [CommandsPlugin] uses to manage commands.
+  ///
+  /// Use this instance if you wish to use `nyxx_interactions` features along with `nyxx_commands`.
+  /// This instance's [IInteractions.sync] is called automatically when [client] is ready, so there
+  /// is no need to call it yourself.
+  IInteractions get interactions;
+
+  /// The options this [CommandsPlugin] uses.
+  CommandsOptions get options;
+
+  /// The guild for this [CommandsPlugin]. Unless a guild override is present (using [GuildCheck]),
+  /// all commands registered by this bot will be registered in this guild.
+  ///
+  /// This does not prevent commands from being executed from elsewhere and should only be used for
+  /// testing. Set to `null` to register commands globally.
+  Snowflake? get guild;
+
+  /// The client that this [CommandsPlugin] was added to.
+  INyxx? get client;
+
+  /// Add a [Converter] to this [CommandsPlugin]'s converters.
+  void addConverter<T>(Converter<T> converter);
+
+  /// Get the converter for a given [Type].
+  ///
+  /// If no converter registered with [addConverter] or present in the default converter set can be
+  /// used to parse arguments of type [target], a new [Converter] will be created with all the
+  /// converters thhat *might* convert to [target].
+  ///
+  /// If this occurs and [logWarn] is set to false, a warning will be issued.
+  Converter<dynamic>? getConverter(Type target, {bool logWarn = false});
+}
+
+class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsPlugin {
+  @override
   final String Function(IMessage) prefix;
 
   final StreamController<CommandsException> _onCommandErrorController =
       StreamController.broadcast();
 
-  /// A [Stream] of exceptions that occur when processing [Command]s
+  @override
   late final Stream<CommandsException> onCommandError = _onCommandErrorController.stream;
 
   final Map<Type, Converter<dynamic>> _converters = {};
 
-  /// The [IInteractions] instance that this bot uses for managing slash commands.
+  @override
   late final IInteractions interactions;
 
-  /// The options for this [CommandsPlugin] instance.
-  late final CommandsOptions options;
+  @override
+  final CommandsOptions options;
 
   final Logger _commandsLogger = Logger('Commands');
 
-  /// The guild that registered commands will be restricted to. Use for testing, and disable when
-  /// deploying the bot.
+  @override
   Snowflake? guild;
 
-  /// The [INyxx] client this plugin is registered on
+  @override
   INyxx? client;
 
   @override
@@ -66,8 +109,7 @@ class CommandsPlugin extends BasePlugin with GroupMixin {
   @override
   Iterable<String> get aliases => throw UnsupportedError('get aliases');
 
-  /// Create a new [CommandsPlugin] instance.
-  CommandsPlugin({
+  CommandsPluginImpl({
     required this.prefix,
     this.guild,
     this.options = const CommandsOptions(),
@@ -321,18 +363,13 @@ class CommandsPlugin extends BasePlugin with GroupMixin {
     return options;
   }
 
-  /// Add a [Converter] to this bot.
+  @override
   void addConverter<T>(Converter<T> converter) {
     _converters[T] = converter;
   }
 
-  /// If it exists, get the [Converter] for a given type.
-  ///
-  /// If no direct converter for the specified [Type] is found, a [FallbackConverter] will be
-  /// assebled with all converters that might be able to provide the requested type indirectly.
-  ///
-  /// If [logWarn] is `true`, a warning will be issued when using an assembled converter.
-  Converter<dynamic>? converterFor(Type type, {bool logWarn = true}) {
+  @override
+  Converter<dynamic>? getConverter(Type type, {bool logWarn = true}) {
     if (_converters.containsKey(type)) {
       return _converters[type]!;
     }

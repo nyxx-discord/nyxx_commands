@@ -693,7 +693,7 @@ Future<dynamic> parse(
   Type expectedType, {
   Converter<dynamic>? converterOverride,
 }) async {
-  Converter<dynamic>? converter = converterOverride ?? commands.converterFor(expectedType);
+  Converter<dynamic>? converter = converterOverride ?? commands.getConverter(expectedType);
   if (converter == null) {
     throw NoConverterException(expectedType, context);
   }

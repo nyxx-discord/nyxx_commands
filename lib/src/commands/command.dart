@@ -437,7 +437,7 @@ class Command with GroupMixin {
         }
 
         Converter<dynamic>? argumentConverter = _mappedConverterOverrides[name]?.converter ??
-            commands.converterFor(mirror.type.reflectedType);
+            commands.getConverter(mirror.type.reflectedType);
 
         Iterable<ArgChoiceBuilder>? choices = _mappedChoices[name]?.builders;
 
