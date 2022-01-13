@@ -22,10 +22,10 @@ import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import 'checks/checks.dart';
 import 'commands/command.dart';
+import 'commands/group.dart';
 import 'context/context.dart';
 import 'converters/converter.dart';
 import 'errors.dart';
-import 'commands/group.dart';
 import 'util/view.dart';
 
 /// The base plugin class. Add this to your [INyxx] instance with [INyxx.registerPlugin] to use

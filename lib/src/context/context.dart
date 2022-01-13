@@ -15,8 +15,8 @@
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
-import '../commands/command.dart';
 import '../commands.dart';
+import '../commands/command.dart';
 
 /// Contains data about a command's execution context.
 abstract class Context {

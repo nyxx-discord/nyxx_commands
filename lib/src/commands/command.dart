@@ -22,9 +22,9 @@ import '../commands.dart';
 import '../context/context.dart';
 import '../converters/converter.dart';
 import '../errors.dart';
-import 'group.dart';
 import '../util/util.dart';
 import '../util/view.dart';
+import 'group.dart';
 
 /// An enum used to specify how a [Command] can be executed.
 enum CommandType {

@@ -4,8 +4,9 @@ library nyxx_commands;
 
 export 'src/checks/checks.dart'
     show AbstractCheck, Check, GuildCheck, RoleCheck, UserCheck, CooldownCheck, CooldownType;
+export 'src/commands.dart' show CommandsPlugin;
 export 'src/commands/command.dart' show Command, CommandType, commandNameRegexp;
-export 'src/commands.dart' show CommandsPlugin, CommandsOptions;
+export 'src/commands/group.dart' show Group, GroupMixin;
 export 'src/context/context.dart' show Context, InteractionContext, MessageContext;
 export 'src/converters/converter.dart'
     show
@@ -41,8 +42,7 @@ export 'src/errors.dart'
         NotEnoughArgumentsException,
         ParsingException,
         UncaughtException;
-export 'src/commands/group.dart' show Group, GroupMixin;
+export 'src/options.dart' show CommandsOptions;
 export 'src/util/util.dart'
     show Choices, Description, Name, UseConverter, convertToKebabCase, mentionOr, dmOr;
 export 'src/util/view.dart' show StringView;
-export 'src/options.dart' show CommandsOptions;

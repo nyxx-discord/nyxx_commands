@@ -19,11 +19,11 @@ import 'package:meta/meta.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../checks/checks.dart';
-import 'command.dart';
 import '../commands.dart';
 import '../context/context.dart';
 import '../errors.dart';
 import '../util/view.dart';
+import 'command.dart';
 
 /// A [Group] is a collection of commands. This mixin implements that functionality.
 ///
