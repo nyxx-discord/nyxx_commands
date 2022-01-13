@@ -150,6 +150,7 @@ class SlashCommandImpl with GroupMixin implements ChatCommand {
 
   @override
   final CommandType type;
+
   @override
   final Function execute;
 

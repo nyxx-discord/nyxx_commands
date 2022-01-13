@@ -62,12 +62,8 @@ mixin GroupMixin {
   // ignore: public_member_api_docs
   final StreamController<ChatContext> postCallController = StreamController.broadcast();
 
-  /// A [Stream] of [ChatContext]s that emits after the checks have succeeded, but before
-  /// [ChatCommand.execute] is called.
   late final Stream<ChatContext> onPreCall = preCallController.stream;
 
-  /// A [Stream] of [ChatContext]s that emits after [ChatCommand.execute] has successfully been called (no
-  /// exceptions were thrown).
   late final Stream<ChatContext> onPostCall = postCallController.stream;
 
   final List<AbstractCheck> _checks = [];
@@ -214,7 +210,6 @@ mixin GroupMixin {
     return options;
   }
 
-  /// Add a check to this groups [checks].
   void check(AbstractCheck check) {
     _checks.add(check);
 
