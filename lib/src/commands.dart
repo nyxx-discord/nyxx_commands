@@ -74,6 +74,14 @@ abstract class CommandsPlugin extends BasePlugin with GroupMixin {
   ///
   /// If this occurs and [logWarn] is set to false, a warning will be issued.
   Converter<dynamic>? getConverter(Type target, {bool logWarn = false});
+
+  /// Create a new instance of [CommandsPlugin] to be used as a plugin on [INyxx] instances.
+  factory CommandsPlugin({
+    required String Function(IMessage) prefix,
+    Snowflake? guild,
+    CommandsOptions options = const CommandsOptions(),
+  }) =>
+      CommandsPluginImpl(prefix: prefix, guild: guild, options: options);
 }
 
 class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsPlugin {
