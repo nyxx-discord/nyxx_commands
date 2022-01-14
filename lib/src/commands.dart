@@ -408,6 +408,8 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
   Future<Iterable<SlashCommandBuilder>> getSlashBuilders() async {
     List<SlashCommandBuilder> builders = [];
 
+    const Snowflake zeroSnowflake = Snowflake.zero();
+
     for (final command in [...super.children, ...userCommands.values, ...messageCommands.values]) {
       if (command is GroupMixin) {
         if (command is ChatCommand && command.type == CommandType.textOnly) {
@@ -422,14 +424,14 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
       Iterable<CommandPermissionBuilderAbstract> permissions = await getPermissions(command);
 
       if (permissions.length == 1 &&
-          permissions.first.id == Snowflake.zero() &&
+          permissions.first.id == zeroSnowflake &&
           !permissions.first.hasPermission) {
         continue;
       }
 
       bool defaultPermission = true;
       for (final permission in permissions) {
-        if (permission.id == Snowflake.zero()) {
+        if (permission.id == zeroSnowflake) {
           defaultPermission = permission.hasPermission;
           break;
         }
@@ -453,7 +455,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
             ),
             defaultPermissions: defaultPermission,
             permissions: List.of(
-              permissions.where((permission) => permission.id != Snowflake.zero()),
+              permissions.where((permission) => permission.id != zeroSnowflake),
             ),
             guild: guildId ?? guild,
             type: SlashCommandType.chat,
@@ -471,7 +473,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
             [],
             defaultPermissions: defaultPermission,
             permissions: List.of(
-              permissions.where((permission) => permission.id != Snowflake.zero()),
+              permissions.where((permission) => permission.id != zeroSnowflake),
             ),
             guild: guildId ?? guild,
             type: SlashCommandType.user,
@@ -487,7 +489,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
             [],
             defaultPermissions: defaultPermission,
             permissions: List.of(
-              permissions.where((permission) => permission.id != Snowflake.zero()),
+              permissions.where((permission) => permission.id != zeroSnowflake),
             ),
             guild: guildId ?? guild,
             type: SlashCommandType.message,
