@@ -2,7 +2,7 @@ import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/src/commands.dart';
 import 'package:nyxx_commands/src/commands/command.dart';
 
-abstract class Context {
+abstract class IContext {
   /// The [CommandsPlugin] that triggered this context's execution.
   CommandsPlugin get commands;
 
@@ -22,7 +22,7 @@ abstract class Context {
   IUser get user;
 
   /// The command triggered in this context.
-  Command get command;
+  ICommand get command;
 
   /// The [INyxx] client from which this command was dispatched
   INyxx get client;

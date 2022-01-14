@@ -81,7 +81,7 @@ abstract class CommandsPlugin extends BasePlugin with GroupMixin {
   Converter<dynamic>? getConverter(Type target, {bool logWarn = false});
 
   @override
-  void addCommand(CommandComponent command);
+  void addCommand(ICommandComponent command);
 
   /// Create a new instance of [CommandsPlugin] to be used as a plugin on [INyxx] instances.
   factory CommandsPlugin({
@@ -124,8 +124,8 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
   @override
   Iterable<String> get aliases => throw UnsupportedError('get aliases');
 
-  final Map<String, Command> userCommands = {};
-  final Map<String, Command> messageCommands = {};
+  final Map<String, ICommand> userCommands = {};
+  final Map<String, ICommand> messageCommands = {};
 
   CommandsPluginImpl({
     required this.prefix,
@@ -189,7 +189,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
       StringView view = StringView(message.content);
 
       if (view.skipString(prefix)) {
-        ChatContext context = await messageChatContext(message, view, prefix);
+        IChatContext context = await messageChatContext(message, view, prefix);
 
         logger.fine('Invoking command ${context.command.name} from message $message');
 
@@ -205,7 +205,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     ChatCommand command,
   ) async {
     try {
-      ChatContext context = await interactionChatContext(interactionEvent, command);
+      IChatContext context = await interactionChatContext(interactionEvent, command);
 
       if (options.autoAcknowledgeInteractions) {
         Timer(Duration(seconds: 2), () async {
@@ -280,7 +280,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     }
   }
 
-  Future<ChatContext> messageChatContext(
+  Future<IChatContext> messageChatContext(
       IMessage message, StringView contentView, String prefix) async {
     ChatCommand command = getCommand(contentView) ?? (throw CommandNotFoundException(contentView));
 
@@ -312,7 +312,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     );
   }
 
-  Future<ChatContext> interactionChatContext(
+  Future<IChatContext> interactionChatContext(
       ISlashCommandInteractionEvent interactionEvent, ChatCommand command) async {
     ISlashCommandInteraction interaction = interactionEvent.interaction;
 
@@ -504,7 +504,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
   }
 
   Future<Iterable<CommandPermissionBuilderAbstract>> getPermissions(
-      CommandComponent command) async {
+      ICommandComponent command) async {
     Map<Snowflake, CommandPermissionBuilderAbstract> uniquePermissions = {};
 
     for (final check in command.checks) {
@@ -602,7 +602,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
   }
 
   @override
-  void addCommand(CommandComponent command) {
+  void addCommand(ICommandComponent command) {
     if (command is GroupMixin) {
       super.addCommand(command);
 

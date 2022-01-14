@@ -6,7 +6,7 @@ import 'package:nyxx_commands/src/context/context.dart';
 import 'package:nyxx_commands/src/context/user_context.dart';
 import 'package:nyxx_commands/src/errors.dart';
 
-class UserCommand implements Command {
+class UserCommand implements ICommand {
   @override
   final String name;
 
@@ -39,7 +39,7 @@ class UserCommand implements Command {
   }
 
   @override
-  Future<void> invoke(Context context) async {
+  Future<void> invoke(IContext context) async {
     if (context is! UserContext) {
       return;
     }

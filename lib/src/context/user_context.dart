@@ -6,8 +6,8 @@ import 'package:nyxx_commands/src/context/interaction_context.dart';
 import 'package:nyxx_interactions/src/models/interaction.dart';
 import 'package:nyxx_interactions/src/events/interaction_event.dart';
 
-/// Represents a [Context] in which a [UserCommand] was executed.
-class UserContext with InteractionContext implements Context {
+/// Represents a [IContext] in which a [UserCommand] was executed.
+class UserContext with InteractionContextMixin implements IContext {
   /// The target member for this context.
   final IMember? targetMember;
 

@@ -6,7 +6,7 @@ import 'package:nyxx_commands/src/context/interaction_context.dart';
 import 'package:nyxx_interactions/src/models/interaction.dart';
 import 'package:nyxx_interactions/src/events/interaction_event.dart';
 
-class MessageContext with InteractionContext implements Context {
+class MessageContext with InteractionContextMixin implements IContext {
   /// The target message for this context.
   final IMessage targetMessage;
 

@@ -2,7 +2,7 @@ import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/src/context/context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
-mixin InteractionContext implements Context {
+mixin InteractionContextMixin implements IContext {
   /// The [ISlashCommandInteraction] that triggered this context's execution.
   ISlashCommandInteraction get interaction;
 

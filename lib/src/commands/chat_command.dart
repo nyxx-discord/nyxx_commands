@@ -37,7 +37,7 @@ import 'group.dart';
 /// Note that text-only commands can be [Group]s containing slash commands and vice versa, but slash
 /// commands cannot be groups containing other slash commands due to
 /// [limitations on Discord](https://discord.com/developers/docs/interactions/application-commands#subcommands-and-subcommand-groups).
-abstract class ChatCommand with GroupMixin implements Command {
+abstract class ChatCommand with GroupMixin implements ICommand {
   /// The type of the command.
   ///
   /// A command's type indicates how it can be invoked; text-only commands can only be executed by
@@ -69,7 +69,7 @@ abstract class ChatCommand with GroupMixin implements Command {
         name,
         description,
         execute,
-        ChatContext,
+        IChatContext,
         aliases: aliases,
         type: type,
         children: children,
@@ -334,8 +334,8 @@ class SlashCommandImpl with GroupMixin implements ChatCommand {
   /// string representations or will not be parsed at all if the type received from the API is
   /// correct.
   @override
-  Future<void> invoke(Context context) async {
-    if (context is! ChatContext) {
+  Future<void> invoke(IContext context) async {
+    if (context is! IChatContext) {
       return;
     }
 
