@@ -18,7 +18,9 @@ import 'dart:mirrors';
 import 'package:logging/logging.dart';
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/src/commands/command.dart';
+import 'package:nyxx_commands/src/commands/message_command.dart';
 import 'package:nyxx_commands/src/commands/user_command.dart';
+import 'package:nyxx_commands/src/context/message_context.dart';
 import 'package:nyxx_commands/src/context/user_context.dart';
 import 'package:nyxx_commands/src/options.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
@@ -79,7 +81,7 @@ abstract class CommandsPlugin extends BasePlugin with GroupMixin {
   Converter<dynamic>? getConverter(Type target, {bool logWarn = false});
 
   @override
-  void addCommand(CommandComponent command);
+  void addCommand(ICommandComponent command);
 
   /// Create a new instance of [CommandsPlugin] to be used as a plugin on [INyxx] instances.
   factory CommandsPlugin({
@@ -122,7 +124,8 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
   @override
   Iterable<String> get aliases => throw UnsupportedError('get aliases');
 
-  final Map<String, Command> userCommands = {};
+  final Map<String, ICommand> userCommands = {};
+  final Map<String, ICommand> messageCommands = {};
 
   CommandsPluginImpl({
     required this.prefix,
@@ -186,7 +189,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
       StringView view = StringView(message.content);
 
       if (view.skipString(prefix)) {
-        ChatContext context = await messageChatContext(message, view, prefix);
+        IChatContext context = await messageChatContext(message, view, prefix);
 
         logger.fine('Invoking command ${context.command.name} from message $message');
 
@@ -202,7 +205,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     ChatCommand command,
   ) async {
     try {
-      ChatContext context = await interactionChatContext(interactionEvent, command);
+      IChatContext context = await interactionChatContext(interactionEvent, command);
 
       if (options.autoAcknowledgeInteractions) {
         Timer(Duration(seconds: 2), () async {
@@ -251,7 +254,33 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     }
   }
 
-  Future<ChatContext> messageChatContext(
+  Future<void> processMessageInteraction(
+      ISlashCommandInteractionEvent interactionEvent, MessageCommand command) async {
+    try {
+      MessageContext context = await interactionMessageContext(interactionEvent, command);
+
+      if (options.autoAcknowledgeInteractions) {
+        Timer(Duration(seconds: 2), () async {
+          try {
+            await interactionEvent.acknowledge(
+              hidden: options.hideOriginalResponse,
+            );
+          } on AlreadyRespondedError {
+            // ignore: command has responded itself
+          }
+        });
+      }
+
+      logger.fine('Invoking command ${context.command.name} '
+          'from interaction ${interactionEvent.interaction.token}');
+
+      await context.command.invoke(context);
+    } on CommandsException catch (e) {
+      onCommandErrorController.add(e);
+    }
+  }
+
+  Future<IChatContext> messageChatContext(
       IMessage message, StringView contentView, String prefix) async {
     ChatCommand command = getCommand(contentView) ?? (throw CommandNotFoundException(contentView));
 
@@ -283,7 +312,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     );
   }
 
-  Future<ChatContext> interactionChatContext(
+  Future<IChatContext> interactionChatContext(
       ISlashCommandInteractionEvent interactionEvent, ChatCommand command) async {
     ISlashCommandInteraction interaction = interactionEvent.interaction;
 
@@ -347,10 +376,41 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     );
   }
 
+  Future<MessageContext> interactionMessageContext(
+      ISlashCommandInteractionEvent interactionEvent, MessageCommand command) async {
+    ISlashCommandInteraction interaction = interactionEvent.interaction;
+
+    IMember? member = interaction.memberAuthor;
+    IUser user;
+    if (member != null) {
+      user = await member.user.getOrDownload();
+    } else {
+      user = interaction.userAuthor!;
+    }
+
+    IGuild? guild = await interaction.guild?.getOrDownload();
+
+    return MessageContext(
+      commands: this,
+      client: client!,
+      interactionEvent: interactionEvent,
+      interaction: interaction,
+      command: command,
+      channel: await interaction.channel.getOrDownload(),
+      member: member,
+      user: user,
+      guild: guild,
+      targetMessage: interaction.channel.getFromCache()!.messageCache[interaction.targetId] ??
+          await interaction.channel.getFromCache()!.fetchMessage(interaction.targetId!),
+    );
+  }
+
   Future<Iterable<SlashCommandBuilder>> getSlashBuilders() async {
     List<SlashCommandBuilder> builders = [];
 
-    for (final command in [...super.children, ...userCommands.values]) {
+    const Snowflake zeroSnowflake = Snowflake.zero();
+
+    for (final command in [...super.children, ...userCommands.values, ...messageCommands.values]) {
       if (command is GroupMixin) {
         if (command is ChatCommand && command.type == CommandType.textOnly) {
           continue;
@@ -364,14 +424,14 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
       Iterable<CommandPermissionBuilderAbstract> permissions = await getPermissions(command);
 
       if (permissions.length == 1 &&
-          permissions.first.id == Snowflake.zero() &&
+          permissions.first.id == zeroSnowflake &&
           !permissions.first.hasPermission) {
         continue;
       }
 
       bool defaultPermission = true;
       for (final permission in permissions) {
-        if (permission.id == Snowflake.zero()) {
+        if (permission.id == zeroSnowflake) {
           defaultPermission = permission.hasPermission;
           break;
         }
@@ -395,7 +455,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
             ),
             defaultPermissions: defaultPermission,
             permissions: List.of(
-              permissions.where((permission) => permission.id != Snowflake.zero()),
+              permissions.where((permission) => permission.id != zeroSnowflake),
             ),
             guild: guildId ?? guild,
             type: SlashCommandType.chat,
@@ -413,13 +473,29 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
             [],
             defaultPermissions: defaultPermission,
             permissions: List.of(
-              permissions.where((permission) => permission.id != Snowflake.zero()),
+              permissions.where((permission) => permission.id != zeroSnowflake),
             ),
             guild: guildId ?? guild,
             type: SlashCommandType.user,
           );
 
           builder.registerHandler((interaction) => processUserInteraction(interaction, command));
+
+          builders.add(builder);
+        } else if (command is MessageCommand) {
+          SlashCommandBuilder builder = SlashCommandBuilder(
+            command.name,
+            null,
+            [],
+            defaultPermissions: defaultPermission,
+            permissions: List.of(
+              permissions.where((permission) => permission.id != zeroSnowflake),
+            ),
+            guild: guildId ?? guild,
+            type: SlashCommandType.message,
+          );
+
+          builder.registerHandler((interaction) => processMessageInteraction(interaction, command));
 
           builders.add(builder);
         }
@@ -430,7 +506,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
   }
 
   Future<Iterable<CommandPermissionBuilderAbstract>> getPermissions(
-      CommandComponent command) async {
+      ICommandComponent command) async {
     Map<Snowflake, CommandPermissionBuilderAbstract> uniquePermissions = {};
 
     for (final check in command.checks) {
@@ -528,7 +604,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
   }
 
   @override
-  void addCommand(CommandComponent command) {
+  void addCommand(ICommandComponent command) {
     if (command is GroupMixin) {
       super.addCommand(command);
 
@@ -544,6 +620,17 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
       userCommands[command.name] = command;
 
       logger.info('Registered User Command "${command.name}"');
+
+      // TODO: hook commands' pre- and post- call streams to this plugin's
+    } else if (command is MessageCommand) {
+      if (messageCommands.containsKey(command.name)) {
+        throw CommandRegistrationError(
+            'Message Command with name "$fullName ${command.name}" already exists');
+      }
+
+      messageCommands[command.name] = command;
+
+      logger.info('Registered Message Command "${command.name}"');
 
       // TODO: hook commands' pre- and post- call streams to this plugin's
     } else {

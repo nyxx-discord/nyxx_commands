@@ -20,8 +20,8 @@ import 'package:nyxx_interactions/nyxx_interactions.dart';
 import '../commands.dart';
 import '../commands/chat_command.dart';
 
-/// Represents a [Context] in which a [ChatCommand] was executed.
-abstract class ChatContext implements Context {
+/// Represents a [IContext] in which a [ChatCommand] was executed.
+abstract class IChatContext implements IContext {
   /// The list of arguments parsed from this context.
   Iterable<dynamic> get arguments;
   set arguments(Iterable<dynamic> value);
@@ -30,8 +30,8 @@ abstract class ChatContext implements Context {
   ChatCommand get command;
 }
 
-/// Represents a [ChatContext] triggered by a message sent in a text channel.
-class MessageChatContext extends ChatContext {
+/// Represents a [IChatContext] triggered by a message sent in a text channel.
+class MessageChatContext extends IChatContext {
   /// The prefix that triggered this context's execution.
   final String prefix;
 
@@ -116,8 +116,8 @@ class MessageChatContext extends ChatContext {
   String toString() => 'MessageContext[message=$message, message.content=${message.content}]';
 }
 
-/// Represents a [ChatContext] triggered by a slash command ([ISlashCommandInteraction]).
-class InteractionChatContext with InteractionContext implements ChatContext {
+/// Represents a [IChatContext] triggered by a slash command ([ISlashCommandInteraction]).
+class InteractionChatContext with InteractionContextMixin implements IChatContext {
   /// The raw arguments received from the API, mapped by name to value.
   final Map<String, dynamic> rawArguments;
 

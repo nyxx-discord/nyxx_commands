@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:nyxx_commands/src/checks/checks.dart';
 import 'package:nyxx_commands/src/commands/command.dart';
 import 'package:nyxx_commands/src/context/context.dart';
-import 'package:nyxx_commands/src/context/user_context.dart';
+import 'package:nyxx_commands/src/context/message_context.dart';
 import 'package:nyxx_commands/src/errors.dart';
 
-class UserCommand implements ICommand {
+class MessageCommand implements ICommand {
   @override
   final String name;
 
@@ -14,21 +14,21 @@ class UserCommand implements ICommand {
   String get description => '';
 
   @override
-  final Function(UserContext) execute;
-
-  @override
   final List<AbstractCheck> checks = [];
 
-  final StreamController<UserContext> _preCallController = StreamController.broadcast();
-  final StreamController<UserContext> _postCallController = StreamController.broadcast();
+  final StreamController<MessageContext> _preCallController = StreamController.broadcast();
+  final StreamController<MessageContext> _postCallController = StreamController.broadcast();
 
   @override
-  late final Stream<UserContext> onPreCall = _preCallController.stream;
+  late final Stream<MessageContext> onPreCall = _preCallController.stream;
 
   @override
-  late final Stream<UserContext> onPostCall = _postCallController.stream;
+  late final Stream<MessageContext> onPostCall = _postCallController.stream;
 
-  UserCommand(
+  @override
+  final Function(MessageContext) execute;
+
+  MessageCommand(
     this.name,
     this.execute, {
     Iterable<AbstractCheck> checks = const [],
@@ -40,7 +40,7 @@ class UserCommand implements ICommand {
 
   @override
   Future<void> invoke(IContext context) async {
-    if (context is! UserContext) {
+    if (context is! MessageContext) {
       return;
     }
 

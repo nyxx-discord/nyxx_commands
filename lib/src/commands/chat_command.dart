@@ -28,102 +28,6 @@ import '../util/util.dart';
 import '../util/view.dart';
 import 'group.dart';
 
-/// A [ChatCommand] is a function bound to a name and arguments.
-///
-/// [ChatCommand]s can be text-only (meaning they can only be executed through sending a message with
-/// the bot's prefix) or slash-only (meaning they can only be executed through the means of a slash
-/// command). They can also be both, meaning they can be used both as a text and as a slash command.
-///
-/// Note that text-only commands can be [Group]s containing slash commands and vice versa, but slash
-/// commands cannot be groups containing other slash commands due to
-/// [limitations on Discord](https://discord.com/developers/docs/interactions/application-commands#subcommands-and-subcommand-groups).
-abstract class ChatCommand with GroupMixin implements Command {
-  /// The type of the command.
-  ///
-  /// A command's type indicates how it can be invoked; text-only commands can only be executed by
-  /// sending a text message on Discord and slash commands can only be invoked by executing a slash
-  /// command on Discord.
-  ///
-  /// Note that a command's type does not influence what type of children a command can have.
-  CommandType get type;
-
-  /// Similar to [checks] but only applies to this command.
-  ///
-  /// Normally checks are inherited from parent to child, but [singleChecks] will only ever apply to
-  /// this command and not its children.
-  Iterable<AbstractCheck> get singleChecks;
-
-  /// Create a new [ChatCommand]. This must then be registered with [CommandsPlugin.addCommand] or
-  /// [GroupMixin.addCommand] before it can be used.
-  factory ChatCommand(
-    String name,
-    String description,
-    Function execute, {
-    List<String> aliases = const [],
-    CommandType type = CommandType.all,
-    Iterable<GroupMixin> children = const [],
-    Iterable<AbstractCheck> checks = const [],
-    Iterable<AbstractCheck> singleChecks = const [],
-  }) =>
-      SlashCommandImpl(
-        name,
-        description,
-        execute,
-        ChatContext,
-        aliases: aliases,
-        type: type,
-        children: children,
-        checks: checks,
-        singleChecks: singleChecks,
-      );
-
-  /// Create a new text-only [ChatCommand]. This must then be registered with
-  /// [CommandsPlugin.addCommand] or [GroupMixin.addCommand] before it can be used.
-  factory ChatCommand.textOnly(
-    String name,
-    String description,
-    Function execute, {
-    List<String> aliases = const [],
-    Iterable<GroupMixin> children = const [],
-    Iterable<AbstractCheck> checks = const [],
-    Iterable<AbstractCheck> singleChecks = const [],
-  }) =>
-      SlashCommandImpl(
-        name,
-        description,
-        execute,
-        MessageChatContext,
-        aliases: aliases,
-        type: CommandType.textOnly,
-        children: children,
-        checks: checks,
-        singleChecks: singleChecks,
-      );
-
-  /// Create a new slash-only [ChatCommand]. This must then be registered with
-  /// [CommandsPlugin.addCommand] or [GroupMixin.addCommand] before it can be used.
-  factory ChatCommand.slashOnly(
-    String name,
-    String description,
-    Function execute, {
-    List<String> aliases = const [],
-    Iterable<GroupMixin> children = const [],
-    Iterable<AbstractCheck> checks = const [],
-    Iterable<AbstractCheck> singleChecks = const [],
-  }) =>
-      SlashCommandImpl(
-        name,
-        description,
-        execute,
-        InteractionChatContext,
-        aliases: aliases,
-        type: CommandType.slashOnly,
-        children: children,
-        checks: checks,
-        singleChecks: singleChecks,
-      );
-}
-
 /// An enum used to specify how a [ChatCommand] can be executed.
 enum CommandType {
   /// Only allow execution by message.
@@ -138,7 +42,16 @@ enum CommandType {
   all,
 }
 
-class SlashCommandImpl with GroupMixin implements ChatCommand {
+/// A [ChatCommand] is a function bound to a name and arguments.
+///
+/// [ChatCommand]s can be text-only (meaning they can only be executed through sending a message with
+/// the bot's prefix) or slash-only (meaning they can only be executed through the means of a slash
+/// command). They can also be both, meaning they can be used both as a text and as a slash command.
+///
+/// Note that text-only commands can be [Group]s containing slash commands and vice versa, but slash
+/// commands cannot be groups containing other slash commands due to
+/// [limitations on Discord](https://discord.com/developers/docs/interactions/application-commands#subcommands-and-subcommand-groups).
+class ChatCommand with GroupMixin implements ICommand {
   @override
   final String name;
 
@@ -148,13 +61,22 @@ class SlashCommandImpl with GroupMixin implements ChatCommand {
   @override
   final String description;
 
-  @override
+  /// The type of the command.
+  ///
+  /// A command's type indicates how it can be invoked; text-only commands can only be executed by
+  /// sending a text message on Discord and slash commands can only be invoked by executing a slash
+  /// command on Discord.
+  ///
+  /// Note that a command's type does not influence what type of children a command can have.
   final CommandType type;
 
   @override
   final Function execute;
 
-  @override
+  /// Similar to [checks] but only applies to this command.
+  ///
+  /// Normally checks are inherited from parent to child, but [singleChecks] will only ever apply to
+  /// this command and not its children.
   final List<AbstractCheck> singleChecks = [];
 
   late final MethodMirror _mirror;
@@ -167,7 +89,74 @@ class SlashCommandImpl with GroupMixin implements ChatCommand {
   final Map<String, Choices> _mappedChoices = {};
   final Map<String, UseConverter> _mappedConverterOverrides = {};
 
-  SlashCommandImpl(
+  /// Create a new [ChatCommand]. This must then be registered with [CommandsPlugin.addCommand] or
+  /// [GroupMixin.addCommand] before it can be used.
+  ChatCommand(
+    String name,
+    String description,
+    Function execute, {
+    List<String> aliases = const [],
+    CommandType type = CommandType.all,
+    Iterable<GroupMixin> children = const [],
+    Iterable<AbstractCheck> checks = const [],
+    Iterable<AbstractCheck> singleChecks = const [],
+  }) : this._(
+          name,
+          description,
+          execute,
+          IChatContext,
+          aliases: aliases,
+          type: type,
+          children: children,
+          checks: checks,
+          singleChecks: singleChecks,
+        );
+
+  /// Create a new text-only [ChatCommand]. This must then be registered with
+  /// [CommandsPlugin.addCommand] or [GroupMixin.addCommand] before it can be used.
+  ChatCommand.textOnly(
+    String name,
+    String description,
+    Function execute, {
+    List<String> aliases = const [],
+    Iterable<GroupMixin> children = const [],
+    Iterable<AbstractCheck> checks = const [],
+    Iterable<AbstractCheck> singleChecks = const [],
+  }) : this._(
+          name,
+          description,
+          execute,
+          MessageChatContext,
+          aliases: aliases,
+          type: CommandType.textOnly,
+          children: children,
+          checks: checks,
+          singleChecks: singleChecks,
+        );
+
+  /// Create a new slash-only [ChatCommand]. This must then be registered with
+  /// [CommandsPlugin.addCommand] or [GroupMixin.addCommand] before it can be used.
+  ChatCommand.slashOnly(
+    String name,
+    String description,
+    Function execute, {
+    List<String> aliases = const [],
+    Iterable<GroupMixin> children = const [],
+    Iterable<AbstractCheck> checks = const [],
+    Iterable<AbstractCheck> singleChecks = const [],
+  }) : this._(
+          name,
+          description,
+          execute,
+          InteractionChatContext,
+          aliases: aliases,
+          type: CommandType.slashOnly,
+          children: children,
+          checks: checks,
+          singleChecks: singleChecks,
+        );
+
+  ChatCommand._(
     this.name,
     this.description,
     this.execute,
@@ -334,8 +323,8 @@ class SlashCommandImpl with GroupMixin implements ChatCommand {
   /// string representations or will not be parsed at all if the type received from the API is
   /// correct.
   @override
-  Future<void> invoke(Context context) async {
-    if (context is! ChatContext) {
+  Future<void> invoke(IContext context) async {
+    if (context is! IChatContext) {
       return;
     }
 

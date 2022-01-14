@@ -35,7 +35,7 @@ abstract class AbstractCheck {
   /// The method called to validate this check.
   ///
   /// Should not change the check's internal state.
-  FutureOr<bool> check(Context context);
+  FutureOr<bool> check(IContext context);
 
   /// An Iterable of permission overrides that will be used on slash commands using this check.
   Future<Iterable<CommandPermissionBuilderAbstract>> get permissions;
@@ -45,14 +45,14 @@ abstract class AbstractCheck {
   ///
   /// Should be used by checks that have internal state to update that state, instead of updating it
   /// in [check].
-  Iterable<void Function(Context)> get preCallHooks;
+  Iterable<void Function(IContext)> get preCallHooks;
 
   /// An Iterable of post-call hooks that will be called when a command this check is on emits to
   /// [ChatCommand.onPostCall].
   ///
   /// Should be used by checks that have internal state to update that state, instead of updating it
   /// in [check].
-  Iterable<void Function(Context)> get postCallHooks;
+  Iterable<void Function(IContext)> get postCallHooks;
 
   @override
   String toString() => 'Check[name=$name]';
@@ -60,7 +60,7 @@ abstract class AbstractCheck {
 
 /// Represents a simple stateless check.
 class Check extends AbstractCheck {
-  final FutureOr<bool> Function(Context) _check;
+  final FutureOr<bool> Function(IContext) _check;
 
   /// Creates a new [Check].
   ///
@@ -91,16 +91,16 @@ class Check extends AbstractCheck {
       _GroupCheck(checks, name);
 
   @override
-  FutureOr<bool> check(Context context) => _check(context);
+  FutureOr<bool> check(IContext context) => _check(context);
 
   @override
   Future<Iterable<CommandPermissionBuilderAbstract>> get permissions => Future.value([]);
 
   @override
-  Iterable<void Function(Context context)> get postCallHooks => [];
+  Iterable<void Function(IContext context)> get postCallHooks => [];
 
   @override
-  Iterable<void Function(Context context)> get preCallHooks => [];
+  Iterable<void Function(IContext context)> get preCallHooks => [];
 }
 
 class _AnyCheck extends AbstractCheck {
@@ -116,7 +116,7 @@ class _AnyCheck extends AbstractCheck {
   }
 
   @override
-  FutureOr<bool> check(Context context) async {
+  FutureOr<bool> check(IContext context) async {
     for (final check in checks) {
       FutureOr<bool> result = check.check(context);
 
@@ -150,7 +150,7 @@ class _AnyCheck extends AbstractCheck {
   }
 
   @override
-  Iterable<void Function(Context)> get preCallHooks => [
+  Iterable<void Function(IContext)> get preCallHooks => [
         (context) {
           AbstractCheck? actualCheck = _succesfulChecks[context];
 
@@ -166,7 +166,7 @@ class _AnyCheck extends AbstractCheck {
       ];
 
   @override
-  Iterable<void Function(Context)> get postCallHooks => [
+  Iterable<void Function(IContext)> get postCallHooks => [
         (context) {
           AbstractCheck? actualCheck = _succesfulChecks[context];
 
@@ -210,10 +210,10 @@ class _DenyCheck extends Check {
   // a situation where there is no proper solution. Here, we assume that the source check will
   // reset its state on failure after failure, so calling the hooks is desireable.
   @override
-  Iterable<void Function(Context)> get preCallHooks => source.preCallHooks;
+  Iterable<void Function(IContext)> get preCallHooks => source.preCallHooks;
 
   @override
-  Iterable<void Function(Context)> get postCallHooks => source.postCallHooks;
+  Iterable<void Function(IContext)> get postCallHooks => source.postCallHooks;
 }
 
 class _GroupCheck extends Check {
@@ -238,11 +238,11 @@ class _GroupCheck extends Check {
               (acc, element) => (acc as List<CommandPermissionBuilderAbstract>)..addAll(element));
 
   @override
-  Iterable<void Function(Context)> get preCallHooks =>
+  Iterable<void Function(IContext)> get preCallHooks =>
       checks.map((e) => e.preCallHooks).expand((_) => _);
 
   @override
-  Iterable<void Function(Context)> get postCallHooks =>
+  Iterable<void Function(IContext)> get postCallHooks =>
       checks.map((e) => e.postCallHooks).expand((_) => _);
 }
 
@@ -507,7 +507,7 @@ class CooldownCheck extends AbstractCheck {
   late DateTime _currentStart = DateTime.now();
 
   @override
-  FutureOr<bool> check(Context context) {
+  FutureOr<bool> check(IContext context) {
     if (DateTime.now().isAfter(_currentStart.add(duration))) {
       _previousBucket = _currentBucket;
       _currentBucket = {};
@@ -530,8 +530,8 @@ class CooldownCheck extends AbstractCheck {
 
   bool _isActive(_BucketEntry entry) => entry.start.add(duration).isAfter(DateTime.now());
 
-  /// Get a key representing a [Context] depending on [type].
-  int getKey(Context context) {
+  /// Get a key representing a [IContext] depending on [type].
+  int getKey(IContext context) {
     List<int> keys = [];
 
     if (CooldownType.applies(type, CooldownType.category)) {
@@ -580,7 +580,7 @@ class CooldownCheck extends AbstractCheck {
   /// Get the remaining cooldown time for a context.
   ///
   /// If the context is not on cooldown, [Duration.zero] is returned.
-  Duration remaining(Context context) {
+  Duration remaining(IContext context) {
     if (check(context) as bool) {
       return Duration.zero;
     }
@@ -604,7 +604,7 @@ class CooldownCheck extends AbstractCheck {
   }
 
   @override
-  late Iterable<void Function(Context)> preCallHooks = [
+  late Iterable<void Function(IContext)> preCallHooks = [
     (context) {
       int key = getKey(context);
 
@@ -622,7 +622,7 @@ class CooldownCheck extends AbstractCheck {
   Future<Iterable<CommandPermissionBuilderAbstract>> get permissions => Future.value([]);
 
   @override
-  Iterable<void Function(Context p1)> get postCallHooks => [];
+  Iterable<void Function(IContext p1)> get postCallHooks => [];
 }
 
 /// A [Check] that checks that a [ChatCommand] is invoked from an [InteractionEvent].

@@ -1,18 +1,14 @@
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/src/commands.dart';
-import 'package:nyxx_commands/src/commands/user_command.dart';
+import 'package:nyxx_commands/src/commands/message_command.dart';
 import 'package:nyxx_commands/src/context/context.dart';
 import 'package:nyxx_commands/src/context/interaction_context.dart';
 import 'package:nyxx_interactions/src/models/interaction.dart';
 import 'package:nyxx_interactions/src/events/interaction_event.dart';
 
-/// Represents a [IContext] in which a [UserCommand] was executed.
-class UserContext with InteractionContextMixin implements IContext {
-  /// The target member for this context.
-  final IMember? targetMember;
-
-  /// The target user for this context, or the user representing [targetMember].
-  final IUser targetUser;
+class MessageContext with InteractionContextMixin implements IContext {
+  /// The target message for this context.
+  final IMessage targetMessage;
 
   @override
   final ITextChannel channel;
@@ -21,7 +17,7 @@ class UserContext with InteractionContextMixin implements IContext {
   final INyxx client;
 
   @override
-  final UserCommand command;
+  final MessageCommand command;
 
   @override
   final CommandsPlugin commands;
@@ -30,31 +26,30 @@ class UserContext with InteractionContextMixin implements IContext {
   final IGuild? guild;
 
   @override
-  final IMember? member;
-
-  @override
-  final IUser user;
-
-  @override
   final ISlashCommandInteraction interaction;
 
   @override
   final ISlashCommandInteractionEvent interactionEvent;
 
-  UserContext({
-    required this.targetMember,
-    required this.targetUser,
+  @override
+  final IMember? member;
+
+  @override
+  final IUser user;
+
+  MessageContext({
+    required this.targetMessage,
     required this.channel,
     required this.client,
     required this.command,
     required this.commands,
     required this.guild,
-    required this.member,
-    required this.user,
     required this.interaction,
     required this.interactionEvent,
+    required this.member,
+    required this.user,
   });
 
   @override
-  String toString() => 'UserContext[interaction=${interaction.token}, target=$targetUser]';
+  String toString() => 'MessageContext[interaction=${interaction.token}, message=$targetMessage}]';
 }

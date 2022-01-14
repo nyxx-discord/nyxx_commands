@@ -35,7 +35,7 @@ class CommandsException implements Exception {
 /// Base class for exceptions thrown during command invocation.
 class CommandInvocationException extends CommandsException {
   /// The context in which the exception occurred.
-  final Context context;
+  final IContext context;
 
   /// Create a new [CommandInvocationException] with a specific message and context.
   CommandInvocationException(String message, this.context) : super(message);
@@ -49,7 +49,7 @@ class UncaughtException extends CommandInvocationException {
   final Exception exception;
 
   /// Create a new [UncaughtException] with a specific exception and context.
-  UncaughtException(this.exception, Context context) : super(exception.toString(), context);
+  UncaughtException(this.exception, IContext context) : super(exception.toString(), context);
 }
 
 /// Base class for exceptions thrown during argument parsing.
@@ -57,7 +57,7 @@ class UncaughtException extends CommandInvocationException {
 /// A raw [BadInputException] is thrown when a [Converter] fails to parse an argument.
 class BadInputException extends CommandInvocationException {
   /// Create a new [BadInputException] with a specific message and context.
-  BadInputException(String message, ChatContext context) : super(message, context);
+  BadInputException(String message, IChatContext context) : super(message, context);
 }
 
 /// Exception thrown when a command is invoked without the minimum amount of arguments required.
@@ -77,7 +77,7 @@ class CheckFailedException extends CommandInvocationException {
   final AbstractCheck failed;
 
   /// Create a new [CheckFailedException] with a specific check and context.
-  CheckFailedException(this.failed, Context context)
+  CheckFailedException(this.failed, IContext context)
       : super('Check "${failed.name}" failed', context);
 }
 
@@ -87,7 +87,7 @@ class NoConverterException extends CommandInvocationException {
   final Type expectedType;
 
   /// Create a new [NoConverterException] with a specific expected type and context.
-  NoConverterException(this.expectedType, ChatContext context)
+  NoConverterException(this.expectedType, IChatContext context)
       : super('No converter found for type "$expectedType"', context);
 }
 

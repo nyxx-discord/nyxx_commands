@@ -30,7 +30,7 @@ import 'chat_command.dart';
 ///
 /// All [Group]s, [ChatCommand]s and [CommandsPlugin]s use this mixin to enable nesting and registration
 /// of commands.
-mixin GroupMixin implements CommandComponent {
+mixin GroupMixin implements ICommandComponent {
   /// A mapping of child names to children.
   ///
   /// Used for easier lookup of children based on both [name] and [aliases].
@@ -57,17 +57,17 @@ mixin GroupMixin implements CommandComponent {
 
   @protected
   // ignore: public_member_api_docs
-  final StreamController<ChatContext> preCallController = StreamController.broadcast();
+  final StreamController<IChatContext> preCallController = StreamController.broadcast();
 
   @protected
   // ignore: public_member_api_docs
-  final StreamController<ChatContext> postCallController = StreamController.broadcast();
+  final StreamController<IChatContext> postCallController = StreamController.broadcast();
 
   @override
-  late final Stream<ChatContext> onPreCall = preCallController.stream;
+  late final Stream<IChatContext> onPreCall = preCallController.stream;
 
   @override
-  late final Stream<ChatContext> onPostCall = postCallController.stream;
+  late final Stream<IChatContext> onPostCall = postCallController.stream;
 
   final List<AbstractCheck> _checks = [];
 
