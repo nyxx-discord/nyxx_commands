@@ -16,14 +16,14 @@ class MessageCommand implements ICommand {
   @override
   final List<AbstractCheck> checks = [];
 
-  final StreamController<MessageContext> preCallController = StreamController.broadcast();
-  final StreamController<MessageContext> postCallController = StreamController.broadcast();
+  final StreamController<MessageContext> _preCallController = StreamController.broadcast();
+  final StreamController<MessageContext> _postCallController = StreamController.broadcast();
 
   @override
-  late final Stream<MessageContext> onPreCall = preCallController.stream;
+  late final Stream<MessageContext> onPreCall = _preCallController.stream;
 
   @override
-  late final Stream<MessageContext> onPostCall = postCallController.stream;
+  late final Stream<MessageContext> onPostCall = _postCallController.stream;
 
   @override
   final Function(MessageContext) execute;
@@ -50,7 +50,7 @@ class MessageCommand implements ICommand {
       }
     }
 
-    preCallController.add(context);
+    _preCallController.add(context);
 
     try {
       await execute(context);
@@ -58,7 +58,7 @@ class MessageCommand implements ICommand {
       throw UncaughtException(e, context);
     }
 
-    postCallController.add(context);
+    _postCallController.add(context);
   }
 
   @override

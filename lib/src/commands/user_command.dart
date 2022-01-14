@@ -19,14 +19,14 @@ class UserCommand implements ICommand {
   @override
   final List<AbstractCheck> checks = [];
 
-  final StreamController<UserContext> preCallController = StreamController.broadcast();
-  final StreamController<UserContext> postCallController = StreamController.broadcast();
+  final StreamController<UserContext> _preCallController = StreamController.broadcast();
+  final StreamController<UserContext> _postCallController = StreamController.broadcast();
 
   @override
-  late final Stream<UserContext> onPreCall = preCallController.stream;
+  late final Stream<UserContext> onPreCall = _preCallController.stream;
 
   @override
-  late final Stream<UserContext> onPostCall = postCallController.stream;
+  late final Stream<UserContext> onPostCall = _postCallController.stream;
 
   UserCommand(
     this.name,
@@ -50,7 +50,7 @@ class UserCommand implements ICommand {
       }
     }
 
-    preCallController.add(context);
+    _preCallController.add(context);
 
     try {
       await execute(context);
@@ -58,7 +58,7 @@ class UserCommand implements ICommand {
       throw UncaughtException(e, context);
     }
 
-    postCallController.add(context);
+    _postCallController.add(context);
   }
 
   @override
