@@ -49,4 +49,7 @@ class MessageContext with InteractionContext implements Context {
     required this.member,
     required this.user,
   });
+
+  @override
+  String toString() => 'MessageContext[interaction=${interaction.token}, message=$targetMessage}]';
 }
