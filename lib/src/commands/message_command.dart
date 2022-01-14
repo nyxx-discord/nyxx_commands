@@ -6,19 +6,7 @@ import 'package:nyxx_commands/src/context/context.dart';
 import 'package:nyxx_commands/src/context/message_context.dart';
 import 'package:nyxx_commands/src/errors.dart';
 
-abstract class MessageCommand implements Command {
-  @override
-  Function(MessageContext) get execute;
-
-  factory MessageCommand(
-    String name,
-    Function(MessageContext) execute, {
-    Iterable<AbstractCheck> checks = const [],
-  }) =>
-      MessageCommandImpl(name, execute, checks: checks);
-}
-
-class MessageCommandImpl implements MessageCommand {
+class MessageCommand implements Command {
   @override
   final String name;
 
@@ -40,7 +28,7 @@ class MessageCommandImpl implements MessageCommand {
   @override
   final Function(MessageContext) execute;
 
-  MessageCommandImpl(
+  MessageCommand(
     this.name,
     this.execute, {
     Iterable<AbstractCheck> checks = const [],

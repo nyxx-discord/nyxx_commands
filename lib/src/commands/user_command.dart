@@ -6,19 +6,7 @@ import 'package:nyxx_commands/src/context/context.dart';
 import 'package:nyxx_commands/src/context/user_context.dart';
 import 'package:nyxx_commands/src/errors.dart';
 
-abstract class UserCommand implements Command {
-  @override
-  Function(UserContext) get execute;
-
-  factory UserCommand(
-    String name,
-    Function(UserContext) execute, {
-    Iterable<AbstractCheck> checks = const [],
-  }) =>
-      UserCommandImpl(name, execute, checks: checks);
-}
-
-class UserCommandImpl implements UserCommand {
+class UserCommand implements Command {
   @override
   final String name;
 
@@ -40,7 +28,7 @@ class UserCommandImpl implements UserCommand {
   @override
   late final Stream<UserContext> onPostCall = postCallController.stream;
 
-  UserCommandImpl(
+  UserCommand(
     this.name,
     this.execute, {
     Iterable<AbstractCheck> checks = const [],
