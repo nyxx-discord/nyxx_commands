@@ -168,15 +168,6 @@ mixin GroupMixin implements ICommandComponent {
     command.onPostCall.listen(postCallController.add);
   }
 
-  /// Add a child to this group.
-  ///
-  /// If any of its name or aliases confict with already registered commands, a
-  /// [CommandRegistrationError] is thrown.
-  ///
-  /// If [child] already has a parent, an [CommandRegistrationError] is thrown.
-  @Deprecated('Use addCommand() instead')
-  void registerChild(GroupMixin child) => addCommand(child);
-
   /// Iterate over all the commands in this group and any subgroups.
   Iterable<ChatCommand> walkCommands() sync* {
     if (this is ChatCommand) {
