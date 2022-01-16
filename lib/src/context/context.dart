@@ -1,6 +1,6 @@
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/src/commands.dart';
-import 'package:nyxx_commands/src/commands/command.dart';
+import 'package:nyxx_commands/src/commands/interfaces.dart';
 
 abstract class IContext {
   /// The [CommandsPlugin] that triggered this context's execution.
