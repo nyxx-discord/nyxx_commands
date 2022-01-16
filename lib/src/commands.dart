@@ -613,8 +613,6 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
       command.parent = this;
 
       logger.info('Registered User Command "${command.name}"');
-
-      // TODO: hook commands' pre- and post- call streams to this plugin's
     } else if (command is MessageCommand) {
       if (_messageCommands.containsKey(command.name)) {
         throw CommandRegistrationError(
@@ -626,8 +624,6 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
       command.parent = this;
 
       logger.info('Registered Message Command "${command.name}"');
-
-      // TODO: hook commands' pre- and post- call streams to this plugin's
     } else {
       logger.warning('Unknown command type "${command.runtimeType}"');
     }
