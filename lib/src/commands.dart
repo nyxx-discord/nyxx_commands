@@ -17,117 +17,81 @@ import 'dart:mirrors';
 
 import 'package:logging/logging.dart';
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/commands/command.dart';
+import 'package:nyxx_commands/src/commands/interfaces.dart';
 import 'package:nyxx_commands/src/commands/message_command.dart';
 import 'package:nyxx_commands/src/commands/user_command.dart';
+import 'package:nyxx_commands/src/context/context.dart';
 import 'package:nyxx_commands/src/context/message_context.dart';
 import 'package:nyxx_commands/src/context/user_context.dart';
 import 'package:nyxx_commands/src/options.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import 'checks/checks.dart';
-import 'commands/group.dart';
 import 'commands/chat_command.dart';
 import 'context/chat_context.dart';
 import 'converters/converter.dart';
 import 'errors.dart';
 import 'util/view.dart';
 
+final Logger logger = Logger('Commands');
+
 /// The base plugin class. Add this to your [INyxx] instance with [INyxx.registerPlugin] to use
 /// `nyxx_commands`.
-///
-/// Although this class mixes [GroupMixin], not all properties of [GroupMixin] are availible and
-/// will throw an [UnsupportedError] upon being accessed or called.
-abstract class CommandsPlugin extends BasePlugin with GroupMixin {
+class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
   /// The current prefix for this [CommandsPlugin].
   ///
   /// This is called for each message sent in any of [client]'s Guilds or Direct Messages to
   /// determine the prefix that message has to match to be parsed and interpreted as a command.
-  String Function(IMessage) get prefix;
+  final String Function(IMessage) prefix;
+
+  final StreamController<CommandsException> _onCommandErrorController =
+      StreamController.broadcast();
+  final StreamController<IContext> _onPreCallController = StreamController.broadcast();
+  final StreamController<IContext> _onPostCallController = StreamController.broadcast();
 
   /// A [Stream] of [CommandsException]s that are emitted during execution of a command.
-  Stream<CommandsException> get onCommandError;
+  late final Stream<CommandsException> onCommandError = _onCommandErrorController.stream;
+
+  @override
+  late final Stream<IContext> onPreCall = _onPreCallController.stream;
+
+  @override
+  late final Stream<IContext> onPostCall = _onPostCallController.stream;
+
+  final Map<Type, Converter<dynamic>> _converters = {};
 
   /// The [IInteractions] instance that this [CommandsPlugin] uses to manage commands.
   ///
   /// Use this instance if you wish to use `nyxx_interactions` features along with `nyxx_commands`.
   /// This instance's [IInteractions.sync] is called automatically when [client] is ready, so there
   /// is no need to call it yourself.
-  IInteractions get interactions;
+  late final IInteractions interactions;
 
   /// The options this [CommandsPlugin] uses.
-  CommandsOptions get options;
+  final CommandsOptions options;
 
   /// The guild for this [CommandsPlugin]. Unless a guild override is present (using [GuildCheck]),
   /// all commands registered by this bot will be registered in this guild.
   ///
   /// This does not prevent commands from being executed from elsewhere and should only be used for
   /// testing. Set to `null` to register commands globally.
-  Snowflake? get guild;
-
-  /// The client that this [CommandsPlugin] was added to.
-  INyxx? get client;
-
-  /// Add a [Converter] to this [CommandsPlugin]'s converters.
-  void addConverter<T>(Converter<T> converter);
-
-  /// Get the converter for a given [Type].
-  ///
-  /// If no converter registered with [addConverter] or present in the default converter set can be
-  /// used to parse arguments of type [target], a new [Converter] will be created with all the
-  /// converters thhat *might* convert to [target].
-  ///
-  /// If this occurs and [logWarn] is set to false, a warning will be issued.
-  Converter<dynamic>? getConverter(Type target, {bool logWarn = false});
-
-  @override
-  void addCommand(ICommandComponent command);
-
-  /// Create a new instance of [CommandsPlugin] to be used as a plugin on [INyxx] instances.
-  factory CommandsPlugin({
-    required String Function(IMessage) prefix,
-    Snowflake? guild,
-    CommandsOptions options = const CommandsOptions(),
-  }) =>
-      CommandsPluginImpl(prefix: prefix, guild: guild, options: options);
-}
-
-final Logger logger = Logger('Commands');
-
-class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsPlugin {
-  @override
-  final String Function(IMessage) prefix;
-
-  final StreamController<CommandsException> onCommandErrorController = StreamController.broadcast();
-
-  @override
-  late final Stream<CommandsException> onCommandError = onCommandErrorController.stream;
-
-  final Map<Type, Converter<dynamic>> converters = {};
-
-  @override
-  late final IInteractions interactions;
-
-  @override
-  final CommandsOptions options;
-
-  @override
   Snowflake? guild;
 
-  @override
+  /// The client that this [CommandsPlugin] was added to.
   INyxx? client;
 
   @override
-  String get name => throw UnsupportedError('get name');
-  @override
-  String get description => throw UnsupportedError('get description');
-  @override
-  Iterable<String> get aliases => throw UnsupportedError('get aliases');
+  final List<AbstractCheck> checks = [];
 
-  final Map<String, ICommand> userCommands = {};
-  final Map<String, ICommand> messageCommands = {};
+  final Map<String, UserCommand> _userCommands = {};
+  final Map<String, MessageCommand> _messageCommands = {};
+  final Map<String, IChatCommandComponent> _chatCommands = {};
 
-  CommandsPluginImpl({
+  @override
+  Iterable<ICommandRegisterable> get children =>
+      {..._userCommands.values, ..._messageCommands.values, ..._chatCommands.values};
+
+  CommandsPlugin({
     required this.prefix,
     this.guild,
     this.options = const CommandsOptions(),
@@ -148,7 +112,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     client = nyxx;
 
     if (nyxx is INyxxWebsocket) {
-      nyxx.eventsWs.onMessageReceived.listen((event) => processMessage(event.message));
+      nyxx.eventsWs.onMessageReceived.listen((event) => _processMessage(event.message));
 
       interactions = IInteractions.create(options.backend ?? WebsocketInteractionBackend(nyxx));
     } else {
@@ -159,14 +123,14 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     }
 
     if (nyxx.ready) {
-      for (final builder in await getSlashBuilders()) {
+      for (final builder in await _getSlashBuilders()) {
         interactions.registerSlashCommand(builder);
       }
 
       interactions.sync();
     } else {
       nyxx.onReady.listen((event) async {
-        for (final builder in await getSlashBuilders()) {
+        for (final builder in await _getSlashBuilders()) {
           interactions.registerSlashCommand(builder);
         }
 
@@ -175,7 +139,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     }
   }
 
-  Future<void> processMessage(IMessage message) async {
+  Future<void> _processMessage(IMessage message) async {
     if (message.author.bot && !options.acceptBotCommands) {
       return;
     }
@@ -189,23 +153,23 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
       StringView view = StringView(message.content);
 
       if (view.skipString(prefix)) {
-        IChatContext context = await messageChatContext(message, view, prefix);
+        IChatContext context = await _messageChatContext(message, view, prefix);
 
         logger.fine('Invoking command ${context.command.name} from message $message');
 
         await context.command.invoke(context);
       }
     } on CommandsException catch (e) {
-      onCommandErrorController.add(e);
+      _onCommandErrorController.add(e);
     }
   }
 
-  Future<void> processChatInteraction(
+  Future<void> _processChatInteraction(
     ISlashCommandInteractionEvent interactionEvent,
     ChatCommand command,
   ) async {
     try {
-      IChatContext context = await interactionChatContext(interactionEvent, command);
+      IChatContext context = await _interactionChatContext(interactionEvent, command);
 
       if (options.autoAcknowledgeInteractions) {
         Timer(Duration(seconds: 2), () async {
@@ -224,14 +188,14 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
 
       await context.command.invoke(context);
     } on CommandsException catch (e) {
-      onCommandErrorController.add(e);
+      _onCommandErrorController.add(e);
     }
   }
 
-  Future<void> processUserInteraction(
+  Future<void> _processUserInteraction(
       ISlashCommandInteractionEvent interactionEvent, UserCommand command) async {
     try {
-      UserContext context = await interactionUserContext(interactionEvent, command);
+      UserContext context = await _interactionUserContext(interactionEvent, command);
 
       if (options.autoAcknowledgeInteractions) {
         Timer(Duration(seconds: 2), () async {
@@ -250,14 +214,14 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
 
       await context.command.invoke(context);
     } on CommandsException catch (e) {
-      onCommandErrorController.add(e);
+      _onCommandErrorController.add(e);
     }
   }
 
-  Future<void> processMessageInteraction(
+  Future<void> _processMessageInteraction(
       ISlashCommandInteractionEvent interactionEvent, MessageCommand command) async {
     try {
-      MessageContext context = await interactionMessageContext(interactionEvent, command);
+      MessageContext context = await _interactionMessageContext(interactionEvent, command);
 
       if (options.autoAcknowledgeInteractions) {
         Timer(Duration(seconds: 2), () async {
@@ -276,11 +240,11 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
 
       await context.command.invoke(context);
     } on CommandsException catch (e) {
-      onCommandErrorController.add(e);
+      _onCommandErrorController.add(e);
     }
   }
 
-  Future<IChatContext> messageChatContext(
+  Future<IChatContext> _messageChatContext(
       IMessage message, StringView contentView, String prefix) async {
     ChatCommand command = getCommand(contentView) ?? (throw CommandNotFoundException(contentView));
 
@@ -312,7 +276,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     );
   }
 
-  Future<IChatContext> interactionChatContext(
+  Future<IChatContext> _interactionChatContext(
       ISlashCommandInteractionEvent interactionEvent, ChatCommand command) async {
     ISlashCommandInteraction interaction = interactionEvent.interaction;
 
@@ -344,7 +308,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     );
   }
 
-  Future<UserContext> interactionUserContext(
+  Future<UserContext> _interactionUserContext(
       ISlashCommandInteractionEvent interactionEvent, UserCommand command) async {
     ISlashCommandInteraction interaction = interactionEvent.interaction;
 
@@ -376,7 +340,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     );
   }
 
-  Future<MessageContext> interactionMessageContext(
+  Future<MessageContext> _interactionMessageContext(
       ISlashCommandInteractionEvent interactionEvent, MessageCommand command) async {
     ISlashCommandInteraction interaction = interactionEvent.interaction;
 
@@ -405,13 +369,13 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     );
   }
 
-  Future<Iterable<SlashCommandBuilder>> getSlashBuilders() async {
+  Future<Iterable<SlashCommandBuilder>> _getSlashBuilders() async {
     List<SlashCommandBuilder> builders = [];
 
     const Snowflake zeroSnowflake = Snowflake.zero();
 
-    for (final command in [...super.children, ...userCommands.values, ...messageCommands.values]) {
-      if (command is GroupMixin) {
+    for (final command in children) {
+      if (command is IChatCommandComponent) {
         if (command is ChatCommand && command.type == CommandType.textOnly) {
           continue;
         }
@@ -421,7 +385,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
         }
       }
 
-      Iterable<CommandPermissionBuilderAbstract> permissions = await getPermissions(command);
+      Iterable<CommandPermissionBuilderAbstract> permissions = await _getPermissions(command);
 
       if (permissions.length == 1 &&
           permissions.first.id == zeroSnowflake &&
@@ -446,12 +410,12 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
       Iterable<Snowflake?> guildIds = guildChecks.isNotEmpty ? guildChecks.first.guildIds : [null];
 
       for (final guildId in guildIds) {
-        if (command is GroupMixin) {
+        if (command is IChatCommandComponent) {
           SlashCommandBuilder builder = SlashCommandBuilder(
             command.name,
             command.description,
             List.of(
-              processHandlerRegistration(command.getOptions(this), command),
+              _processHandlerRegistration(command.getOptions(this), command),
             ),
             defaultPermissions: defaultPermission,
             permissions: List.of(
@@ -462,7 +426,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
           );
 
           if (command is ChatCommand) {
-            builder.registerHandler((interaction) => processChatInteraction(interaction, command));
+            builder.registerHandler((interaction) => _processChatInteraction(interaction, command));
           }
 
           builders.add(builder);
@@ -479,7 +443,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
             type: SlashCommandType.user,
           );
 
-          builder.registerHandler((interaction) => processUserInteraction(interaction, command));
+          builder.registerHandler((interaction) => _processUserInteraction(interaction, command));
 
           builders.add(builder);
         } else if (command is MessageCommand) {
@@ -495,7 +459,8 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
             type: SlashCommandType.message,
           );
 
-          builder.registerHandler((interaction) => processMessageInteraction(interaction, command));
+          builder
+              .registerHandler((interaction) => _processMessageInteraction(interaction, command));
 
           builders.add(builder);
         }
@@ -505,8 +470,7 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     return builders;
   }
 
-  Future<Iterable<CommandPermissionBuilderAbstract>> getPermissions(
-      ICommandComponent command) async {
+  Future<Iterable<CommandPermissionBuilderAbstract>> _getPermissions(IChecked command) async {
     Map<Snowflake, CommandPermissionBuilderAbstract> uniquePermissions = {};
 
     for (final check in command.checks) {
@@ -540,30 +504,43 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     return uniquePermissions.values;
   }
 
-  Iterable<CommandOptionBuilder> processHandlerRegistration(
+  Iterable<CommandOptionBuilder> _processHandlerRegistration(
     Iterable<CommandOptionBuilder> options,
-    GroupMixin current,
+    IChatCommandComponent current,
   ) {
     for (final builder in options) {
       if (builder.type == CommandOptionType.subCommand) {
-        builder.registerHandler((interaction) =>
-            processChatInteraction(interaction, current.childrenMap[builder.name] as ChatCommand));
+        builder.registerHandler(
+          (interaction) => _processChatInteraction(
+            interaction,
+            current.children.where((child) => child.name == builder.name) as ChatCommand,
+          ),
+        );
       } else if (builder.type == CommandOptionType.subCommandGroup) {
-        processHandlerRegistration(builder.options!, current.childrenMap[builder.name]!);
+        _processHandlerRegistration(
+          builder.options!,
+          current.children.where((child) => child.name == builder.name) as ChatCommand,
+        );
       }
     }
     return options;
   }
 
-  @override
+  /// Add a [Converter] to this [CommandsPlugin]'s converters.
   void addConverter<T>(Converter<T> converter) {
-    converters[T] = converter;
+    _converters[T] = converter;
   }
 
-  @override
+  /// Get the converter for a given [Type].
+  ///
+  /// If no converter registered with [addConverter] or present in the default converter set can be
+  /// used to parse arguments of type [target], a new [Converter] will be created with all the
+  /// converters thhat *might* convert to [target].
+  ///
+  /// If this occurs and [logWarn] is set to false, a warning will be issued.
   Converter<dynamic>? getConverter(Type type, {bool logWarn = true}) {
-    if (converters.containsKey(type)) {
-      return converters[type]!;
+    if (_converters.containsKey(type)) {
+      return _converters[type]!;
     }
 
     TypeMirror targetMirror = reflectType(type);
@@ -571,13 +548,13 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     List<Converter<dynamic>> assignable = [];
     List<Converter<dynamic>> superClasses = [];
 
-    for (final key in converters.keys) {
+    for (final key in _converters.keys) {
       TypeMirror keyMirror = reflectType(key);
 
       if (keyMirror.isAssignableTo(targetMirror)) {
-        assignable.add(converters[key]!);
+        assignable.add(_converters[key]!);
       } else if (targetMirror.isAssignableTo(keyMirror)) {
-        superClasses.add(converters[key]!);
+        superClasses.add(_converters[key]!);
       }
     }
 
@@ -604,38 +581,55 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
   }
 
   @override
-  void addCommand(ICommandComponent command) {
-    if (command is GroupMixin) {
-      super.addCommand(command);
+  void addCommand(ICommandRegisterable<IContext> command) {
+    if (command is IChatCommandComponent) {
+      if (_chatCommands.containsKey(command.name)) {
+        throw CommandRegistrationError('Command with name "${command.name}" already exists');
+      }
 
-      for (final child in command.walkCommands()) {
+      for (final alias in command.aliases) {
+        if (_chatCommands.containsKey(alias)) {
+          throw CommandRegistrationError('Command with alias "$alias" already exists');
+        }
+      }
+
+      command.parent = this;
+
+      _chatCommands[command.name] = command;
+      for (final alias in command.aliases) {
+        _chatCommands[alias] = command;
+      }
+
+      for (final child in command.walkCommands() as Iterable<IChatCommandComponent>) {
         logger.info('Registered command "${child.fullName}"');
       }
     } else if (command is UserCommand) {
-      if (userCommands.containsKey(command.name)) {
-        throw CommandRegistrationError(
-            'User Command with name "$fullName ${command.name}" already exists');
+      if (_userCommands.containsKey(command.name)) {
+        throw CommandRegistrationError('User Command with name "${command.name}" already exists');
       }
 
-      userCommands[command.name] = command;
+      _userCommands[command.name] = command;
+
+      command.parent = this;
 
       logger.info('Registered User Command "${command.name}"');
-
-      // TODO: hook commands' pre- and post- call streams to this plugin's
     } else if (command is MessageCommand) {
-      if (messageCommands.containsKey(command.name)) {
+      if (_messageCommands.containsKey(command.name)) {
         throw CommandRegistrationError(
-            'Message Command with name "$fullName ${command.name}" already exists');
+            'Message Command with name "${command.name}" already exists');
       }
 
-      messageCommands[command.name] = command;
+      _messageCommands[command.name] = command;
+
+      command.parent = this;
 
       logger.info('Registered Message Command "${command.name}"');
-
-      // TODO: hook commands' pre- and post- call streams to this plugin's
     } else {
       logger.warning('Unknown command type "${command.runtimeType}"');
     }
+
+    command.onPreCall.listen(_onPreCallController.add);
+    command.onPostCall.listen(_onPostCallController.add);
 
     if (client?.ready ?? false) {
       logger.warning('Registering commands after bot is ready might cause global commands to be '
@@ -644,7 +638,61 @@ class CommandsPluginImpl extends BasePlugin with GroupMixin implements CommandsP
     }
   }
 
+  /// Get a [Command] based off a [StringView].
+  ///
+  /// This is usually used to obtain the command being executed in a message, after the prefix has
+  /// been skipped in the view.
+  ///
+  /// This will not search registered User or Message commands, as the only command type to have to
+  /// search it's command based on a [StringView] are text Chat commands.
+  @override
+  ChatCommand? getCommand(StringView view) {
+    String name = view.getWord();
+
+    if (_chatCommands.containsKey(name)) {
+      IChatCommandComponent child = _chatCommands[name]!;
+
+      if (child is ChatCommand && child.type != CommandType.slashOnly) {
+        ChatCommand? found = child.getCommand(view);
+
+        if (found == null) {
+          return child;
+        }
+
+        return found;
+      } else {
+        return child.getCommand(view) as ChatCommand;
+      }
+    }
+
+    view.undo();
+    return null;
+  }
+
+  @override
+  Iterable<ICommand> walkCommands() sync* {
+    yield* _userCommands.values;
+    yield* _messageCommands.values;
+
+    for (final command in Set.of(_chatCommands.values)) {
+      yield* command.walkCommands();
+    }
+  }
+
+  @override
+  void check(AbstractCheck check) {
+    checks.add(check);
+
+    for (final preCallHook in check.preCallHooks) {
+      onPreCall.listen(preCallHook);
+    }
+
+    for (final postCallHook in check.postCallHooks) {
+      onPostCall.listen(postCallHook);
+    }
+  }
+
   @override
   String toString() =>
-      'CommandsPlugin[commands=${List.of(walkCommands())}, converters=${List.of(converters.values)}]';
+      'CommandsPlugin[commands=${List.of(walkCommands())}, converters=${List.of(_converters.values)}]';
 }

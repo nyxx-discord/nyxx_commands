@@ -17,9 +17,7 @@ import 'dart:async';
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/nyxx_commands.dart';
 import 'package:nyxx_commands/src/commands.dart';
-import 'package:nyxx_commands/src/context/chat_context.dart';
 import 'package:nyxx_commands/src/context/context.dart';
-import 'package:nyxx_commands/src/context/interaction_context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 /// Represents a check executed on a [ChatCommand].

@@ -6,7 +6,6 @@ export 'src/checks/checks.dart'
     show AbstractCheck, Check, GuildCheck, RoleCheck, UserCheck, CooldownCheck, CooldownType;
 export 'src/commands.dart' show CommandsPlugin;
 export 'src/commands/chat_command.dart' show ChatCommand, CommandType;
-export 'src/commands/group.dart' show Group, GroupMixin;
 export 'src/context/chat_context.dart'
     show IChatContext, InteractionChatContext, MessageChatContext;
 export 'src/converters/converter.dart'

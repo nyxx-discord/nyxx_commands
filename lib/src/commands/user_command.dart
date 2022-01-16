@@ -1,23 +1,20 @@
 import 'dart:async';
 
 import 'package:nyxx_commands/src/checks/checks.dart';
-import 'package:nyxx_commands/src/commands/command.dart';
+import 'package:nyxx_commands/src/commands/interfaces.dart';
 import 'package:nyxx_commands/src/context/context.dart';
 import 'package:nyxx_commands/src/context/user_context.dart';
 import 'package:nyxx_commands/src/errors.dart';
+import 'package:nyxx_commands/src/util/mixins.dart';
 
-class UserCommand implements ICommand {
+class UserCommand
+    with ParentMixin<UserContext>, CheckMixin<UserContext>
+    implements ICommand<UserContext> {
   @override
   final String name;
 
   @override
-  String get description => '';
-
-  @override
   final Function(UserContext) execute;
-
-  @override
-  final List<AbstractCheck> checks = [];
 
   final StreamController<UserContext> _preCallController = StreamController.broadcast();
   final StreamController<UserContext> _postCallController = StreamController.broadcast();
@@ -59,18 +56,5 @@ class UserCommand implements ICommand {
     }
 
     _postCallController.add(context);
-  }
-
-  @override
-  void check(AbstractCheck check) {
-    checks.add(check);
-
-    for (final preCallHook in check.preCallHooks) {
-      onPreCall.listen(preCallHook);
-    }
-
-    for (final postCallHook in check.postCallHooks) {
-      onPostCall.listen(postCallHook);
-    }
   }
 }

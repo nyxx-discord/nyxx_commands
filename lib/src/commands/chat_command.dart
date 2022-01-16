@@ -15,8 +15,9 @@
 import 'dart:async';
 import 'dart:mirrors';
 
-import 'package:nyxx_commands/src/commands/command.dart';
+import 'package:nyxx_commands/src/commands/interfaces.dart';
 import 'package:nyxx_commands/src/context/context.dart';
+import 'package:nyxx_commands/src/util/mixins.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../checks/checks.dart';
@@ -26,7 +27,6 @@ import '../converters/converter.dart';
 import '../errors.dart';
 import '../util/util.dart';
 import '../util/view.dart';
-import 'group.dart';
 
 /// An enum used to specify how a [ChatCommand] can be executed.
 enum CommandType {
@@ -42,6 +42,160 @@ enum CommandType {
   all,
 }
 
+mixin ChatGroupMixin implements IChatCommandComponent {
+  final StreamController<IChatContext> _onPreCallController = StreamController.broadcast();
+  final StreamController<IChatContext> _onPostCallController = StreamController.broadcast();
+
+  @override
+  late final Stream<IChatContext> onPreCall = _onPreCallController.stream;
+
+  @override
+  late final Stream<IChatContext> onPostCall = _onPostCallController.stream;
+
+  final Map<String, IChatCommandComponent> _childrenMap = {};
+
+  @override
+  void addCommand(ICommandRegisterable<IChatContext> command) {
+    if (command is! IChatCommandComponent) {
+      throw CommandsError(
+          'All child commands of chat groups or commands must implement IChatCommandComponent');
+    }
+
+    if (_childrenMap.containsKey(command.name)) {
+      throw CommandRegistrationError(
+          'Command with name "$fullName ${command.name}" already exists');
+    }
+
+    for (final alias in command.aliases) {
+      if (_childrenMap.containsKey(alias)) {
+        throw CommandRegistrationError('Command with alias "$fullName $alias" already exists');
+      }
+    }
+
+    if (parent != null) {
+      logger.warning('Registering commands to a group after it is registered might cause slash '
+          'commands to have incomplete definitions');
+    }
+
+    command.parent = this;
+
+    _childrenMap[command.name] = command;
+    for (final alias in command.aliases) {
+      _childrenMap[alias] = command;
+    }
+
+    command.onPreCall.listen(_onPreCallController.add);
+    command.onPostCall.listen(_onPostCallController.add);
+  }
+
+  @override
+  Iterable<IChatCommandComponent> get children => Set.of(_childrenMap.values);
+
+  @override
+  Iterable<ChatCommand> walkCommands() sync* {
+    if (this is ChatCommand) {
+      yield this as ChatCommand;
+    }
+
+    for (final child in children) {
+      yield* child.walkCommands() as Iterable<ChatCommand>;
+    }
+  }
+
+  @override
+  ChatCommand? getCommand(StringView view) {
+    String name = view.getWord();
+
+    if (_childrenMap.containsKey(name)) {
+      IChatCommandComponent child = _childrenMap[name]!;
+
+      if (child is ChatCommand && child.type != CommandType.slashOnly) {
+        ChatCommand? found = child.getCommand(view);
+
+        if (found == null) {
+          return child;
+        }
+
+        return found;
+      } else {
+        return child.getCommand(view) as ChatCommand;
+      }
+    }
+
+    view.undo();
+    return null;
+  }
+
+  @override
+  String get fullName =>
+      (parent == null || parent is! ICommandRegisterable
+          ? ''
+          : (parent as ICommandRegisterable).name + ' ') +
+      name;
+
+  @override
+  bool get hasSlashCommand => children.any((child) =>
+      (child is ChatCommand && child.type != CommandType.textOnly) || child.hasSlashCommand);
+
+  @override
+  Iterable<CommandOptionBuilder> getOptions(CommandsPlugin commands) {
+    List<CommandOptionBuilder> options = [];
+
+    for (final child in children) {
+      if (child.hasSlashCommand) {
+        options.add(CommandOptionBuilder(
+          CommandOptionType.subCommandGroup,
+          child.name,
+          child.description,
+          options: List.of(child.getOptions(commands)),
+        ));
+      } else if (child is ChatCommand && child.type != CommandType.textOnly) {
+        options.add(CommandOptionBuilder(
+          CommandOptionType.subCommand,
+          child.name,
+          child.description,
+          options: List.of(child.getOptions(commands)),
+        ));
+      }
+    }
+
+    return options;
+  }
+}
+
+class ChatGroup
+    with ChatGroupMixin, ParentMixin<IChatContext>, CheckMixin<IChatContext>
+    implements IChatCommandComponent {
+  @override
+  final List<String> aliases;
+
+  @override
+  final String description;
+
+  @override
+  final String name;
+
+  ChatGroup(
+    this.name,
+    this.description, {
+    this.aliases = const [],
+    Iterable<IChatCommandComponent> children = const [],
+    Iterable<AbstractCheck> checks = const [],
+  }) {
+    if (!commandNameRegexp.hasMatch(name) || name != name.toLowerCase()) {
+      throw CommandRegistrationError('Invalid group name "$name"');
+    }
+
+    for (final child in children) {
+      addCommand(child);
+    }
+
+    for (final check in checks) {
+      super.check(check);
+    }
+  }
+}
+
 /// A [ChatCommand] is a function bound to a name and arguments.
 ///
 /// [ChatCommand]s can be text-only (meaning they can only be executed through sending a message with
@@ -51,7 +205,9 @@ enum CommandType {
 /// Note that text-only commands can be [Group]s containing slash commands and vice versa, but slash
 /// commands cannot be groups containing other slash commands due to
 /// [limitations on Discord](https://discord.com/developers/docs/interactions/application-commands#subcommands-and-subcommand-groups).
-class ChatCommand with GroupMixin implements ICommand {
+class ChatCommand
+    with ChatGroupMixin, ParentMixin<IChatContext>, CheckMixin<IChatContext>
+    implements ICommand<IChatContext>, IChatCommandComponent {
   @override
   final String name;
 
@@ -97,7 +253,7 @@ class ChatCommand with GroupMixin implements ICommand {
     Function execute, {
     List<String> aliases = const [],
     CommandType type = CommandType.all,
-    Iterable<GroupMixin> children = const [],
+    Iterable<IChatCommandComponent> children = const [],
     Iterable<AbstractCheck> checks = const [],
     Iterable<AbstractCheck> singleChecks = const [],
   }) : this._(
@@ -119,7 +275,7 @@ class ChatCommand with GroupMixin implements ICommand {
     String description,
     Function execute, {
     List<String> aliases = const [],
-    Iterable<GroupMixin> children = const [],
+    Iterable<IChatCommandComponent> children = const [],
     Iterable<AbstractCheck> checks = const [],
     Iterable<AbstractCheck> singleChecks = const [],
   }) : this._(
@@ -141,7 +297,7 @@ class ChatCommand with GroupMixin implements ICommand {
     String description,
     Function execute, {
     List<String> aliases = const [],
-    Iterable<GroupMixin> children = const [],
+    Iterable<IChatCommandComponent> children = const [],
     Iterable<AbstractCheck> checks = const [],
     Iterable<AbstractCheck> singleChecks = const [],
   }) : this._(
@@ -163,7 +319,7 @@ class ChatCommand with GroupMixin implements ICommand {
     Type contextType, {
     this.aliases = const [],
     this.type = CommandType.all,
-    Iterable<GroupMixin> children = const [],
+    Iterable<IChatCommandComponent> children = const [],
     Iterable<AbstractCheck> checks = const [],
     Iterable<AbstractCheck> singleChecks = const [],
   }) {
@@ -386,7 +542,7 @@ class ChatCommand with GroupMixin implements ICommand {
       }
     }
 
-    preCallController.add(context);
+    _onPreCallController.add(context);
 
     try {
       await Function.apply(execute, [context, ...context.arguments]);
@@ -394,7 +550,7 @@ class ChatCommand with GroupMixin implements ICommand {
       throw UncaughtException(e, context);
     }
 
-    postCallController.add(context);
+    _onPostCallController.add(context);
   }
 
   @override
@@ -441,7 +597,12 @@ class ChatCommand with GroupMixin implements ICommand {
   }
 
   @override
-  void addCommand(GroupMixin command) {
+  void addCommand(ICommandRegisterable<IChatContext> command) {
+    if (command is! IChatCommandComponent) {
+      throw CommandsError(
+          'All child commands of chat groups or commands must implement IChatCommandComponent');
+    }
+
     if (type != CommandType.textOnly) {
       if (command.hasSlashCommand ||
           (command is ChatCommand && command.type != CommandType.textOnly)) {
