@@ -16,6 +16,7 @@ export 'src/checks/checks.dart'
 export 'src/commands.dart' show CommandsPlugin;
 export 'src/commands/chat_command.dart' show ChatCommand, ChatGroup, CommandType;
 export 'src/commands/message_command.dart' show MessageCommand;
+export 'src/commands/options.dart' show CommandOptions;
 export 'src/commands/user_command.dart' show UserCommand;
 export 'src/context/chat_context.dart'
     show IChatContext, InteractionChatContext, MessageChatContext;
