@@ -1,12 +1,13 @@
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/src/commands.dart';
 import 'package:nyxx_commands/src/commands/message_command.dart';
+import 'package:nyxx_commands/src/context/component_wrappers.dart';
 import 'package:nyxx_commands/src/context/context.dart';
 import 'package:nyxx_commands/src/context/interaction_context.dart';
 import 'package:nyxx_interactions/src/models/interaction.dart';
 import 'package:nyxx_interactions/src/events/interaction_event.dart';
 
-class MessageContext with InteractionContextMixin implements IContext {
+class MessageContext with InteractionContextMixin, ComponentWrappersMixin implements IContext {
   /// The target message for this context.
   final IMessage targetMessage;
 
