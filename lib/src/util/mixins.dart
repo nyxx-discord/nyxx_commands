@@ -15,6 +15,7 @@ mixin ParentMixin<T extends IContext> implements ICommandRegisterable<T> {
     if (_parent != null) {
       throw CommandRegistrationError('Cannot register command "$name" again');
     }
+    _parent = parent;
   }
 }
 
