@@ -8,7 +8,7 @@ import 'package:nyxx_commands/src/errors.dart';
 import 'package:nyxx_commands/src/util/mixins.dart';
 
 class MessageCommand
-    with ParentMixin<MessageContext>, CheckMixin<MessageContext>
+    with ParentMixin<MessageContext>, CheckMixin<MessageContext>, OptionsMixin<MessageContext>
     implements ICommand<MessageContext> {
   @override
   final String name;

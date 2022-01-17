@@ -8,7 +8,7 @@ import 'package:nyxx_commands/src/errors.dart';
 import 'package:nyxx_commands/src/util/mixins.dart';
 
 class UserCommand
-    with ParentMixin<UserContext>, CheckMixin<UserContext>
+    with ParentMixin<UserContext>, CheckMixin<UserContext>, OptionsMixin<UserContext>
     implements ICommand<UserContext> {
   @override
   final String name;

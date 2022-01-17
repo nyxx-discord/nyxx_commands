@@ -68,6 +68,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
   late final IInteractions interactions;
 
   /// The options this [CommandsPlugin] uses.
+  @override
   final CommandsOptions options;
 
   /// The guild for this [CommandsPlugin]. Unless a guild override is present (using [GuildCheck]),
@@ -140,20 +141,21 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
   }
 
   Future<void> _processMessage(IMessage message) async {
-    if (message.author.bot && !options.acceptBotCommands) {
-      return;
-    }
-
-    if (message.author.id == (client as INyxxRest).self.id && !options.acceptSelfCommands) {
-      return;
-    }
-
     try {
       String prefix = this.prefix(message);
       StringView view = StringView(message.content);
 
       if (view.skipString(prefix)) {
         IChatContext context = await _messageChatContext(message, view, prefix);
+
+        if (message.author.bot && !context.command.options.acceptBotCommands!) {
+          return;
+        }
+
+        if (message.author.id == (client as INyxxRest).self.id &&
+            !context.command.options.acceptSelfCommands!) {
+          return;
+        }
 
         logger.fine('Invoking command ${context.command.name} from message $message');
 
@@ -171,11 +173,11 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     try {
       IChatContext context = await _interactionChatContext(interactionEvent, command);
 
-      if (options.autoAcknowledgeInteractions) {
+      if (context.command.options.autoAcknowledgeInteractions!) {
         Timer(Duration(seconds: 2), () async {
           try {
             await interactionEvent.acknowledge(
-              hidden: options.hideOriginalResponse,
+              hidden: context.command.options.hideOriginalResponse!,
             );
           } on AlreadyRespondedError {
             // ignore: command has responded itself

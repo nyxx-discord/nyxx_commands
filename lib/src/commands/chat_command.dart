@@ -164,7 +164,11 @@ mixin ChatGroupMixin implements IChatCommandComponent {
 }
 
 class ChatGroup
-    with ChatGroupMixin, ParentMixin<IChatContext>, CheckMixin<IChatContext>
+    with
+        ChatGroupMixin,
+        ParentMixin<IChatContext>,
+        CheckMixin<IChatContext>,
+        OptionsMixin<IChatContext>
     implements IChatCommandComponent {
   @override
   final List<String> aliases;
@@ -206,7 +210,11 @@ class ChatGroup
 /// commands cannot be groups containing other slash commands due to
 /// [limitations on Discord](https://discord.com/developers/docs/interactions/application-commands#subcommands-and-subcommand-groups).
 class ChatCommand
-    with ChatGroupMixin, ParentMixin<IChatContext>, CheckMixin<IChatContext>
+    with
+        ChatGroupMixin,
+        ParentMixin<IChatContext>,
+        CheckMixin<IChatContext>,
+        OptionsMixin<IChatContext>
     implements ICommand<IChatContext>, IChatCommandComponent {
   @override
   final String name;
