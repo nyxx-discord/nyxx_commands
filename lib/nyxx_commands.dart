@@ -3,15 +3,29 @@
 library nyxx_commands;
 
 export 'src/checks/checks.dart'
-    show AbstractCheck, Check, GuildCheck, RoleCheck, UserCheck, CooldownCheck, CooldownType;
+    show
+        AbstractCheck,
+        Check,
+        CooldownCheck,
+        CooldownType,
+        GuildCheck,
+        InteractionCheck,
+        MessageCheck,
+        RoleCheck,
+        UserCheck;
 export 'src/commands.dart' show CommandsPlugin;
-export 'src/commands/chat_command.dart' show ChatCommand, CommandType;
+export 'src/commands/chat_command.dart' show ChatCommand, ChatGroup, CommandType;
+export 'src/commands/message_command.dart' show MessageCommand;
+export 'src/commands/user_command.dart' show UserCommand;
 export 'src/context/chat_context.dart'
     show IChatContext, InteractionChatContext, MessageChatContext;
+export 'src/context/context.dart' show IContext;
+export 'src/context/message_context.dart' show MessageContext;
+export 'src/context/user_context.dart' show UserContext;
 export 'src/converters/converter.dart'
     show
-        Converter,
         CombineConverter,
+        Converter,
         FallbackConverter,
         boolConverter,
         categoryGuildChannelConverter,
@@ -26,18 +40,16 @@ export 'src/converters/converter.dart'
         stringConverter,
         textGuildChannelConverter,
         userConverter,
-        voiceGuildChannelConverter,
-        parse,
-        registerDefaultConverters;
+        voiceGuildChannelConverter;
 export 'src/errors.dart'
     show
-        CommandsException,
-        CommandsError,
         BadInputException,
         CheckFailedException,
         CommandInvocationException,
         CommandNotFoundException,
         CommandRegistrationError,
+        CommandsError,
+        CommandsException,
         NoConverterException,
         NotEnoughArgumentsException,
         ParsingException,
@@ -49,8 +61,8 @@ export 'src/util/util.dart'
         Description,
         Name,
         UseConverter,
+        commandNameRegexp,
         convertToKebabCase,
-        mentionOr,
         dmOr,
-        commandNameRegexp;
+        mentionOr;
 export 'src/util/view.dart' show StringView;
