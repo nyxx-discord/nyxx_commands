@@ -15,6 +15,7 @@
 import 'dart:async';
 import 'dart:mirrors';
 
+import 'package:nyxx_commands/nyxx_commands.dart';
 import 'package:nyxx_commands/src/commands/interfaces.dart';
 import 'package:nyxx_commands/src/context/context.dart';
 import 'package:nyxx_commands/src/util/mixins.dart';
@@ -179,12 +180,16 @@ class ChatGroup
   @override
   final String name;
 
+  @override
+  final CommandOptions options;
+
   ChatGroup(
     this.name,
     this.description, {
     this.aliases = const [],
     Iterable<IChatCommandComponent> children = const [],
     Iterable<AbstractCheck> checks = const [],
+    this.options = const CommandOptions(),
   }) {
     if (!commandNameRegexp.hasMatch(name) || name != name.toLowerCase()) {
       throw CommandRegistrationError('Invalid group name "$name"');
@@ -243,6 +248,9 @@ class ChatCommand
   /// this command and not its children.
   final List<AbstractCheck> singleChecks = [];
 
+  @override
+  final CommandOptions options;
+
   late final MethodMirror _mirror;
   late final Iterable<ParameterMirror> _arguments;
   late final int _requiredArguments;
@@ -264,6 +272,7 @@ class ChatCommand
     Iterable<IChatCommandComponent> children = const [],
     Iterable<AbstractCheck> checks = const [],
     Iterable<AbstractCheck> singleChecks = const [],
+    CommandOptions options = const CommandOptions(),
   }) : this._(
           name,
           description,
@@ -274,6 +283,7 @@ class ChatCommand
           children: children,
           checks: checks,
           singleChecks: singleChecks,
+          options: options,
         );
 
   /// Create a new text-only [ChatCommand]. This must then be registered with
@@ -286,6 +296,7 @@ class ChatCommand
     Iterable<IChatCommandComponent> children = const [],
     Iterable<AbstractCheck> checks = const [],
     Iterable<AbstractCheck> singleChecks = const [],
+    CommandOptions options = const CommandOptions(),
   }) : this._(
           name,
           description,
@@ -296,6 +307,7 @@ class ChatCommand
           children: children,
           checks: checks,
           singleChecks: singleChecks,
+          options: options,
         );
 
   /// Create a new slash-only [ChatCommand]. This must then be registered with
@@ -308,6 +320,7 @@ class ChatCommand
     Iterable<IChatCommandComponent> children = const [],
     Iterable<AbstractCheck> checks = const [],
     Iterable<AbstractCheck> singleChecks = const [],
+    CommandOptions options = const CommandOptions(),
   }) : this._(
           name,
           description,
@@ -318,6 +331,7 @@ class ChatCommand
           children: children,
           checks: checks,
           singleChecks: singleChecks,
+          options: options,
         );
 
   ChatCommand._(
@@ -330,6 +344,7 @@ class ChatCommand
     Iterable<IChatCommandComponent> children = const [],
     Iterable<AbstractCheck> checks = const [],
     Iterable<AbstractCheck> singleChecks = const [],
+    this.options = const CommandOptions(),
   }) {
     if (!commandNameRegexp.hasMatch(name) || name != name.toLowerCase()) {
       throw CommandRegistrationError('Invalid command name "$name"');

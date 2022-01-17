@@ -29,7 +29,7 @@ abstract class IChecked {
 
 /// Represents an entity that has options applied.
 abstract class IOptions {
-  /// A set of options that will be applied to this command.
+  /// A set of options that will be applied to this command and its descendants.
   CommandOptions get options;
 }
 
@@ -45,6 +45,9 @@ abstract class ICommandRegisterable<T extends IContext>
   /// The parent of this group, if any.
   ICommandGroup<IContext>? get parent;
   set parent(ICommandGroup<IContext>? parent);
+
+  /// The set of options used after combining this command's options with those of its parents.
+  CommandOptions get resolvedOptions;
 }
 
 /// Represents a collection of [ICommandRegisterable]s.

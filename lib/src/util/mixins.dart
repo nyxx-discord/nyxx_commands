@@ -40,22 +40,22 @@ mixin CheckMixin<T extends IContext> on ICommandRegisterable<T> implements IChec
 }
 
 mixin OptionsMixin<T extends IContext> on ICommandRegisterable<T> implements IOptions {
-  CommandOptions get _options;
-
   @override
-  CommandOptions get options {
+  CommandOptions get resolvedOptions {
     if (parent == null) {
-      return _options;
+      return options;
     }
 
-    CommandOptions parentOptions = parent!.options;
+    CommandOptions parentOptions = parent is ICommandRegisterable
+        ? (parent as ICommandRegisterable).resolvedOptions
+        : parent!.options;
 
     return CommandOptions(
       autoAcknowledgeInteractions:
-          _options.autoAcknowledgeInteractions ?? parentOptions.autoAcknowledgeInteractions,
-      acceptBotCommands: _options.acceptBotCommands ?? parentOptions.acceptBotCommands,
-      acceptSelfCommands: _options.acceptSelfCommands ?? parentOptions.acceptSelfCommands,
-      hideOriginalResponse: _options.hideOriginalResponse ?? parentOptions.hideOriginalResponse,
+          options.autoAcknowledgeInteractions ?? parentOptions.autoAcknowledgeInteractions,
+      acceptBotCommands: options.acceptBotCommands ?? parentOptions.acceptBotCommands,
+      acceptSelfCommands: options.acceptSelfCommands ?? parentOptions.acceptSelfCommands,
+      hideOriginalResponse: options.hideOriginalResponse ?? parentOptions.hideOriginalResponse,
     );
   }
 }

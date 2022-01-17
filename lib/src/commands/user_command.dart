@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:nyxx_commands/nyxx_commands.dart';
 import 'package:nyxx_commands/src/checks/checks.dart';
 import 'package:nyxx_commands/src/commands/interfaces.dart';
 import 'package:nyxx_commands/src/context/context.dart';
@@ -25,10 +26,14 @@ class UserCommand
   @override
   late final Stream<UserContext> onPostCall = _postCallController.stream;
 
+  @override
+  final CommandOptions options;
+
   UserCommand(
     this.name,
     this.execute, {
     Iterable<AbstractCheck> checks = const [],
+    this.options = const CommandOptions(),
   }) {
     for (final check in checks) {
       this.check(check);

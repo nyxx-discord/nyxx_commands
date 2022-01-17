@@ -148,12 +148,12 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
       if (view.skipString(prefix)) {
         IChatContext context = await _messageChatContext(message, view, prefix);
 
-        if (message.author.bot && !context.command.options.acceptBotCommands!) {
+        if (message.author.bot && !context.command.resolvedOptions.acceptBotCommands!) {
           return;
         }
 
         if (message.author.id == (client as INyxxRest).self.id &&
-            !context.command.options.acceptSelfCommands!) {
+            !context.command.resolvedOptions.acceptSelfCommands!) {
           return;
         }
 
@@ -173,11 +173,11 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     try {
       IChatContext context = await _interactionChatContext(interactionEvent, command);
 
-      if (context.command.options.autoAcknowledgeInteractions!) {
+      if (context.command.resolvedOptions.autoAcknowledgeInteractions!) {
         Timer(Duration(seconds: 2), () async {
           try {
             await interactionEvent.acknowledge(
-              hidden: context.command.options.hideOriginalResponse!,
+              hidden: context.command.resolvedOptions.hideOriginalResponse!,
             );
           } on AlreadyRespondedError {
             // ignore: command has responded itself
