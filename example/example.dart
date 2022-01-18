@@ -38,7 +38,7 @@ void main() {
     GatewayIntents.allUnprivileged | GatewayIntents.guildMembers,
   );
 
-  // Next, we need to create our plugin. The plugin class used for nyxx_commands is `CommandsPlugin`
+  // Next, we need to create our plugin. The plugin class used for nyxx_commands is `ChatCommandsPlugin`
   // and we need to store it in a variable to be able to access it for registering commands and
   // converters.
 
@@ -103,14 +103,14 @@ void main() {
   // ======= Registering a command ======== //
   // ====================================== //
 
-  // To register a command, we must first create an instance of the `Command` class.
+  // To register a command, we must first create an instance of the `ChatCommand` class.
   // This class represents a single command, slash command or not, and once added to the bot will
   // automatically be ready to use.
   //
   // As our first example, let's create a ping command that simply replies with `pong`.
-  Command ping = Command(
+  ChatCommand ping = ChatCommand(
     // The first parameter is the command name.
-    // Command names must obey certain rules, if they don't an error will be thrown.
+    // ChatCommand names must obey certain rules, if they don't an error will be thrown.
     // Generally using lower case letters and dashes (`-`) instead of spaces or underscores will
     // avoid any problems.
     'ping',
@@ -122,16 +122,16 @@ void main() {
 
     // The third parameter is the function that will be executed when the command is ran.
     //
-    // The first parameter to this function must be a `Context`. A `Context` allows you to access
+    // The first parameter to this function must be a `IChatContext`. A `IChatContext` allows you to access
     // various information about how the command was run: the user that executed it, the guild it
     // was ran in and a few other useful pieces of information.
-    // `Context` also has a couple of methods that make it easier to respond to commands.
+    // `IChatContext` also has a couple of methods that make it easier to respond to commands.
     //
     // Since a ping command doesn't have any other arguments, we don't add any other parameters to
     // the function.
-    (Context context) {
+    (IChatContext context) {
       // For a ping command, all we need to do is respond with `pong`.
-      // To do that, we can use the `Context`'s `respond` method which responds to the command with
+      // To do that, we can use the `IChatContext`'s `respond` method which responds to the command with
       // a message.
       context.respond(MessageBuilder.content('pong!'));
     },
@@ -153,7 +153,7 @@ void main() {
   // ======= Using a command group ======== //
   // ====================================== //
 
-  // Command groups are a powerful tool that allow you to group commands together.
+  // ChatCommand groups are a powerful tool that allow you to group commands together.
   // As an example, we'll create a command group `throw` with two sub-commands: `coin` and `die` (
   // the singular form of dice, not the verb).
   // Our command structure will look like this once we're done (the ping command we made earlier is
@@ -165,10 +165,10 @@ void main() {
   //    ┗━ coin
   //    ┗━ die
 
-  // We have to use the variable name `throwGroup` since `throw` is a reserved keyword. Note that
+  // We have to use the variable name `throwChatGroup` since `throw` is a reserved keyword. Note that
   // the variable name does not change how the group behaves at all though.
-  Group throwGroup = Group(
-    // Similarly to `Command`, the `Group` constructor's first two arguments are the group's name
+  ChatGroup throwGroup = ChatGroup(
+    // Similarly to `ChatCommand`, the `ChatGroup` constructor's first two arguments are the group's name
     // and description.
     'throw',
     'Throw an objet',
@@ -180,10 +180,10 @@ void main() {
     // method here and the `throw die` command later.
     children: [
       // We create a command in the same way as we created the `ping` command earlier.
-      Command(
+      ChatCommand(
         'coin',
         'Throw a coin',
-        (Context context) {
+        (IChatContext context) {
           bool heads = Random().nextBool();
 
           context.respond(
@@ -193,12 +193,12 @@ void main() {
     ],
   );
 
-  // The other way to add a command to a group is using the `Group`'s `addCommand` method,
+  // The other way to add a command to a group is using the `ChatGroup`'s `addCommand` method,
   // similarly to how we added the `ping` command to the bot earlie.
-  throwGroup.addCommand(Command(
+  throwGroup.addCommand(ChatCommand(
     'die',
     'Throw a die',
-    (Context context) {
+    (IChatContext context) {
       int number = Random().nextInt(6) + 1;
 
       context.respond(MessageBuilder.content('The die landed on the $number!'));
@@ -220,7 +220,7 @@ void main() {
   // ====== Using command arguments ======= //
   // ====================================== //
 
-  // Command argumens are another powerful tool that allow you to get user input when using
+  // ChatCommand argumens are another powerful tool that allow you to get user input when using
   // commands.
   // Adding arguments to your commands in nyxx_commands is simple, just add the argument as a
   // parameter to your `execute` function and nyxx_commands will do the rest, including:
@@ -230,13 +230,13 @@ void main() {
   //
   // As an example, let's implement a `say` command that simply repeats what the user input.
 
-  Command say = Command(
+  ChatCommand say = ChatCommand(
     'say',
     'Make the bot say something',
     // As mentioned earlier, all we need to do to add an argument to our command is add it as a
     // parameter to our execute function. In this case, we take an argument called `message` and of
     // type `String`.
-    (Context context, String message) {
+    (IChatContext context, String message) {
       context.respond(MessageBuilder.content(message));
     },
   );
@@ -289,12 +289,12 @@ void main() {
   //
   // As an example, let's create a `nick` command that changes a user's nickname.
 
-  Command nick = Command(
+  ChatCommand nick = ChatCommand(
     'nick',
     "Change a user's nickname",
     // Setting the type of the `target` parameter to `IMember` will make nyxx_commands convert user
     // input to instances of `IMember`.
-    (Context context, IMember target, String newNick) async {
+    (IChatContext context, IMember target, String newNick) async {
       try {
         await target.edit(nick: newNick);
       } on IHttpResponseError {
@@ -369,7 +369,7 @@ void main() {
     // The first parameter to the function is an instance of `StringView`. `StringView` allows you
     // to manipulate and extract data from a `String`, but also allows the next converter to know
     // where to start parsing its argument from.
-    // The second parameter is the current `Context` in which the argument is being parsed.
+    // The second parameter is the current `IChatContext` in which the argument is being parsed.
     (view, context) {
       // In our case, we want to return a `Shape` based on the user's input. The `getQuotedWord()`
       // will get the next quoted word from the input.
@@ -433,10 +433,10 @@ void main() {
   commands.addConverter(dimensionConverter);
 
   // Let's create a command to test our converter out:
-  Command favouriteShape = Command(
+  ChatCommand favouriteShape = ChatCommand(
     'favourite-shape',
     'Outputs your favourite shape',
-    (Context context, Shape shape, Dimension dimension) {
+    (IChatContext context, Shape shape, Dimension dimension) {
       String favourite;
 
       switch (shape) {
@@ -496,16 +496,16 @@ void main() {
   //
   // As an example:
   // ```dart
-  // (Context context, [String? a, String? b, String? c]) {}
+  // (IChatContext context, [String? a, String? b, String? c]) {}
   // ```
   // In this case, `b` having a value does not guarantee `a` has a value. As such, it is always
   // better to provide a default for your optional parameters instead of making them nullable.
 
   // As an example for using optional arguments, let's create a command with an optional argument:
-  Command favouriteFruit = Command(
+  ChatCommand favouriteFruit = ChatCommand(
     'favourite-fruit',
     'Outputs your favourite fruit',
-    (Context context, [String favourite = 'apple']) {
+    (IChatContext context, [String favourite = 'apple']) {
       context.respond(MessageBuilder.content('Your favourite fruit is $favourite!'));
     },
   );
@@ -528,15 +528,15 @@ void main() {
   // =========== Using checks ============= //
   // ====================================== //
 
-  // Command checks allow you to restrict a command's usage. There are a few built-in checks that
+  // ChatCommand checks allow you to restrict a command's usage. There are a few built-in checks that
   // integrate with Discord's slash command permissions, and a special cooldown check.
   //
   // As an example, we'll create a command with a cooldown:
 
-  Command alphabet = Command(
+  ChatCommand alphabet = ChatCommand(
     'alphabet',
     'Outputs the alphabet',
-    (Context context) {
+    (IChatContext context) {
       context.respond(MessageBuilder.content('ABCDEFGHIJKLMNOPQRSTUVWXYZ'));
     },
     // Since this command is spammy, we can use a cooldown to restrict it's usage:
@@ -575,11 +575,11 @@ void main() {
   // You can see the implementation of `filterInput` at the bottom of this file.
   const Converter<String> nonEmptyStringConverter = CombineConverter(stringConverter, filterInput);
 
-  Command betterSay = Command(
+  ChatCommand betterSay = ChatCommand(
     'better-say',
     'A better version of the say command',
     (
-      Context context,
+      IChatContext context,
       @UseConverter(nonEmptyStringConverter) String input,
     ) {
       context.respond(MessageBuilder.content(input));
@@ -612,7 +612,7 @@ enum Dimension {
 // ---------- Global functions ---------- //
 // -------------------------------------- //
 
-String? filterInput(String input, Context context) {
+String? filterInput(String input, IContext context) {
   if (input.isNotEmpty) {
     return input;
   }

@@ -35,24 +35,24 @@ void main() {
 
   client.connect();
 
-  Command ping = Command(
+  ChatCommand ping = ChatCommand(
     'ping',
     'Checks if the bot is online',
-    (Context context) {
+    (IChatContext context) {
       context.respond(MessageBuilder.content('pong!'));
     },
   );
 
   commands.addCommand(ping);
 
-  Group throwGroup = Group(
+  ChatGroup throwGroup = ChatGroup(
     'throw',
     'Throw an objet',
     children: [
-      Command(
+      ChatCommand(
         'coin',
         'Throw a coin',
-        (Context context) {
+        (IChatContext context) {
           bool heads = Random().nextBool();
 
           context.respond(
@@ -62,10 +62,10 @@ void main() {
     ],
   );
 
-  throwGroup.addCommand(Command(
+  throwGroup.addCommand(ChatCommand(
     'die',
     'Throw a die',
-    (Context context) {
+    (IChatContext context) {
       int number = Random().nextInt(6) + 1;
 
       context.respond(MessageBuilder.content('The die landed on the $number!'));
@@ -74,20 +74,20 @@ void main() {
 
   commands.addCommand(throwGroup);
 
-  Command say = Command(
+  ChatCommand say = ChatCommand(
     'say',
     'Make the bot say something',
-    (Context context, String message) {
+    (IChatContext context, String message) {
       context.respond(MessageBuilder.content(message));
     },
   );
 
   commands.addCommand(say);
 
-  Command nick = Command(
+  ChatCommand nick = ChatCommand(
     'nick',
     "Change a user's nickname",
-    (Context context, IMember target, String newNick) async {
+    (IChatContext context, IMember target, String newNick) async {
       try {
         await target.edit(nick: newNick);
       } on IHttpResponseError {
@@ -139,10 +139,10 @@ void main() {
 
   commands.addConverter(dimensionConverter);
 
-  Command favouriteShape = Command(
+  ChatCommand favouriteShape = ChatCommand(
     'favourite-shape',
     'Outputs your favourite shape',
-    (Context context, Shape shape, Dimension dimension) {
+    (IChatContext context, Shape shape, Dimension dimension) {
       String favourite;
 
       switch (shape) {
@@ -174,20 +174,20 @@ void main() {
 
   commands.addCommand(favouriteShape);
 
-  Command favouriteFruit = Command(
+  ChatCommand favouriteFruit = ChatCommand(
     'favourite-fruit',
     'Outputs your favourite fruit',
-    (Context context, [String favourite = 'apple']) {
+    (IChatContext context, [String favourite = 'apple']) {
       context.respond(MessageBuilder.content('Your favourite fruit is $favourite!'));
     },
   );
 
   commands.addCommand(favouriteFruit);
 
-  Command alphabet = Command(
+  ChatCommand alphabet = ChatCommand(
     'alphabet',
     'Outputs the alphabet',
-    (Context context) {
+    (IChatContext context) {
       context.respond(MessageBuilder.content('ABCDEFGHIJKLMNOPQRSTUVWXYZ'));
     },
     checks: [
@@ -202,11 +202,11 @@ void main() {
 
   const Converter<String> nonEmptyStringConverter = CombineConverter(stringConverter, filterInput);
 
-  Command betterSay = Command(
+  ChatCommand betterSay = ChatCommand(
     'better-say',
     'A better version of the say command',
     (
-      Context context,
+      IChatContext context,
       @UseConverter(nonEmptyStringConverter) String input,
     ) {
       context.respond(MessageBuilder.content(input));
@@ -227,7 +227,7 @@ enum Dimension {
   threeD,
 }
 
-String? filterInput(String input, Context context) {
+String? filterInput(String input, IContext context) {
   if (input.isNotEmpty) {
     return input;
   }
