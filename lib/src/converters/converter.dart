@@ -15,13 +15,11 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
+import 'package:nyxx_commands/src/commands.dart';
 import 'package:nyxx_commands/src/context/chat_context.dart';
+import 'package:nyxx_commands/src/errors.dart';
+import 'package:nyxx_commands/src/util/view.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
-
-import '../commands.dart';
-import '../context/context.dart';
-import '../errors.dart';
-import '../util/view.dart';
 
 /// Object used to convert raw argument strings to the type required by the
 /// command using them.
@@ -32,7 +30,7 @@ class Converter<T> {
   ///
   /// The first [StringView] parameter should be left with its index pointing to the position from
   /// which the next argument should be parsed.
-  final FutureOr<T?> Function(StringView view, IContext context) convert;
+  final FutureOr<T?> Function(StringView view, IChatContext context) convert;
 
   /// A Iterable of choices users can choose from.
   ///
@@ -72,7 +70,7 @@ class CombineConverter<R, T> implements Converter<T> {
   final Converter<R> converter;
 
   /// The function used to further process the output of [converter].
-  final FutureOr<T?> Function(R, IContext) process;
+  final FutureOr<T?> Function(R, IChatContext) process;
 
   /// The output [Type] of this converter.
   @override
@@ -107,7 +105,8 @@ class CombineConverter<R, T> implements Converter<T> {
   CommandOptionType get type => _type ?? converter.type;
 
   @override
-  FutureOr<T?> Function(StringView view, IContext context) get convert => (view, context) async {
+  FutureOr<T?> Function(StringView view, IChatContext context) get convert =>
+      (view, context) async {
         R? ret = await converter.convert(view, context);
 
         if (ret != null) {
@@ -200,7 +199,8 @@ class FallbackConverter<T> implements Converter<T> {
   }
 
   @override
-  FutureOr<T?> Function(StringView view, IContext context) get convert => (view, context) async {
+  FutureOr<T?> Function(StringView view, IChatContext context) get convert =>
+      (view, context) async {
         StringView? used;
         T? ret = await converters.fold(Future.value(null), (previousValue, element) async {
           if (await previousValue != null) {
@@ -226,7 +226,7 @@ class FallbackConverter<T> implements Converter<T> {
   String toString() => 'FallbackConverter<$T>[converters=${List.of(converters)}]';
 }
 
-String? convertString(StringView view, IContext context) => view.getQuotedWord();
+String? convertString(StringView view, IChatContext context) => view.getQuotedWord();
 
 /// Converter to convert input to [String]s.
 ///
@@ -236,7 +236,7 @@ const Converter<String> stringConverter = Converter<String>(
   type: CommandOptionType.string,
 );
 
-int? convertInt(StringView view, IContext context) => int.tryParse(view.getQuotedWord());
+int? convertInt(StringView view, IChatContext context) => int.tryParse(view.getQuotedWord());
 
 /// Converter to convert input to [int]s.
 ///
@@ -246,7 +246,8 @@ const Converter<int> intConverter = Converter<int>(
   type: CommandOptionType.integer,
 );
 
-double? convertDouble(StringView view, IContext context) => double.tryParse(view.getQuotedWord());
+double? convertDouble(StringView view, IChatContext context) =>
+    double.tryParse(view.getQuotedWord());
 
 /// Converter to convert input to [double]s.
 ///
@@ -256,7 +257,7 @@ const Converter<double> doubleConverter = Converter<double>(
   type: CommandOptionType.number,
 );
 
-bool? convertBool(StringView view, IContext context) {
+bool? convertBool(StringView view, IChatContext context) {
   String word = view.getQuotedWord();
 
   const Iterable<String> truthy = ['y', 'yes', '+', '1', 'true'];
@@ -285,7 +286,7 @@ const Converter<bool> boolConverter = Converter<bool>(
 
 final RegExp _snowflakePattern = RegExp(r'^(?:<(?:@(?:!|&)?|#)([0-9]{15,20})>|([0-9]{15,20}))$');
 
-Snowflake? convertSnowflake(StringView view, IContext context) {
+Snowflake? convertSnowflake(StringView view, IChatContext context) {
   String word = view.getQuotedWord();
   if (!_snowflakePattern.hasMatch(word)) {
     return null;
@@ -304,7 +305,7 @@ const Converter<Snowflake> snowflakeConverter = Converter<Snowflake>(
   convertSnowflake,
 );
 
-Future<IMember?> snowflakeToMember(Snowflake snowflake, IContext context) async {
+Future<IMember?> snowflakeToMember(Snowflake snowflake, IChatContext context) async {
   if (context.guild != null) {
     IMember? cached = context.guild!.members[snowflake];
     if (cached != null) {
@@ -320,7 +321,7 @@ Future<IMember?> snowflakeToMember(Snowflake snowflake, IContext context) async 
   return null;
 }
 
-Future<IMember?> convertMember(StringView view, IContext context) async {
+Future<IMember?> convertMember(StringView view, IChatContext context) async {
   String word = view.getQuotedWord();
 
   if (context.guild != null) {
@@ -400,7 +401,7 @@ const Converter<IMember> memberConverter = FallbackConverter<IMember>(
   type: CommandOptionType.user,
 );
 
-Future<IUser?> snowflakeToUser(Snowflake snowflake, IContext context) async {
+Future<IUser?> snowflakeToUser(Snowflake snowflake, IChatContext context) async {
   IUser? cached = context.client.users[snowflake];
   if (cached != null) {
     return cached;
@@ -417,9 +418,9 @@ Future<IUser?> snowflakeToUser(Snowflake snowflake, IContext context) async {
   return null;
 }
 
-FutureOr<IUser?> memberToUser(IMember member, IContext context) => member.user.getOrDownload();
+FutureOr<IUser?> memberToUser(IMember member, IChatContext context) => member.user.getOrDownload();
 
-FutureOr<IUser?> convertUser(StringView view, IContext context) {
+FutureOr<IUser?> convertUser(StringView view, IChatContext context) {
   String word = view.getWord();
 
   if (context.channel.channelType == ChannelType.dm ||
@@ -474,7 +475,7 @@ const Converter<IUser> userConverter = FallbackConverter<IUser>(
   type: CommandOptionType.user,
 );
 
-T? snowflakeToGuildChannel<T extends IGuildChannel>(Snowflake snowflake, IContext context) {
+T? snowflakeToGuildChannel<T extends IGuildChannel>(Snowflake snowflake, IChatContext context) {
   if (context.guild != null) {
     try {
       return context.guild!.channels
@@ -486,7 +487,7 @@ T? snowflakeToGuildChannel<T extends IGuildChannel>(Snowflake snowflake, IContex
   }
 }
 
-T? convertGuildChannel<T extends IGuildChannel>(StringView view, IContext context) {
+T? convertGuildChannel<T extends IGuildChannel>(StringView view, IChatContext context) {
   if (context.guild != null) {
     String word = view.getQuotedWord();
     Iterable<T> channels = context.guild!.channels.whereType<T>();
@@ -606,7 +607,7 @@ const Converter<IStageVoiceGuildChannel> stageVoiceChannelConverter = FallbackCo
   type: CommandOptionType.channel,
 );
 
-FutureOr<IRole?> snowflakeToRole(Snowflake snowflake, IContext context) {
+FutureOr<IRole?> snowflakeToRole(Snowflake snowflake, IChatContext context) {
   if (context.guild != null) {
     IRole? cached = context.guild!.roles[snowflake];
     if (cached != null) {
@@ -621,7 +622,7 @@ FutureOr<IRole?> snowflakeToRole(Snowflake snowflake, IContext context) {
   }
 }
 
-FutureOr<IRole?> convertRole(StringView view, IContext context) async {
+FutureOr<IRole?> convertRole(StringView view, IChatContext context) async {
   String word = view.getQuotedWord();
   if (context.guild != null) {
     Stream<IRole> roles = context.guild!.fetchRoles();
