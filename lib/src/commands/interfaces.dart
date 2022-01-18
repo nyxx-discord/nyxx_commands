@@ -1,5 +1,6 @@
 import 'package:nyxx_commands/src/checks/checks.dart';
 import 'package:nyxx_commands/src/commands.dart';
+import 'package:nyxx_commands/src/commands/options.dart';
 import 'package:nyxx_commands/src/context/chat_context.dart';
 import 'package:nyxx_commands/src/context/context.dart';
 import 'package:nyxx_commands/src/errors.dart';
@@ -26,8 +27,15 @@ abstract class IChecked {
   void check(AbstractCheck check);
 }
 
+/// Represents an entity that has options applied.
+abstract class IOptions {
+  /// A set of options that will be applied to this command and its descendants.
+  CommandOptions get options;
+}
+
 /// Represents an entity that can be registered in an [ICommandGroup].
-abstract class ICommandRegisterable<T extends IContext> implements ICallHooked<T>, IChecked {
+abstract class ICommandRegisterable<T extends IContext>
+    implements ICallHooked<T>, IChecked, IOptions {
   /// The name of this command.
   ///
   /// This must match [commandNameRegex] and be composed of the lowercase variant of letters where
@@ -37,13 +45,16 @@ abstract class ICommandRegisterable<T extends IContext> implements ICallHooked<T
   /// The parent of this group, if any.
   ICommandGroup<IContext>? get parent;
   set parent(ICommandGroup<IContext>? parent);
+
+  /// The set of options used after combining this command's options with those of its parents.
+  CommandOptions get resolvedOptions;
 }
 
 /// Represents a collection of [ICommandRegisterable]s.
 ///
 /// This could be a subcommand group, but this class carries no connection to the Discord API. For
 /// that, use [ChatGroup].
-abstract class ICommandGroup<T extends IContext> implements ICallHooked<T>, IChecked {
+abstract class ICommandGroup<T extends IContext> implements ICallHooked<T>, IChecked, IOptions {
   /// An iterable of all this groups children.
   Iterable<ICommandRegisterable<T>> get children;
 

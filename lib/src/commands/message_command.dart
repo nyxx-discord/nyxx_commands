@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:nyxx_commands/nyxx_commands.dart';
 import 'package:nyxx_commands/src/checks/checks.dart';
 import 'package:nyxx_commands/src/commands/interfaces.dart';
 import 'package:nyxx_commands/src/context/context.dart';
@@ -8,7 +9,7 @@ import 'package:nyxx_commands/src/errors.dart';
 import 'package:nyxx_commands/src/util/mixins.dart';
 
 class MessageCommand
-    with ParentMixin<MessageContext>, CheckMixin<MessageContext>
+    with ParentMixin<MessageContext>, CheckMixin<MessageContext>, OptionsMixin<MessageContext>
     implements ICommand<MessageContext> {
   @override
   final String name;
@@ -25,10 +26,14 @@ class MessageCommand
   @override
   final Function(MessageContext) execute;
 
+  @override
+  final CommandOptions options;
+
   MessageCommand(
     this.name,
     this.execute, {
     Iterable<AbstractCheck> checks = const [],
+    this.options = const CommandOptions(),
   }) {
     for (final check in checks) {
       this.check(check);
