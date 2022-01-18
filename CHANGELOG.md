@@ -1,3 +1,18 @@
+## 4.0.0
+__Breaking changes__:
+- The names of command classes have changed. The old class `Command` is now named `ChatCommand` and `Group` is now `ChatGroup`
+- The names of context classes have changed. The old class `Context` is not named `IChatContext`, `MessageContext` is `MessageChatContext` and `InteractionContext` is now `InteractionChatContext`
+- All deprecated members have been removed
+- The `hideOriginalResponse` parameter has been removed from the `ChatCommand` constructor. Use the new `options` parameter and specify `hideOriginalResponse` there instead
+
+If you find any more breaking changes please notify us on the official nyxx Discord server, or open an issue on GitHub.
+
+__New features__:
+- Support for User Application Commands has been addded. They can be created through the `UserCommand` class similarly to `ChatCommand`s, and must be added with `CommandsPlugin.addCommand()` as `ChatCommand`s are
+- Support for Message Application Commands has been addded. They can be created through the `MessageCommand` class similarly to `ChatCommand`s, and must be added with `CommandsPlugin.addCommand()` as `ChatCommand`s are
+- Better support for command configuration has been added. Users can now specify options to apply only to specific commands through the `options` parameter in all command constructors with the new `CommandOptions` class. Similarly to checks, these options are inherited but can be overridden by children
+- Added a few simple functions for easier interaction with `nyxx_interactions` covering common use cases for interactions
+
 ## 3.3.0
 __New features__:
 - Added a `remaining()` method to `CooldownCheck` to get the remaining cooldown for a context
