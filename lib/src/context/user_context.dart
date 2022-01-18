@@ -1,13 +1,14 @@
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/src/commands.dart';
 import 'package:nyxx_commands/src/commands/user_command.dart';
+import 'package:nyxx_commands/src/context/component_wrappers.dart';
 import 'package:nyxx_commands/src/context/context.dart';
 import 'package:nyxx_commands/src/context/interaction_context.dart';
 import 'package:nyxx_interactions/src/models/interaction.dart';
 import 'package:nyxx_interactions/src/events/interaction_event.dart';
 
 /// Represents a [IContext] in which a [UserCommand] was executed.
-class UserContext with InteractionContextMixin implements IContext {
+class UserContext with InteractionContextMixin, ComponentWrappersMixin implements IContext {
   /// The target member for this context.
   final IMember? targetMember;
 

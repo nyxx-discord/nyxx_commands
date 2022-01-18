@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 import 'package:nyxx/nyxx.dart';
+import 'package:nyxx_commands/src/context/component_wrappers.dart';
 import 'package:nyxx_commands/src/context/context.dart';
 import 'package:nyxx_commands/src/context/interaction_context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
@@ -31,7 +32,7 @@ abstract class IChatContext implements IContext {
 }
 
 /// Represents a [IChatContext] triggered by a message sent in a text channel.
-class MessageChatContext extends IChatContext {
+class MessageChatContext with ComponentWrappersMixin implements IChatContext {
   /// The prefix that triggered this context's execution.
   final String prefix;
 
@@ -117,7 +118,9 @@ class MessageChatContext extends IChatContext {
 }
 
 /// Represents a [IChatContext] triggered by a slash command ([ISlashCommandInteraction]).
-class InteractionChatContext with InteractionContextMixin implements IChatContext {
+class InteractionChatContext
+    with InteractionContextMixin, ComponentWrappersMixin
+    implements IChatContext {
   /// The raw arguments received from the API, mapped by name to value.
   final Map<String, dynamic> rawArguments;
 
