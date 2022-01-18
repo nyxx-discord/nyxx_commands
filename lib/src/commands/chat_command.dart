@@ -16,18 +16,11 @@ import 'dart:async';
 import 'dart:mirrors';
 
 import 'package:nyxx_commands/nyxx_commands.dart';
+import 'package:nyxx_commands/src/commands.dart';
 import 'package:nyxx_commands/src/commands/interfaces.dart';
-import 'package:nyxx_commands/src/context/context.dart';
+import 'package:nyxx_commands/src/converters/converter.dart';
 import 'package:nyxx_commands/src/util/mixins.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
-
-import '../checks/checks.dart';
-import '../commands.dart';
-import '../context/chat_context.dart';
-import '../converters/converter.dart';
-import '../errors.dart';
-import '../util/util.dart';
-import '../util/view.dart';
 
 /// An enum used to specify how a [ChatCommand] can be executed.
 enum CommandType {

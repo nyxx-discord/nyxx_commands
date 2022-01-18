@@ -17,21 +17,20 @@ import 'dart:mirrors';
 
 import 'package:logging/logging.dart';
 import 'package:nyxx/nyxx.dart';
+import 'package:nyxx_commands/src/checks/checks.dart';
+import 'package:nyxx_commands/src/commands/chat_command.dart';
 import 'package:nyxx_commands/src/commands/interfaces.dart';
 import 'package:nyxx_commands/src/commands/message_command.dart';
 import 'package:nyxx_commands/src/commands/user_command.dart';
+import 'package:nyxx_commands/src/context/chat_context.dart';
 import 'package:nyxx_commands/src/context/context.dart';
 import 'package:nyxx_commands/src/context/message_context.dart';
 import 'package:nyxx_commands/src/context/user_context.dart';
+import 'package:nyxx_commands/src/converters/converter.dart';
+import 'package:nyxx_commands/src/errors.dart';
 import 'package:nyxx_commands/src/options.dart';
+import 'package:nyxx_commands/src/util/view.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
-
-import 'checks/checks.dart';
-import 'commands/chat_command.dart';
-import 'context/chat_context.dart';
-import 'converters/converter.dart';
-import 'errors.dart';
-import 'util/view.dart';
 
 final Logger logger = Logger('Commands');
 

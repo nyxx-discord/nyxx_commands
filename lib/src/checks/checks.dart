@@ -17,14 +17,15 @@ import 'dart:async';
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/nyxx_commands.dart';
 import 'package:nyxx_commands/src/commands.dart';
-import 'package:nyxx_commands/src/context/context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
-/// Represents a check executed on a [ChatCommand].
+/// Represents a check executed on a [IChecked].
 ///
-/// All checks must succeed in order for a [ChatCommand] to be executed.
+/// All checks must succeed in order for a [ICommand] to be executed. Each check is executed and if
+/// any return `false`, command execution is cancelled and a [CheckFailedException] is added to
+/// [CommandsPlugin.onCommandError].
 abstract class AbstractCheck {
-  /// The name of the check
+  /// The name of the check.
   final String name;
 
   /// Create a new [AbstractCheck] with a given name.
