@@ -66,19 +66,18 @@ mixin ComponentWrappersMixin implements IContext {
       componentMessageBuilder.componentRows = [];
     }
 
-    List<ButtonBuilder> buttons = [
-      ButtonBuilder(confirmMessage, randomAlpha(10), ComponentStyle.success),
-      ButtonBuilder(denyMessage, randomAlpha(10), ComponentStyle.danger),
-    ];
+    ButtonBuilder confirmButton =
+        ButtonBuilder(confirmMessage, randomAlpha(10), ComponentStyle.success);
+
+    ButtonBuilder denyButton = ButtonBuilder(denyMessage, randomAlpha(10), ComponentStyle.danger);
 
     componentMessageBuilder.addComponentRow(ComponentRowBuilder()
-      ..addComponent(buttons[0])
-      ..addComponent(buttons[1]));
+      ..addComponent(confirmButton)
+      ..addComponent(denyButton));
 
     await respond(componentMessageBuilder);
 
-    IButtonInteractionEvent event = await getButtonPress(buttons);
-
-    return event.interaction.customId == buttons[0].customId;
+    IButtonInteractionEvent event = await getButtonPress([confirmButton, denyButton]);
+    return event.interaction.customId == confirmButton.customId;
   }
 }
