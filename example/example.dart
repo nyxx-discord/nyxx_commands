@@ -38,7 +38,7 @@ void main() {
     GatewayIntents.allUnprivileged | GatewayIntents.guildMembers,
   );
 
-  // Next, we need to create our plugin. The plugin class used for nyxx_commands is `ChatCommandsPlugin`
+  // Next, we need to create our plugin. The plugin class used for nyxx_commands is `CommandsPlugin`
   // and we need to store it in a variable to be able to access it for registering commands and
   // converters.
 
@@ -153,7 +153,7 @@ void main() {
   // ======= Using a command group ======== //
   // ====================================== //
 
-  // ChatCommand groups are a powerful tool that allow you to group commands together.
+  // Command groups are a powerful tool that allow you to group commands together.
   // As an example, we'll create a command group `throw` with two sub-commands: `coin` and `die` (
   // the singular form of dice, not the verb).
   // Our command structure will look like this once we're done (the ping command we made earlier is
@@ -165,7 +165,7 @@ void main() {
   //    ┗━ coin
   //    ┗━ die
 
-  // We have to use the variable name `throwChatGroup` since `throw` is a reserved keyword. Note that
+  // We have to use the variable name `throwGroup` since `throw` is a reserved keyword. Note that
   // the variable name does not change how the group behaves at all though.
   ChatGroup throwGroup = ChatGroup(
     // Similarly to `ChatCommand`, the `ChatGroup` constructor's first two arguments are the group's name
@@ -220,7 +220,7 @@ void main() {
   // ====== Using command arguments ======= //
   // ====================================== //
 
-  // ChatCommand argumens are another powerful tool that allow you to get user input when using
+  // ChatCommand arguments are another powerful tool that allow you to get user input when using
   // commands.
   // Adding arguments to your commands in nyxx_commands is simple, just add the argument as a
   // parameter to your `execute` function and nyxx_commands will do the rest, including:
@@ -296,7 +296,7 @@ void main() {
     // input to instances of `IMember`.
     (IChatContext context, IMember target, String newNick) async {
       try {
-        await target.edit(nick: newNick);
+        await target.edit(builder: MemberBuilder()..nick = newNick);
       } on IHttpResponseError {
         context.respond(MessageBuilder.content("Couldn't change nickname :/"));
         return;
@@ -357,7 +357,7 @@ void main() {
   // converter from scratch for this, since no existing converter can be mapped to a `Shape`.
 
   // To create the converter, we instanciate the `Converter` class.
-  //Note that the variable is fully
+  // Note that the variable is fully
   // typed, the typed generics on `Converter` are filled in. This allows nyxx_commands to know what
   // the target type of this converter is.
   Converter<Shape> shapeConverter = Converter<Shape>(
@@ -483,7 +483,7 @@ void main() {
   // ===== Using optional arguments ======= //
   // ====================================== //
 
-  // Optional argument allow you to allow the user to input something while providing a default
+  // Optional arguments allow you to allow the user to input something while providing a default
   // value.
   // Like converters, optional arguments are easy to use: just make the parameter in your `execute`
   // function optional.
@@ -528,7 +528,7 @@ void main() {
   // =========== Using checks ============= //
   // ====================================== //
 
-  // ChatCommand checks allow you to restrict a command's usage. There are a few built-in checks that
+  // Command checks allow you to restrict a command's usage. There are a few built-in checks that
   // integrate with Discord's slash command permissions, and a special cooldown check.
   //
   // As an example, we'll create a command with a cooldown:
@@ -539,10 +539,10 @@ void main() {
     (IChatContext context) {
       context.respond(MessageBuilder.content('ABCDEFGHIJKLMNOPQRSTUVWXYZ'));
     },
-    // Since this command is spammy, we can use a cooldown to restrict it's usage:
+    // Since this command is spammy, we can use a cooldown to restrict its usage:
     checks: [
       CooldownCheck(
-        CooldownType.user,
+        CooldownType.user | CooldownType.guild, // Make the cooldown per user per guild
         Duration(seconds: 30),
       )
     ],
@@ -550,7 +550,7 @@ void main() {
 
   commands.addCommand(alphabet);
 
-  // At this point, if you run the file you will get an `alphabet` command appear in the slash
+  // At this point, if you run the file you will see an `alphabet` command appear in the slash
   // command menu. Executing it once will run fine, however trying to execute it again less that 30
   // seconds later will cause the command to fail with an exception. After 30 seconds have passed,
   // the command can be used again.

@@ -89,7 +89,7 @@ void main() {
     "Change a user's nickname",
     (IChatContext context, IMember target, String newNick) async {
       try {
-        await target.edit(nick: newNick);
+        await target.edit(builder: MemberBuilder()..nick = newNick);
       } on IHttpResponseError {
         context.respond(MessageBuilder.content("Couldn't change nickname :/"));
         return;
@@ -192,7 +192,7 @@ void main() {
     },
     checks: [
       CooldownCheck(
-        CooldownType.user,
+        CooldownType.user | CooldownType.guild,
         Duration(seconds: 30),
       )
     ],
