@@ -1,4 +1,4 @@
-## 4.0.0
+## 4.0.0-dev.0
 __Breaking changes__:
 - The names of command classes have changed. The old class `Command` is now named `ChatCommand` and `Group` is now `ChatGroup`.
 - The names of context classes have changed. The old class `Context` is not named `IChatContext`, `MessageContext` is `MessageChatContext` and `InteractionContext` is now `InteractionChatContext`.
