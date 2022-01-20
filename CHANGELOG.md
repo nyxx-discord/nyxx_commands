@@ -13,6 +13,9 @@ __New features__:
 - Better support for command configuration has been added. Users can now specify options to apply only to specific commands through the `options` parameter in all command constructors with the new `CommandOptions` class. Similarly to checks, these options are inherited but can be overridden by children.
 - Added a few simple functions for easier interaction with `nyxx_interactions` covering common use cases for interactions.
 
+__Bug fixes__:
+- Fixed an edge case issue with converters where assembled converters sometimes wouldn't return the correct type
+
 ## 3.3.0
 __New features__:
 - Added a `remaining()` method to `CooldownCheck` to get the remaining cooldown for a context.

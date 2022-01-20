@@ -552,9 +552,9 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     for (final key in _converters.keys) {
       TypeMirror keyMirror = reflectType(key);
 
-      if (keyMirror.isAssignableTo(targetMirror)) {
+      if (keyMirror.isSubtypeOf(targetMirror)) {
         assignable.add(_converters[key]!);
-      } else if (targetMirror.isAssignableTo(keyMirror)) {
+      } else if (targetMirror.isSubtypeOf(keyMirror)) {
         superClasses.add(_converters[key]!);
       }
     }
@@ -563,7 +563,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
       // Converters for types that superclass the target type might return an instance of the
       // target type.
       assignable.add(CombineConverter(converter, (superInstance, context) {
-        if (reflect(superInstance).type.isAssignableTo(targetMirror)) {
+        if (reflect(superInstance).type.isSubtypeOf(targetMirror)) {
           return superInstance;
         }
         return null;
