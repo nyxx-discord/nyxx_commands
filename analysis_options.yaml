@@ -6,7 +6,7 @@ linter:
     implementation_imports: false
 
 analyzer:
-  exclude: [build/**]
+  exclude: [build/**, "*.g.dart"]
   language:
     strict-raw-types: true
   strong-mode:
