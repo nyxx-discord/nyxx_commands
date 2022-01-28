@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 import 'dart:async';
-import 'dart:mirrors';
 
 import 'package:logging/logging.dart';
 import 'package:nyxx/nyxx.dart';
@@ -28,6 +27,7 @@ import 'package:nyxx_commands/src/context/message_context.dart';
 import 'package:nyxx_commands/src/context/user_context.dart';
 import 'package:nyxx_commands/src/converters/converter.dart';
 import 'package:nyxx_commands/src/errors.dart';
+import 'package:nyxx_commands/src/mirror_utils/mirror_utils.dart';
 import 'package:nyxx_commands/src/options.dart';
 import 'package:nyxx_commands/src/util/view.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
@@ -544,17 +544,13 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
       return _converters[type]!;
     }
 
-    TypeMirror targetMirror = reflectType(type);
-
     List<Converter<dynamic>> assignable = [];
     List<Converter<dynamic>> superClasses = [];
 
     for (final key in _converters.keys) {
-      TypeMirror keyMirror = reflectType(key);
-
-      if (keyMirror.isSubtypeOf(targetMirror)) {
+      if (isAssignableTo(key, type)) {
         assignable.add(_converters[key]!);
-      } else if (targetMirror.isSubtypeOf(keyMirror)) {
+      } else if (isAssignableTo(type, key)) {
         superClasses.add(_converters[key]!);
       }
     }
@@ -563,7 +559,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
       // Converters for types that superclass the target type might return an instance of the
       // target type.
       assignable.add(CombineConverter(converter, (superInstance, context) {
-        if (reflect(superInstance).type.isSubtypeOf(targetMirror)) {
+        if (isAssignableTo(superInstance.runtimeType, type)) {
           return superInstance;
         }
         return null;
