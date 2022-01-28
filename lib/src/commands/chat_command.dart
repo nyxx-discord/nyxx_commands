@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 import 'dart:async';
-import 'dart:mirrors';
 
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
@@ -23,6 +22,7 @@ import '../context/chat_context.dart';
 import '../context/context.dart';
 import '../converters/converter.dart';
 import '../errors.dart';
+import '../mirror_utils/mirror_utils.dart';
 import '../util/mixins.dart';
 import '../util/util.dart';
 import '../util/view.dart';
@@ -345,15 +345,7 @@ class ChatCommand
   @override
   final CommandOptions options;
 
-  late final MethodMirror _mirror;
-  late final Iterable<ParameterMirror> _arguments;
-  late final int _requiredArguments;
-  final List<String> _orderedArgumentNames = [];
-  final Map<String, Type> _mappedArgumentTypes = {};
-  final Map<String, ParameterMirror> _mappedArgumentMirrors = {};
-  final Map<String, Description> _mappedDescriptions = {};
-  final Map<String, Choices> _mappedChoices = {};
-  final Map<String, UseConverter> _mappedConverterOverrides = {};
+  late final FunctionData _functionData;
 
   /// Create a new [ChatCommand].
   ///
@@ -461,132 +453,30 @@ class ChatCommand
   }
 
   void _loadArguments(Function fn, Type contextType) {
-    _mirror = (reflect(fn) as ClosureMirror).function;
+    _functionData = loadFunctionData(fn);
 
-    Iterable<ParameterMirror> arguments = _mirror.parameters;
-
-    if (arguments.isEmpty) {
+    if (_functionData.parametersData.isEmpty) {
       throw CommandRegistrationError('Command callback function must have a Context parameter');
     }
 
-    if (!reflectType(contextType).isAssignableTo(arguments.first.type)) {
+    if (!isAssignableTo(contextType, _functionData.parametersData.first.type)) {
       throw CommandRegistrationError(
           'The first parameter of a command callback must be of type $contextType');
     }
 
-    // Skip context argument
-    _arguments = arguments.skip(1);
-    _requiredArguments = _arguments.fold(0, (i, e) {
-      if (e.isOptional) {
-        return i;
-      }
-      return i + 1;
-    });
-
-    for (final parametrer in _arguments) {
-      if (!parametrer.type.hasReflectedType) {
-        throw CommandRegistrationError('Command callback parameters must have reflected types');
-      }
-      if (parametrer.type.reflectedType == dynamic) {
-        throw CommandRegistrationError('Command callback parameters must not be of type "dynamic"');
-      }
-      if (parametrer.isNamed) {
-        throw CommandRegistrationError('Command callback parameters must not be named parameters');
-      }
-      if (parametrer.metadata.where((element) => element.reflectee is Description).length > 1) {
-        throw CommandRegistrationError(
-            'Command callback parameters must not have more than one Description annotation');
-      }
-      if (parametrer.metadata.where((element) => element.reflectee is Choices).length > 1) {
-        throw CommandRegistrationError(
-            'Command callback parameters must not have more than one Choices annotation');
-      }
-      if (parametrer.metadata.where((element) => element.reflectee is Name).length > 1) {
-        throw CommandRegistrationError(
-            'Command callback parameters must not have more than one Name annotation');
-      }
-      if (parametrer.metadata.where((element) => element.reflectee is UseConverter).length > 1) {
-        throw CommandRegistrationError(
-            'Command callback parameters must not have more than one UseConverter annotation');
-      }
-      if (parametrer.metadata.where((element) => element.reflectee is Autocomplete).length > 1) {
-        throw CommandRegistrationError(
-            'Command callback parameters must not have more than one UseConverter annotation');
-      }
-    }
-
-    for (final argument in _arguments) {
-      argumentTypes.add(argument.type.reflectedType);
-
-      Iterable<Name> names = argument.metadata
-          .where((element) => element.reflectee is Name)
-          .map((nameMirror) => nameMirror.reflectee)
-          .cast<Name>();
-
-      String argumentName;
-      if (names.isNotEmpty) {
-        argumentName = names.first.name;
-
-        if (!commandNameRegexp.hasMatch(argumentName) || name != name.toLowerCase()) {
-          throw CommandRegistrationError('Invalid argument name "$argumentName"');
-        }
-      } else {
-        String rawArgumentName = MirrorSystem.getName(argument.simpleName);
-
-        argumentName = convertToKebabCase(rawArgumentName);
-
-        if (!commandNameRegexp.hasMatch(argumentName) || name != name.toLowerCase()) {
+    for (final parameter in _functionData.parametersData) {
+      if (parameter.description != null) {
+        if (parameter.description!.isEmpty || parameter.description!.length > 100) {
           throw CommandRegistrationError(
-              'Could not convert parameter "$rawArgumentName" to a valid Discord '
-              'Slash command argument name (got "$argumentName")');
+              'Descriptions must not be empty nor longer than 100 characters');
         }
       }
 
-      Iterable<Description> descriptions = argument.metadata
-          .where((element) => element.reflectee is Description)
-          .map((descriptionMirror) => descriptionMirror.reflectee)
-          .cast<Description>();
-
-      Description description;
-      if (descriptions.isNotEmpty) {
-        description = descriptions.first;
-      } else {
-        description = const Description('No description provided');
-      }
-
-      if (description.value.isEmpty || description.value.length > 100) {
-        throw CommandRegistrationError(
-            'Descriptions must not be empty nor longer than 100 characters');
-      }
-
-      Iterable<Choices> choices = argument.metadata
-          .where((element) => element.reflectee is Choices)
-          .map((choicesMirror) => choicesMirror.reflectee)
-          .cast<Choices>();
-
-      if (choices.isNotEmpty) {
-        _mappedChoices[argumentName] = choices.first;
-      }
-
-      Iterable<UseConverter> converterOverrides = argument.metadata
-          .where((element) => element.reflectee is UseConverter)
-          .map((useConverterMirror) => useConverterMirror.reflectee)
-          .cast<UseConverter>();
-
-      if (converterOverrides.isNotEmpty) {
-        UseConverter converterOverride = converterOverrides.first;
-
-        if (!reflectType(converterOverride.converter.output).isAssignableTo(argument.type)) {
+      if (parameter.converterOverride != null) {
+        if (!isAssignableTo(parameter.converterOverride!.output, parameter.type)) {
           throw CommandRegistrationError('Invalid converter override');
         }
-
-        _mappedConverterOverrides[argumentName] = converterOverride;
       }
-
-      _mappedDescriptions[argumentName] = description;
-      _mappedArgumentTypes[argumentName] = argument.type.reflectedType;
-      _mappedArgumentMirrors[argumentName] = argument;
-      _orderedArgumentNames.add(argumentName);
     }
   }
 
@@ -601,36 +491,36 @@ class ChatCommand
     if (context is MessageChatContext) {
       StringView argumentsView = StringView(context.rawArguments);
 
-      for (final argumentName in _orderedArgumentNames) {
+      for (final parameter in _functionData.parametersData.skip(1)) {
         if (argumentsView.eof) {
           break;
         }
-
-        Type expectedType = _mappedArgumentTypes[argumentName]!;
 
         arguments.add(await parse(
           context.commands,
           context,
           argumentsView,
-          expectedType,
-          converterOverride: _mappedConverterOverrides[argumentName]?.converter,
+          parameter.type,
+          converterOverride: parameter.converterOverride,
         ));
       }
 
-      if (arguments.length < _requiredArguments) {
+      // Context parameter will be added in first position later
+      if (arguments.length < _functionData.requiredParameters - 1) {
         throw NotEnoughArgumentsException(context);
       }
     } else if (context is InteractionChatContext) {
-      for (final argumentName in _orderedArgumentNames) {
-        if (!context.rawArguments.containsKey(argumentName)) {
-          arguments.add(_mappedArgumentMirrors[argumentName]!.defaultValue?.reflectee);
+      for (final parameter in _functionData.parametersData.skip(1)) {
+        String kebabCaseName = convertToKebabCase(parameter.name);
+
+        if (!context.rawArguments.containsKey(kebabCaseName)) {
+          arguments.add(parameter.defaultValue);
           continue;
         }
 
-        dynamic rawArgument = context.rawArguments[argumentName]!;
-        Type expectedType = _mappedArgumentTypes[argumentName]!;
+        dynamic rawArgument = context.rawArguments[kebabCaseName]!;
 
-        if (reflect(rawArgument).type.isAssignableTo(reflectType(expectedType))) {
+        if (isAssignableTo(rawArgument.runtimeType, parameter.type)) {
           arguments.add(rawArgument);
           continue;
         }
@@ -639,8 +529,8 @@ class ChatCommand
           context.commands,
           context,
           StringView(rawArgument.toString(), isRestBlock: true),
-          expectedType,
-          converterOverride: _mappedConverterOverrides[argumentName]?.converter,
+          parameter.type,
+          converterOverride: parameter.converterOverride,
         ));
       }
     }
@@ -669,33 +559,20 @@ class ChatCommand
     if (resolvedType != CommandType.textOnly) {
       List<CommandOptionBuilder> options = [];
 
-      for (final mirror in _arguments) {
-        Iterable<Name> names = mirror.metadata
-            .where((element) => element.reflectee is Name)
-            .map((nameMirror) => nameMirror.reflectee)
-            .cast<Name>();
+      for (final parameter in _functionData.parametersData.skip(1)) {
+        Converter<dynamic>? argumentConverter =
+            parameter.converterOverride ?? commands.getConverter(parameter.type);
 
-        String name;
-        if (names.isNotEmpty) {
-          name = names.first.name;
-        } else {
-          String rawArgumentName = MirrorSystem.getName(mirror.simpleName);
-
-          name = convertToKebabCase(rawArgumentName);
-        }
-
-        Converter<dynamic>? argumentConverter = _mappedConverterOverrides[name]?.converter ??
-            commands.getConverter(mirror.type.reflectedType);
-
-        Iterable<ArgChoiceBuilder>? choices = _mappedChoices[name]?.builders;
+        Iterable<ArgChoiceBuilder>? choices =
+            parameter.choices?.entries.map((entry) => ArgChoiceBuilder(entry.key, entry.value));
 
         choices ??= argumentConverter?.choices;
 
         CommandOptionBuilder builder = CommandOptionBuilder(
           argumentConverter?.type ?? CommandOptionType.string,
-          name,
-          _mappedDescriptions[name]!.value,
-          required: !mirror.isOptional,
+          convertToKebabCase(parameter.name),
+          parameter.description ?? 'No description provided',
+          required: !parameter.isOptional,
           choices: choices?.toList(),
         );
 
