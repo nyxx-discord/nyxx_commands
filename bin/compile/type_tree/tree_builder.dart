@@ -50,7 +50,7 @@ int getId(DartType type) {
   } else if (type is TypeParameterType) {
     ret = getId(type.bound);
   } else {
-    ret = type.hashCode;
+    throw CommandsError('Unhandled type $type');
   }
 
   processing.removeLast();
@@ -124,10 +124,14 @@ Map<int, TypeData> buildTree(List<DartType> types) {
   void handle(DartType type) {
     int id = getId(type);
 
-    logger.finest('Handling type $type (ID $id)');
+    logger.finer('Handling type $type (ID $id)');
 
     if (type is TypeParameterType) {
       handle(type.bound);
+
+      if (result.containsKey(id) || processing.contains(id)) {
+        return;
+      }
 
       int boundId = getId(type.bound);
 
