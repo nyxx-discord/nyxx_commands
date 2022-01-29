@@ -8,6 +8,7 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:analyzer/dart/element/type.dart';
+import 'package:analyzer/diagnostic/diagnostic.dart';
 import 'package:analyzer/src/dart/element/element.dart';
 import 'package:dart_style/dart_style.dart';
 import 'package:logging/logging.dart';
@@ -38,11 +39,19 @@ Future<void> generate(String path, String outPath) async {
 
   logger.info('Finished analyzing file "$path"');
 
-  // TODO check for analysis errors before proceding
-
   if (result is! ResolvedUnitResult || !result.exists) {
     logger.shout('Did not get a valid analysis result for "$path"');
-    exit(1);
+    throw CommandsException('Did not get a valid analysis result for "$path"');
+  }
+
+  if (result.libraryElement.entryPoint == null) {
+    logger.shout('No entry point was found for file "$path"');
+    throw CommandsException('No entry point was found for file "$path"');
+  }
+
+  if (result.errors.where((element) => element.severity == Severity.error).isNotEmpty) {
+    logger.shout('File "$path" contains analysis errors');
+    throw CommandsException('File "$path" contains analysis errors');
   }
 
   Map<int, TypeData> typeTree = await processTypes(result, context);
@@ -249,8 +258,6 @@ String generateOutput(Iterable<TypeData> typeTree, Iterable<CompileTimeFunctionD
   }
 
   result.write('};');
-
-  // TODO: check if main function actually exists in target file
 
   result.write('''
   
