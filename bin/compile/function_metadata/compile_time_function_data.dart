@@ -1,4 +1,4 @@
-import 'package:analyzer/dart/constant/value.dart';
+import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/type.dart';
 
 class CompileTimeFunctionData {
@@ -20,7 +20,7 @@ class CompileTimeParameterData {
 
   final Map<String, dynamic>? choices;
 
-  final DartObject? converterOverride;
+  final Annotation? converterOverride;
 
   const CompileTimeParameterData(
     this.name,
