@@ -129,11 +129,10 @@ Iterable<CompileTimeFunctionData> getFunctionData(
 
       // Get converter override
 
-      DartObject? converterOverride;
+      Annotation? converterOverride;
 
       if (useConverterAnnotations.isNotEmpty) {
-        converterOverride = getAnnotationData(useConverterAnnotations.first.elementAnnotation!)
-            .getField('converter');
+        converterOverride = useConverterAnnotations.first;
       }
 
       parameterData.add(CompileTimeParameterData(

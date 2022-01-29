@@ -4,11 +4,14 @@ import 'package:analyzer/dart/analysis/analysis_context.dart';
 import 'package:analyzer/dart/analysis/context_builder.dart';
 import 'package:analyzer/dart/analysis/context_locator.dart';
 import 'package:analyzer/dart/analysis/results.dart';
+import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:analyzer/dart/element/type.dart';
+import 'package:analyzer/src/dart/element/element.dart';
 import 'package:dart_style/dart_style.dart';
 import 'package:logging/logging.dart';
+import 'package:nyxx_commands/src/errors.dart';
 import 'package:path/path.dart';
 
 import 'function_metadata/compile_time_function_data.dart';
@@ -34,6 +37,8 @@ Future<void> generate(String path, String outPath) async {
   final SomeResolvedUnitResult result = await context.currentSession.getResolvedUnit(path);
 
   logger.info('Finished analyzing file "$path"');
+
+  // TODO check for analysis errors before proceding
 
   if (result is! ResolvedUnitResult || !result.exists) {
     logger.shout('Did not get a valid analysis result for "$path"');
@@ -157,9 +162,10 @@ String generateOutput(Iterable<TypeData> typeTree, Iterable<CompileTimeFunctionD
       continue;
     }
 
-    List<String>? typeSourceRepresentation = toSource(type.source);
+    List<String>? typeSourceRepresentation = toTypeSource(type.source);
 
     if (typeSourceRepresentation == null) {
+      logger.fine('Excluding type $type as data for type was not resolved');
       continue;
     }
 
@@ -168,7 +174,7 @@ String generateOutput(Iterable<TypeData> typeTree, Iterable<CompileTimeFunctionD
     imports.addAll(typeSourceRepresentation.skip(2));
 
     result.write(
-        'typedef t_${type.id}${typeSourceRepresentation[0]} = ${typeSourceRepresentation[1]};\n');
+        'typedef t_${type.id}${typeSourceRepresentation.first} = ${typeSourceRepresentation[1]};\n');
   }
 
   result.write('''
@@ -185,46 +191,78 @@ String generateOutput(Iterable<TypeData> typeTree, Iterable<CompileTimeFunctionD
 
   result.write('};');
 
-  // result.write('''
+  result.write('''
 
-  // // Function data
+  // Function data
 
-  // ''');
+  ''');
 
-  // result.write('const Map<dynamic, FunctionData> functionData = {');
+  result.write('const Map<dynamic, FunctionData> functionData = {');
 
-  // for (final function in functionData) {
-  //   result.write('null: FunctionData([');
+  outerLoop:
+  for (final function in functionData) {
+    String parameterDataSource = '';
 
-  //   for (final parameter in function.parametersData) {
-  //     result.write('''
-  //       ParameterData(
-  //         "${parameter.name}",
-  //         t_${getId(parameter.type)},
-  //         ${parameter.isOptional},
-  //         ${parameter.description == null ? 'null' : '"${parameter.description}"'},
-  //         "${parameter.defaultValue}",
-  //         ${parameter.choices == null ? 'null' : '{${parameter.choices!.entries.map((e) => '${e.key}:${e.value}')}}'},
-  //         "${parameter.converterOverride}",
-  //       ),
-  //     ''');
-  //   }
+    for (final parameter in function.parametersData) {
+      String? converterSource;
 
-  //   result.write(']),');
-  // }
+      if (parameter.converterOverride != null) {
+        List<String>? converterOverrideData = toConverterSource(parameter.converterOverride!);
 
-  // result.write('};');
+        if (converterOverrideData == null) {
+          // Unresolved converters are more severe than unresolved types as the only case where a
+          // converter override is specified is when the @UseConverter annotation is explicitly used
+          logger.shout(
+            'Unable to resolve converter override for parameter ${parameter.name}, skipping function',
+          );
+          continue outerLoop;
+        }
+
+        imports.addAll(converterOverrideData.skip(1));
+
+        converterSource = converterOverrideData.first;
+      }
+
+      if (!successfulIds.contains(getId(parameter.type))) {
+        logger.fine('Parameter ${parameter.name} has an unresolved type, skipping function');
+        continue outerLoop;
+      }
+
+      parameterDataSource += '''
+        ParameterData(
+          "${parameter.name}",
+          t_${getId(parameter.type)},
+          ${parameter.isOptional},
+          ${parameter.description == null ? 'null' : '"${parameter.description}"'},
+          "${parameter.defaultValue}",
+          ${parameter.choices == null ? 'null' : '{${parameter.choices!.entries.map((e) => '${e.key}:${e.value}')}}'},
+          $converterSource,
+        ),
+      ''';
+    }
+
+    result.write('null: FunctionData([');
+
+    result.write(parameterDataSource);
+
+    result.write(']),');
+  }
+
+  result.write('};');
 
   // TODO: check if main function actually exists in target file
-  // TODO: check if main function has an arguments parameter
 
   result.write('''
   
   // Main function wrapper
-  void main() {
+  void main(List<String> args) {
     loadData(typeTree, typeMappings);
 
-    _main.main();
+    if (_main.main is Function(List<String>)) {
+      _main.main(args);
+    } else {
+      _main.main();
+    }
   }
   ''');
 
@@ -235,9 +273,15 @@ String generateOutput(Iterable<TypeData> typeTree, Iterable<CompileTimeFunctionD
   return DartFormatter(lineEnding: '\n').format(result.toString());
 }
 
+String toImportPrefix(String importPath) => importPath
+    .replaceAll(':', '_')
+    .replaceAll('/', '__')
+    .replaceAll(r'\', '__')
+    .replaceAll('.', '___');
+
 /// Returns a list - the first element is a type argument list, the second element is the type
 /// source representation and the others are needed import statements.
-List<String>? toSource(DartType type, [bool handleTypeParameters = true]) {
+List<String>? toTypeSource(DartType type, [bool handleTypeParameters = true]) {
   String typeArguments = '';
 
   Iterable<TypeParameterType> recursivelyGatherTypeParameters(DartType type,
@@ -278,7 +322,7 @@ List<String>? toSource(DartType type, [bool handleTypeParameters = true]) {
         if (typeParameter.bound is! DynamicType) {
           typeArguments += ' extends ';
 
-          List<String>? data = toSource(typeParameter.bound, false);
+          List<String>? data = toTypeSource(typeParameter.bound, false);
 
           if (data == null) {
             return null;
@@ -315,12 +359,7 @@ List<String>? toSource(DartType type, [bool handleTypeParameters = true]) {
 
     String? importPrefix;
     if (type.element is ClassElement) {
-      importPrefix = type.element!.library!.source.uri
-          .toString()
-          .replaceAll(':', '_')
-          .replaceAll('/', '__')
-          .replaceAll(r'\', '__')
-          .replaceAll('.', '___');
+      importPrefix = toImportPrefix(type.element!.library!.source.uri.toString());
     }
 
     List<String> imports = [];
@@ -345,7 +384,7 @@ List<String>? toSource(DartType type, [bool handleTypeParameters = true]) {
             return null;
           }
 
-          typeString += data[0];
+          typeString += data.first;
 
           imports.addAll(data.skip(1));
 
@@ -365,7 +404,7 @@ List<String>? toSource(DartType type, [bool handleTypeParameters = true]) {
 
       imports.addAll(returnTypeData.skip(1));
 
-      typeString = returnTypeData[0];
+      typeString = returnTypeData.first;
 
       typeString += ' Function(';
 
@@ -378,7 +417,7 @@ List<String>? toSource(DartType type, [bool handleTypeParameters = true]) {
 
         imports.addAll(parameterData.skip(1));
 
-        typeString += parameterData[0];
+        typeString += parameterData.first;
 
         typeString += ',';
       }
@@ -395,7 +434,7 @@ List<String>? toSource(DartType type, [bool handleTypeParameters = true]) {
 
           imports.addAll(parameterData.skip(1));
 
-          typeString += parameterData[0];
+          typeString += parameterData.first;
 
           typeString += ',';
         }
@@ -419,7 +458,7 @@ List<String>? toSource(DartType type, [bool handleTypeParameters = true]) {
 
           imports.addAll(parameterData.skip(1));
 
-          typeString += '${parameterData[0]} ${entry.key}';
+          typeString += '${parameterData.first} ${entry.key}';
 
           typeString += ',';
         }
@@ -456,4 +495,129 @@ List<String>? toSource(DartType type, [bool handleTypeParameters = true]) {
   }
 
   return [typeArguments, ...data];
+}
+
+List<String>? toConverterSource(Annotation useConverterAnnotation) {
+  Expression argument = useConverterAnnotation.arguments!.arguments.first;
+
+  return toExpressionSource(argument);
+}
+
+List<String>? toExpressionSource(Expression expression) {
+  if (expression is Identifier) {
+    Element referenced = expression.staticElement!;
+
+    if (referenced is PropertyAccessorElement) {
+      if (referenced.variable is TopLevelVariableElement) {
+        TopLevelVariableElement converter = referenced.variable as TopLevelVariableElement;
+
+        String importPrefix = toImportPrefix(converter.library.source.uri.toString());
+
+        return [
+          '$importPrefix.${converter.name}',
+          'import "${converter.library.source.uri.toString()}" as $importPrefix;',
+        ];
+      } else if (referenced.variable is FieldElement) {
+        List<String>? typeData =
+            toTypeSource((referenced.variable.enclosingElement as ClassElement).thisType);
+
+        if (typeData == null || !referenced.variable.isPublic || !referenced.variable.isStatic) {
+          return null;
+        }
+
+        if (typeData.first.isNotEmpty) {
+          // Can't handle type parameters
+          throw CommandsException('Cannot handle type parameters in expression toSource()');
+        }
+
+        return [
+          '${typeData[1]}.${referenced.variable.name}',
+          ...typeData.skip(2),
+        ];
+      } else {
+        throw CommandsError('Unhandled property accessor type ${referenced.variable.runtimeType}');
+      }
+    } else if (referenced is FunctionElement) {
+      if (referenced.isPublic) {
+        String importPrefix = toImportPrefix(referenced.library.source.uri.toString());
+
+        return [
+          '$importPrefix.${referenced.name}',
+          'import "${referenced.library.source.uri.toString()}" as $importPrefix;',
+        ];
+      } else {
+        return null; // Cannot handle private functions
+      }
+    } else if (referenced is MethodElement) {
+      List<String>? typeData = toTypeSource((referenced.enclosingElement as ClassElement).thisType);
+
+      if (typeData == null || !referenced.isPublic || !referenced.isStatic) {
+        return null;
+      }
+
+      if (typeData.first.isNotEmpty) {
+        // Can't handle type parameters
+        throw CommandsException('Cannot handle type parameters in expression toSource()');
+      }
+
+      return [
+        '${typeData[1]}.${referenced.name}',
+        ...typeData.skip(2),
+      ];
+    } else if (referenced is ConstVariableElement) {
+      return toExpressionSource(referenced.constantInitializer!);
+    }
+  } else if (expression is InstanceCreationExpression) {
+    List<String>? typeData = toTypeSource(expression.staticType!);
+
+    if (typeData == null) {
+      return null;
+    }
+
+    List<String> imports = typeData.skip(2).toList();
+
+    if (typeData.first.isNotEmpty) {
+      // Can't handle type parameters
+      throw CommandsException('Cannot handle type parameters in toExpressionSource()');
+    }
+
+    String namedConstructor = '';
+    if (expression.constructorName.name != null) {
+      namedConstructor = '.${expression.constructorName.name!.name}';
+    }
+
+    String result = '${typeData[1]}$namedConstructor(';
+
+    for (final argument in expression.argumentList.arguments) {
+      List<String>? argumentData = toExpressionSource(argument);
+
+      if (argumentData == null) {
+        return null;
+      }
+
+      imports.addAll(argumentData.skip(1));
+
+      result += '${argumentData.first},';
+    }
+
+    result += ')';
+
+    return [
+      result,
+      ...imports,
+    ];
+  } else if (expression is NamedExpression) {
+    List<String>? wrappedExpressionData = toExpressionSource(expression.expression);
+
+    if (wrappedExpressionData == null) {
+      return null;
+    }
+
+    return [
+      '${expression.name.label.name}: ${wrappedExpressionData.first}',
+      ...wrappedExpressionData.skip(1),
+    ];
+  }
+
+  throw CommandsError('Unhandled constant expression $expression');
 }
