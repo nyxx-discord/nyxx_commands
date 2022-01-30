@@ -5,25 +5,17 @@ import 'package:analyzer/src/dart/element/element.dart';
 import 'package:nyxx_commands/nyxx_commands.dart';
 
 import '../type_tree/tree_builder.dart';
-import '../type_tree/type_data.dart';
-import '../type_tree/util.dart';
 import 'compile_time_function_data.dart';
 
 Iterable<CompileTimeFunctionData> getFunctionData(
-    Iterable<FormalParameterList> functions, Map<int, TypeData> typeTree) {
+    Iterable<InstanceCreationExpression> idCreations) {
   List<CompileTimeFunctionData> result = [];
 
-  Iterable<FormalParameterList> contextFunctions = functions.where(
-    (parameters) =>
-        parameters.parameterElements.isNotEmpty &&
-        (isAAssignableToB(
-                iChatContextId, getId(parameters.parameterElements.first!.type), typeTree) ||
-            isAAssignableToB(
-                getId(parameters.parameterElements.first!.type), iChatContextId, typeTree)),
-  );
-
   outerLoop:
-  for (final parameterList in contextFunctions) {
+  for (final idCreation in idCreations) {
+    FormalParameterList parameterList =
+        (idCreation.argumentList.arguments[1] as FunctionExpression).parameters!;
+
     List<CompileTimeParameterData> parameterData = [
       CompileTimeParameterData(parameterList.parameterElements.first!.name,
           parameterList.parameterElements.first!.type, false, null, null, null, null)
@@ -128,7 +120,7 @@ Iterable<CompileTimeFunctionData> getFunctionData(
       ));
     }
 
-    result.add(CompileTimeFunctionData(parameterData));
+    result.add(CompileTimeFunctionData(idCreation.argumentList.arguments.first, parameterData));
   }
 
   return result;

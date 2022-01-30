@@ -81,6 +81,7 @@ export 'src/util/util.dart'
         Autocomplete,
         Choices,
         Description,
+        Id,
         Name,
         UseConverter,
         commandNameRegexp,

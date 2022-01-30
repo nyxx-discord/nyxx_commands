@@ -67,9 +67,6 @@ int getId(DartType type) {
   return ret;
 }
 
-int get iChatContextId => getId(iChatContextClassElement!.thisType);
-ClassElement? iChatContextClassElement;
-
 int get nameId => getId(nameClassElement!.thisType);
 ClassElement? nameClassElement;
 
@@ -88,9 +85,10 @@ ClassElement? objectClassElement;
 int get functionId => getId(functionClassElement!.thisType);
 ClassElement? functionClassElement;
 
+int get idId => getId(idClassElement!.thisType);
+ClassElement? idClassElement;
+
 Map<List<String>, void Function(ClassElement)> _specialInterfaceTypeSetters = {
-  ['package:nyxx_commands/src/context/chat_context.dart', 'IChatContext']: (element) =>
-      iChatContextClassElement = element,
   ['package:nyxx_commands/src/util/util.dart', 'Description']: (element) =>
       descriptionClassElement = element,
   ['package:nyxx_commands/src/util/util.dart', 'Name']: (element) => nameClassElement = element,
@@ -100,6 +98,7 @@ Map<List<String>, void Function(ClassElement)> _specialInterfaceTypeSetters = {
       useConverterClassElement = element,
   ['dart:core/object.dart', 'Object']: (element) => objectClassElement = element,
   ['dart:core/function.dart', 'Function']: (element) => functionClassElement = element,
+  ['package:nyxx_commands/src/util/util.dart', 'Id']: (element) => idClassElement = element,
 };
 
 void checkSpecialType(DartType type) {
