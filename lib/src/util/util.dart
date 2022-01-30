@@ -283,6 +283,7 @@ final RegExp commandNameRegexp = RegExp(
 );
 
 final Map<int, dynamic> idMap = {};
+final Map<int, Function> wrappedMap = {};
 
 /// A class that can be used to identify functions both at compile-time and at runtime.
 ///
@@ -302,7 +303,11 @@ class Id {
   /// Create a new function wrapped
   Id(this.id, this.wrapped) {
     void setId(Function fn) {
+      // For compiled lookup
       idMap[fn.hashCode] = id;
+
+      // For checking with mirrors
+      wrappedMap[fn.hashCode] = wrapped;
     }
 
     setId(this);
