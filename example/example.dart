@@ -129,12 +129,12 @@ void main() {
     //
     // Since a ping command doesn't have any other arguments, we don't add any other parameters to
     // the function.
-    (IChatContext context) {
+    Id('ping', (IChatContext context) {
       // For a ping command, all we need to do is respond with `pong`.
       // To do that, we can use the `IChatContext`'s `respond` method which responds to the command with
       // a message.
       context.respond(MessageBuilder.content('pong!'));
-    },
+    }),
   );
 
   // Once we've created our command, we need to add it to our bot:
@@ -183,12 +183,12 @@ void main() {
       ChatCommand(
         'coin',
         'Throw a coin',
-        (IChatContext context) {
+        Id('throw-coin', (IChatContext context) {
           bool heads = Random().nextBool();
 
           context.respond(
               MessageBuilder.content('The coin landed on its ${heads ? 'head' : 'tail'}!'));
-        },
+        }),
       ),
     ],
   );
@@ -198,11 +198,11 @@ void main() {
   throwGroup.addCommand(ChatCommand(
     'die',
     'Throw a die',
-    (IChatContext context) {
+    Id('throw-die', (IChatContext context) {
       int number = Random().nextInt(6) + 1;
 
       context.respond(MessageBuilder.content('The die landed on the $number!'));
-    },
+    }),
   ));
 
   // Finally, just like the `ping` command, we need to add our command group to the bot:
@@ -236,9 +236,9 @@ void main() {
     // As mentioned earlier, all we need to do to add an argument to our command is add it as a
     // parameter to our execute function. In this case, we take an argument called `message` and of
     // type `String`.
-    (IChatContext context, String message) {
+    Id('throw-coin', (IChatContext context, String message) {
       context.respond(MessageBuilder.content(message));
-    },
+    }),
   );
 
   // As usual, we need to register the command to our bot.
@@ -294,7 +294,7 @@ void main() {
     "Change a user's nickname",
     // Setting the type of the `target` parameter to `IMember` will make nyxx_commands convert user
     // input to instances of `IMember`.
-    (IChatContext context, IMember target, String newNick) async {
+    Id('nick', (IChatContext context, IMember target, String newNick) async {
       try {
         await target.edit(builder: MemberBuilder()..nick = newNick);
       } on IHttpResponseError {
@@ -303,7 +303,7 @@ void main() {
       }
 
       context.respond(MessageBuilder.content('Successfully changed nickname!'));
-    },
+    }),
   );
 
   commands.addCommand(nick);
@@ -436,7 +436,7 @@ void main() {
   ChatCommand favouriteShape = ChatCommand(
     'favourite-shape',
     'Outputs your favourite shape',
-    (IChatContext context, Shape shape, Dimension dimension) {
+    Id('favourite-shape', (IChatContext context, Shape shape, Dimension dimension) {
       String favourite;
 
       switch (shape) {
@@ -463,7 +463,7 @@ void main() {
       }
 
       context.respond(MessageBuilder.content('Your favourite shape is $favourite!'));
-    },
+    }),
   );
 
   commands.addCommand(favouriteShape);
@@ -505,9 +505,9 @@ void main() {
   ChatCommand favouriteFruit = ChatCommand(
     'favourite-fruit',
     'Outputs your favourite fruit',
-    (IChatContext context, [String favourite = 'apple']) {
+    Id('favourite-fruit', (IChatContext context, [String favourite = 'apple']) {
       context.respond(MessageBuilder.content('Your favourite fruit is $favourite!'));
-    },
+    }),
   );
 
   commands.addCommand(favouriteFruit);
@@ -536,9 +536,9 @@ void main() {
   ChatCommand alphabet = ChatCommand(
     'alphabet',
     'Outputs the alphabet',
-    (IChatContext context) {
+    Id('alphabet', (IChatContext context) {
       context.respond(MessageBuilder.content('ABCDEFGHIJKLMNOPQRSTUVWXYZ'));
-    },
+    }),
     // Since this command is spammy, we can use a cooldown to restrict its usage:
     checks: [
       CooldownCheck(
@@ -578,12 +578,12 @@ void main() {
   ChatCommand betterSay = ChatCommand(
     'better-say',
     'A better version of the say command',
-    (
+    Id('better-say', (
       IChatContext context,
       @UseConverter(nonEmptyStringConverter) String input,
     ) {
       context.respond(MessageBuilder.content(input));
-    },
+    }),
   );
 
   commands.addCommand(betterSay);
