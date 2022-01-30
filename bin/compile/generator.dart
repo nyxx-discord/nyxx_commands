@@ -237,13 +237,30 @@ String generateOutput(Iterable<TypeData> typeTree, Iterable<CompileTimeFunctionD
         continue outerLoop;
       }
 
+      String? defaultValueSource;
+
+      if (parameter.defaultValue != null) {
+        List<String>? defaultValueData = toExpressionSource(parameter.defaultValue!);
+
+        if (defaultValueData == null) {
+          logger.warning(
+            'Unable to resolve default value for parameter ${parameter.name}, skipping function',
+          );
+          continue outerLoop;
+        }
+
+        imports.addAll(defaultValueData.skip(1));
+
+        defaultValueSource = defaultValueData.first;
+      }
+
       parameterDataSource += '''
         ParameterData(
           "${parameter.name}",
           t_${getId(parameter.type)},
           ${parameter.isOptional},
           ${parameter.description == null ? 'null' : '"${parameter.description}"'},
-          "${parameter.defaultValue}",
+          $defaultValueSource,
           ${parameter.choices == null ? 'null' : '{${parameter.choices!.entries.map((e) => '${e.key}:${e.value}')}}'},
           $converterSource,
         ),
@@ -511,18 +528,73 @@ List<String>? toConverterSource(Annotation useConverterAnnotation) {
 }
 
 List<String>? toExpressionSource(Expression expression) {
-  if (expression is Identifier) {
+  if (expression is StringLiteral) {
+    return ['"${expression.stringValue!.replaceAll(r'\', r'\\').replaceAll('"', r'\"')}"'];
+  } else if (expression is IntegerLiteral) {
+    return [expression.value!.toString()];
+  } else if (expression is BooleanLiteral) {
+    return [expression.value.toString()];
+  } else if (expression is ListLiteral || expression is SetOrMapLiteral) {
+    List<String> imports = [];
+
+    String openingBrace, closingBrace;
+    NodeList<CollectionElement> elements;
+
+    if (expression is ListLiteral) {
+      openingBrace = '[';
+      closingBrace = ']';
+
+      elements = expression.elements;
+    } else if (expression is SetOrMapLiteral) {
+      openingBrace = '{';
+      closingBrace = '}';
+
+      elements = expression.elements;
+    } else {
+      assert(false);
+      return null;
+    }
+
+    String ret = 'const $openingBrace';
+
+    for (final item in elements) {
+      List<String>? elementData = toCollectionElementSource(item);
+
+      if (elementData == null) {
+        return null;
+      }
+
+      imports.addAll(elementData.skip(1));
+
+      ret += elementData.first;
+
+      ret += ',';
+    }
+
+    ret += closingBrace;
+
+    return [
+      ret,
+      ...imports,
+    ];
+  } else if (expression is Identifier) {
     Element referenced = expression.staticElement!;
 
     if (referenced is PropertyAccessorElement) {
       if (referenced.variable is TopLevelVariableElement) {
-        TopLevelVariableElement converter = referenced.variable as TopLevelVariableElement;
+        TopLevelVariableElement variable = referenced.variable as TopLevelVariableElement;
 
-        String importPrefix = toImportPrefix(converter.library.source.uri.toString());
+        if (variable.library.source.uri.toString().contains(':_')) {
+          return null; // Private library; cannot handle
+        } else if (!variable.isPublic) {
+          return null; // Private variable; cannot handle
+        }
+
+        String importPrefix = toImportPrefix(variable.library.source.uri.toString());
 
         return [
-          '$importPrefix.${converter.name}',
-          'import "${converter.library.source.uri.toString()}" as $importPrefix;',
+          '$importPrefix.${variable.name}',
+          'import "${variable.library.source.uri.toString()}" as $importPrefix;',
         ];
       } else if (referenced.variable is FieldElement) {
         List<String>? typeData =
@@ -547,6 +619,10 @@ List<String>? toExpressionSource(Expression expression) {
     } else if (referenced is FunctionElement) {
       if (referenced.isPublic) {
         String importPrefix = toImportPrefix(referenced.library.source.uri.toString());
+
+        if (referenced.library.source.uri.toString().contains(':_')) {
+          return null; // Private library; cannot handle
+        }
 
         return [
           '$importPrefix.${referenced.name}',
@@ -624,7 +700,110 @@ List<String>? toExpressionSource(Expression expression) {
       '${expression.name.label.name}: ${wrappedExpressionData.first}',
       ...wrappedExpressionData.skip(1),
     ];
+  } else if (expression is PrefixExpression) {
+    List<String>? expressionData = toExpressionSource(expression.operand);
+
+    if (expressionData == null) {
+      return null;
+    }
+
+    return [
+      '${expression.operator.lexeme}${expressionData.first}',
+      ...expressionData.skip(1),
+    ];
+  } else if (expression is BinaryExpression) {
+    List<String>? leftData = toExpressionSource(expression.leftOperand);
+    List<String>? rightData = toExpressionSource(expression.rightOperand);
+
+    if (leftData == null || rightData == null) {
+      return null;
+    }
+
+    return [
+      '${leftData.first}${expression.operator.lexeme}${rightData.first}',
+      ...leftData.skip(1),
+      ...rightData.skip(1),
+    ];
   }
 
   throw CommandsError('Unhandled constant expression $expression');
+}
+
+List<String>? toCollectionElementSource(CollectionElement item) {
+  if (item is Expression) {
+    return toExpressionSource(item);
+  } else if (item is IfElement) {
+    String ret = 'if(';
+
+    List<String> imports = [];
+
+    List<String>? conditionSource = toExpressionSource(item.condition);
+
+    if (conditionSource == null) {
+      return null;
+    }
+
+    imports.addAll(conditionSource.skip(1));
+
+    ret += conditionSource.first;
+
+    ret += ') ';
+
+    List<String>? thenSource = toCollectionElementSource(item.thenElement);
+
+    if (thenSource == null) {
+      return null;
+    }
+
+    imports.addAll(thenSource.skip(1));
+
+    ret += thenSource.first;
+
+    if (item.elseElement != null) {
+      ret += ' else ';
+
+      List<String>? elseSource = toCollectionElementSource(item.elseElement!);
+
+      if (elseSource == null) {
+        return null;
+      }
+
+      imports.addAll(elseSource.skip(1));
+
+      ret += elseSource.first;
+    }
+
+    return [
+      ret,
+      ...imports,
+    ];
+  } else if (item is ForElement) {
+    throw CommandsException('Cannot reproduce for loops');
+  } else if (item is MapLiteralEntry) {
+    List<String>? keyData = toExpressionSource(item.key);
+    List<String>? valueData = toExpressionSource(item.value);
+
+    if (keyData == null || valueData == null) {
+      return null;
+    }
+
+    return [
+      '${keyData.first}: ${valueData.first}',
+      ...keyData.skip(1),
+      ...valueData.skip(1),
+    ];
+  } else if (item is SpreadElement) {
+    List<String>? expressionData = toExpressionSource(item.expression);
+
+    if (expressionData == null) {
+      return null;
+    }
+
+    return [
+      '...${item.isNullAware ? '?' : ''}${expressionData.first}',
+      ...expressionData.skip(1),
+    ];
+  } else {
+    throw CommandsError('Unhandled type in collection literal: ${item.runtimeType}');
+  }
 }
