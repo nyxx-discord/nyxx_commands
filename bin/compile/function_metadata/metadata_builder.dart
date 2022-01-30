@@ -103,28 +103,10 @@ Iterable<CompileTimeFunctionData> getFunctionData(
 
       // Get default value
 
-      dynamic defaultValue;
+      Expression? defaultValue;
 
       if (parameter is DefaultFormalParameter) {
-        if (parameter.defaultValue == null) {
-          defaultValue = null;
-        } else if (parameter.defaultValue is StringLiteral) {
-          defaultValue = (parameter.defaultValue as StringLiteral).stringValue;
-        } else if (parameter.defaultValue is IntegerLiteral) {
-          defaultValue = (parameter.defaultValue as IntegerLiteral).value;
-        } else if (parameter.defaultValue is BooleanLiteral) {
-          defaultValue = (parameter.defaultValue as BooleanLiteral).value;
-        } else if (parameter.defaultValue is SimpleIdentifier) {
-          Element staticElement = (parameter.defaultValue as SimpleIdentifier).staticElement!;
-
-          if (staticElement is PropertyAccessorElement) {
-            defaultValue = (staticElement.variable as ConstVariableElement).evaluationResult!.value;
-          } else {
-            throw CommandsError('Unhandled default expression type ${staticElement.runtimeType}');
-          }
-        } else {
-          throw CommandsError('Unhandled default type ${parameter.defaultValue.runtimeType}');
-        }
+        defaultValue = parameter.defaultValue;
       }
 
       // Get converter override

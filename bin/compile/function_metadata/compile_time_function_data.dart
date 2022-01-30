@@ -16,7 +16,7 @@ class CompileTimeParameterData {
 
   final String? description;
 
-  final dynamic defaultValue;
+  final Expression? defaultValue;
 
   final Map<String, dynamic>? choices;
 
