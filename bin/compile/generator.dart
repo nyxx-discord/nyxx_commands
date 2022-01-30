@@ -58,8 +58,12 @@ Future<void> generate(String path, String outPath) async {
 
   Iterable<CompileTimeFunctionData> functions = await processFunctions(result, context, typeTree);
 
-  String output =
-      generateOutput({...typeTree.values}, functions, result.libraryElement.source.uri.toString());
+  String output = generateOutput(
+    {...typeTree.values},
+    functions,
+    result.libraryElement.source.uri.toString(),
+    result.libraryElement.entryPoint!.parameters.isNotEmpty,
+  );
 
   logger.info('Writing output to file "$outPath"');
 
@@ -96,18 +100,21 @@ Future<Iterable<CompileTimeFunctionData>> processFunctions(
 
   await functionBuilder.completed;
 
-  logger.fine('Found ${functionBuilder.parameterLists.length} function instances');
+  logger.fine('Found ${functionBuilder.idCreations.length} function instances');
 
-  final Iterable<CompileTimeFunctionData> data =
-      getFunctionData(functionBuilder.parameterLists, typeTree);
+  final Iterable<CompileTimeFunctionData> data = getFunctionData(functionBuilder.idCreations);
 
   logger.info('Got data for ${data.length} functions');
 
   return data;
 }
 
-String generateOutput(Iterable<TypeData> typeTree, Iterable<CompileTimeFunctionData> functionData,
-    String pathToMainFile) {
+String generateOutput(
+  Iterable<TypeData> typeTree,
+  Iterable<CompileTimeFunctionData> functionData,
+  String pathToMainFile,
+  bool hasArgsArgument,
+) {
   logger.info('Generating output');
 
   StringBuffer result = StringBuffer('''
@@ -206,6 +213,8 @@ String generateOutput(Iterable<TypeData> typeTree, Iterable<CompileTimeFunctionD
 
   ''');
 
+  Set<String> loadedIds = {};
+
   result.write('const Map<dynamic, FunctionData> functionData = {');
 
   outerLoop:
@@ -267,7 +276,22 @@ String generateOutput(Iterable<TypeData> typeTree, Iterable<CompileTimeFunctionD
       ''';
     }
 
-    result.write('null: FunctionData([');
+    List<String>? idData = toExpressionSource(function.id);
+
+    if (idData == null) {
+      logger.shout("Couldn't resolve id ${function.id}");
+      continue;
+    }
+
+    if (loadedIds.contains(idData.first)) {
+      throw CommandsException('Duplicate identifier for Id: ${function.id}');
+    }
+
+    loadedIds.add(idData.first);
+
+    imports.addAll(idData.skip(1));
+
+    result.write('${idData.first}: FunctionData([');
 
     result.write(parameterDataSource);
 
@@ -280,13 +304,9 @@ String generateOutput(Iterable<TypeData> typeTree, Iterable<CompileTimeFunctionD
   
   // Main function wrapper
   void main(List<String> args) {
-    loadData(typeTree, typeMappings);
+    loadData(typeTree, typeMappings, functionData);
 
-    if (_main.main is Function(List<String>)) {
-      _main.main(args);
-    } else {
-      _main.main();
-    }
+    _main.main(${hasArgsArgument ? 'args' : ''});
   }
   ''');
 

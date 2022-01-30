@@ -1,26 +1,30 @@
+import 'package:nyxx_commands/nyxx_commands.dart';
 import 'package:nyxx_commands/src/commands.dart';
-import 'package:nyxx_commands/src/errors.dart';
 import 'package:nyxx_commands/src/mirror_utils/mirror_utils.dart';
+import 'package:nyxx_commands/src/util/util.dart';
 
 Map<int, TypeData>? _typeTree;
 Map<Type, int>? _typeMappings;
+Map<dynamic, FunctionData>? _functionData;
 
 bool isAssignableTo(Type instance, Type target) {
+  if (_typeTree == null || _typeMappings == null) {
+    throw CommandsError('Type data was not correctly loaded. Did you compile the wrong file?');
+  }
+
   int? instanceId = _typeMappings?[instance];
   int? targetId = _typeMappings?[target];
 
   if (instanceId == null) {
-    logger.warning('Couldnt find type data for type $instance');
-    return false;
+    throw CommandsException('Couldnt find type data for type $instance');
   } else if (targetId == null) {
-    logger.warning('Couldnt find type data for type $target');
-    return false;
+    throw CommandsException('Couldnt find type data for type $target');
   }
 
   return _isAAssignableToB(instanceId, targetId, _typeTree!);
 }
 
-// Essentially copied from bin/compiled/type_tree/util.dart
+// Essentially copied from bin/compile/type_tree/util.dart
 bool _isAAssignableToB(int aId, int bId, Map<int, TypeData> typeTree) {
   TypeData a = typeTree[aId]!;
   TypeData b = typeTree[bId]!;
@@ -96,14 +100,31 @@ bool _isAAssignableToB(int aId, int bId, Map<int, TypeData> typeTree) {
 }
 
 FunctionData loadFunctionData(Function fn) {
-  throw UnimplementedError();
+  if (_functionData == null) {
+    throw CommandsError('Function data was not correctly loaded. Did you compile the wrong file?');
+  }
+
+  dynamic id = idMap[fn.hashCode];
+
+  FunctionData? result = _functionData![id];
+
+  if (result == null) {
+    throw CommandsException("Couldn't load function data for function $fn");
+  }
+
+  return result;
 }
 
-void loadData(Map<int, TypeData> typeTree, Map<Type, int> typeMappings) {
+void loadData(
+  Map<int, TypeData> typeTree,
+  Map<Type, int> typeMappings,
+  Map<dynamic, FunctionData> functionData,
+) {
   if (const bool.fromEnvironment('dart.library.mirrors')) {
     logger.info('Loading compiled function data when `dart:mirrors` is availible is unneeded');
   }
 
   _typeTree = typeTree;
   _typeMappings = typeMappings;
+  _functionData = functionData;
 }

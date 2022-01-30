@@ -60,6 +60,7 @@ export 'src/util/util.dart'
     show
         Choices,
         Description,
+        Id,
         Name,
         UseConverter,
         commandNameRegexp,

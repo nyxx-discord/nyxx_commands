@@ -2,9 +2,11 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/type.dart';
 
 class CompileTimeFunctionData {
+  final Expression id;
+
   final List<CompileTimeParameterData> parametersData;
 
-  const CompileTimeFunctionData(this.parametersData);
+  const CompileTimeFunctionData(this.id, this.parametersData);
 }
 
 class CompileTimeParameterData {

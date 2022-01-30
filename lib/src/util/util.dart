@@ -14,6 +14,7 @@
 
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/src/converters/converter.dart';
+import 'package:nyxx_commands/src/errors.dart';
 import 'package:nyxx_commands/src/util/view.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
@@ -189,3 +190,33 @@ String Function(IMessage) dmOr(String Function(IMessage) defaultPrefix) {
 
 /// A [RegExp] that all command names must match
 final RegExp commandNameRegexp = RegExp(r'^[\w-]{1,32}$', unicode: true);
+
+final Map<int, dynamic> idMap = {};
+
+/// A class that can be used to identify functions both at compile-time and at runtime.
+///
+/// This class is used to identify a function so that compiled nyxx_commands can extract the
+/// type & annotation data for that function.
+///
+/// It is a compile-time error for two instances of [Id] to share the same [Id.id].
+/// It is a runtime error in compiled nyxx_commands to create a [ChatCommand] with a non-wrapped
+/// function.
+class Id {
+  /// A unique ID representing the wrapped function
+  final dynamic id;
+
+  /// The wrapped function
+  final Function wrapped;
+
+  /// Create a new function wrapped
+  Id(this.id, this.wrapped) {
+    void setId(Function fn) {
+      idMap[fn.hashCode] = id;
+    }
+
+    setId(this);
+  }
+
+  void call() => throw UnsupportedError(
+      'call() Ids. Access the wrapped function with `wrapped` and call that.');
+}
