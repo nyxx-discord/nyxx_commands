@@ -240,7 +240,7 @@ void main() {
     // As mentioned earlier, all we need to do to add an argument to our command is add it as a
     // parameter to our execute function. In this case, we take an argument called `message` and of
     // type `String`.
-    Id('throw-coin', (IChatContext context, String message) {
+    Id('say', (IChatContext context, String message) {
       context.respond(MessageBuilder.content(message));
     }),
   );

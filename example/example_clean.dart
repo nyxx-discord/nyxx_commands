@@ -77,7 +77,7 @@ void main() {
   ChatCommand say = ChatCommand(
     'say',
     'Make the bot say something',
-    Id('throw-coin', (IChatContext context, String message) {
+    Id('say', (IChatContext context, String message) {
       context.respond(MessageBuilder.content(message));
     }),
   );
