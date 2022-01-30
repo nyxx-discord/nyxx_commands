@@ -38,9 +38,9 @@ void main() {
   ChatCommand ping = ChatCommand(
     'ping',
     'Checks if the bot is online',
-    (IChatContext context) {
+    Id('ping', (IChatContext context) {
       context.respond(MessageBuilder.content('pong!'));
-    },
+    }),
   );
 
   commands.addCommand(ping);
@@ -52,12 +52,12 @@ void main() {
       ChatCommand(
         'coin',
         'Throw a coin',
-        (IChatContext context) {
+        Id('throw-coin', (IChatContext context) {
           bool heads = Random().nextBool();
 
           context.respond(
               MessageBuilder.content('The coin landed on its ${heads ? 'head' : 'tail'}!'));
-        },
+        }),
       ),
     ],
   );
@@ -65,11 +65,11 @@ void main() {
   throwGroup.addCommand(ChatCommand(
     'die',
     'Throw a die',
-    (IChatContext context) {
+    Id('throw-die', (IChatContext context) {
       int number = Random().nextInt(6) + 1;
 
       context.respond(MessageBuilder.content('The die landed on the $number!'));
-    },
+    }),
   ));
 
   commands.addCommand(throwGroup);
@@ -77,9 +77,9 @@ void main() {
   ChatCommand say = ChatCommand(
     'say',
     'Make the bot say something',
-    (IChatContext context, String message) {
+    Id('throw-coin', (IChatContext context, String message) {
       context.respond(MessageBuilder.content(message));
-    },
+    }),
   );
 
   commands.addCommand(say);
@@ -87,7 +87,7 @@ void main() {
   ChatCommand nick = ChatCommand(
     'nick',
     "Change a user's nickname",
-    (IChatContext context, IMember target, String newNick) async {
+    Id('nick', (IChatContext context, IMember target, String newNick) async {
       try {
         await target.edit(builder: MemberBuilder()..nick = newNick);
       } on IHttpResponseError {
@@ -96,7 +96,7 @@ void main() {
       }
 
       context.respond(MessageBuilder.content('Successfully changed nickname!'));
-    },
+    }),
   );
 
   commands.addCommand(nick);
@@ -142,7 +142,7 @@ void main() {
   ChatCommand favouriteShape = ChatCommand(
     'favourite-shape',
     'Outputs your favourite shape',
-    (IChatContext context, Shape shape, Dimension dimension) {
+    Id('favourite-shape', (IChatContext context, Shape shape, Dimension dimension) {
       String favourite;
 
       switch (shape) {
@@ -169,7 +169,7 @@ void main() {
       }
 
       context.respond(MessageBuilder.content('Your favourite shape is $favourite!'));
-    },
+    }),
   );
 
   commands.addCommand(favouriteShape);
@@ -177,9 +177,9 @@ void main() {
   ChatCommand favouriteFruit = ChatCommand(
     'favourite-fruit',
     'Outputs your favourite fruit',
-    (IChatContext context, [String favourite = 'apple']) {
+    Id('favourite-fruit', (IChatContext context, [String favourite = 'apple']) {
       context.respond(MessageBuilder.content('Your favourite fruit is $favourite!'));
-    },
+    }),
   );
 
   commands.addCommand(favouriteFruit);
@@ -187,9 +187,9 @@ void main() {
   ChatCommand alphabet = ChatCommand(
     'alphabet',
     'Outputs the alphabet',
-    (IChatContext context) {
+    Id('alphabet', (IChatContext context) {
       context.respond(MessageBuilder.content('ABCDEFGHIJKLMNOPQRSTUVWXYZ'));
-    },
+    }),
     checks: [
       CooldownCheck(
         CooldownType.user | CooldownType.guild,
@@ -205,12 +205,12 @@ void main() {
   ChatCommand betterSay = ChatCommand(
     'better-say',
     'A better version of the say command',
-    (
+    Id('better-say', (
       IChatContext context,
       @UseConverter(nonEmptyStringConverter) String input,
     ) {
       context.respond(MessageBuilder.content(input));
-    },
+    }),
   );
 
   commands.addCommand(betterSay);
