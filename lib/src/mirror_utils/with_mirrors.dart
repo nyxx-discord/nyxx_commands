@@ -2,11 +2,16 @@ import 'dart:mirrors';
 
 import 'package:nyxx_commands/src/mirror_utils/mirror_utils.dart';
 import 'package:nyxx_commands/nyxx_commands.dart';
+import 'package:nyxx_commands/src/util/util.dart';
 
 bool isAssignableTo(Type instance, Type target) =>
     instance == target || reflectType(instance).isSubtypeOf(reflectType(target));
 
 FunctionData loadFunctionData(Function fn) {
+  if (wrappedMap.containsKey(fn.hashCode)) {
+    fn = wrappedMap[fn.hashCode]!;
+  }
+
   List<ParameterData> parametersData = [];
 
   MethodMirror fnMirror = (reflect(fn) as ClosureMirror).function;
