@@ -122,6 +122,10 @@ void main() {
 
     // The third parameter is the function that will be executed when the command is ran.
     //
+    // It is wrapped in a special class, `Id`, that allows nyxx_commands to be compiled and ran as
+    // an executable. If you just want to run nyxx_commands with `dart run`, this is optional and
+    // you can just pass a normal function to the constructor.
+    //
     // The first parameter to this function must be a `IChatContext`. A `IChatContext` allows you to access
     // various information about how the command was run: the user that executed it, the guild it
     // was ran in and a few other useful pieces of information.
