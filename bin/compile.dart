@@ -12,14 +12,83 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:args/args.dart';
 import 'package:logging/logging.dart';
 
 import 'compile/generator.dart';
 
-void main(List<String> args) {
+void main(List<String> args) async {
+  late ArgParser parser;
+  parser = ArgParser()
+    ..addFlag(
+      'help',
+      abbr: 'h',
+      negatable: false,
+      help: 'Print this help and exit',
+    )
+    ..addOption(
+      'output',
+      abbr: 'o',
+      defaultsTo: 'out.g.dart',
+      help: 'The file where generated output should be written to',
+    )
+    ..addOption(
+      'verbosity',
+      abbr: 'v',
+      defaultsTo: 'info',
+      allowed: Level.LEVELS.map((e) => e.name.toLowerCase()),
+      help: 'Change the verbosity level of the command-line output',
+    )
+    ..addFlag(
+      'compile',
+      abbr: 'c',
+      defaultsTo: true,
+      help: 'Compile the generated file with `dart compile exe`',
+    );
+
+  ArgResults result = parser.parse(args);
+
+  // Help
+
+  if (result['help'] as bool) {
+    print(
+      '''
+Generate code from a Dart program that contains metadata about types and function metadata, and can
+be compiled to run a program written with nyxx_commands.
+
+Usage: nyxx-compile [options] <file>
+
+Options:
+''',
+    );
+    print(parser.usage);
+    return;
+  }
+
+  // Logging
+
+  Logger.root.level = Level.LEVELS.firstWhere(
+    (element) => element.name.toLowerCase() == result['verbosity'],
+  );
   Logger.root.onRecord.listen((LogRecord rec) {
     print("[${rec.time}] [${rec.level.name}] ${rec.message}");
   });
 
-  generate(args.first, 'out.g.dart');
+  // Generation
+
+  await generate(result.rest.first, result['output'] as String);
+
+  // Compilation
+
+  if (result['compile'] as bool) {
+    logger.info('Compiling file to executable');
+
+    Process compiler = await Process.start('dart', ['compile', 'exe', result['output'] as String]);
+
+    compiler.stdout.transform(utf8.decoder).listen(stdout.write);
+    compiler.stderr.transform(utf8.decoder).listen(stderr.write);
+  }
 }
