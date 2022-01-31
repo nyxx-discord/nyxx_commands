@@ -14,6 +14,7 @@
 
 import 'dart:mirrors';
 
+import 'package:nyxx_commands/src/commands.dart';
 import 'package:nyxx_commands/src/mirror_utils/mirror_utils.dart';
 import 'package:nyxx_commands/nyxx_commands.dart';
 import 'package:nyxx_commands/src/util/util.dart';
@@ -95,4 +96,14 @@ FunctionData loadFunctionData(Function fn) {
   }
 
   return FunctionData(parametersData);
+}
+
+void loadData(
+  Map<int, TypeData> typeTree,
+  Map<Type, int> typeMappings,
+  Map<dynamic, FunctionData> functionData,
+) {
+  if (const bool.fromEnvironment('dart.library.mirrors')) {
+    logger.info('Loading compiled function data when `dart:mirrors` is availible is unneeded');
+  }
 }

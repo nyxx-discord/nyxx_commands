@@ -134,10 +134,6 @@ void loadData(
   Map<Type, int> typeMappings,
   Map<dynamic, FunctionData> functionData,
 ) {
-  if (const bool.fromEnvironment('dart.library.mirrors')) {
-    logger.info('Loading compiled function data when `dart:mirrors` is availible is unneeded');
-  }
-
   _typeTree = typeTree;
   _typeMappings = typeMappings;
   _functionData = functionData;
