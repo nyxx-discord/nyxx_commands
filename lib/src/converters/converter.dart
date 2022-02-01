@@ -476,40 +476,44 @@ const Converter<IUser> userConverter = FallbackConverter<IUser>(
 );
 
 T? snowflakeToGuildChannel<T extends IGuildChannel>(Snowflake snowflake, IChatContext context) {
-  if (context.guild != null) {
-    try {
-      return context.guild!.channels
-          .whereType<T>()
-          .firstWhere((channel) => channel.id == snowflake);
-    } on StateError {
-      return null;
-    }
+  if (context.guild == null) {
+    return null;
+  }
+
+  try {
+    return context.guild!.channels.whereType<T>().firstWhere((channel) => channel.id == snowflake);
+  } on StateError {
+    return null;
   }
 }
 
 T? convertGuildChannel<T extends IGuildChannel>(StringView view, IChatContext context) {
-  if (context.guild != null) {
-    String word = view.getQuotedWord();
-    Iterable<T> channels = context.guild!.channels.whereType<T>();
+  if (context.guild == null) {
+    return null;
+  }
 
-    List<T> caseInsensitive = [];
-    List<T> partial = [];
+  String word = view.getQuotedWord();
+  Iterable<T> channels = context.guild!.channels.whereType<T>();
 
-    for (final channel in channels) {
-      if (channel.name.toLowerCase() == word.toLowerCase()) {
-        caseInsensitive.add(channel);
-      }
-      if (channel.name.toLowerCase().startsWith(word.toLowerCase())) {
-        partial.add(channel);
-      }
+  List<T> caseInsensitive = [];
+  List<T> partial = [];
+
+  for (final channel in channels) {
+    if (channel.name.toLowerCase() == word.toLowerCase()) {
+      caseInsensitive.add(channel);
     }
-
-    for (final list in [caseInsensitive, partial]) {
-      if (list.length == 1) {
-        return list.first;
-      }
+    if (channel.name.toLowerCase().startsWith(word.toLowerCase())) {
+      partial.add(channel);
     }
   }
+
+  for (final list in [caseInsensitive, partial]) {
+    if (list.length == 1) {
+      return list.first;
+    }
+  }
+
+  return null;
 }
 
 /// Converter to convert input to [IGuildChannel]s.
@@ -608,17 +612,19 @@ const Converter<IStageVoiceGuildChannel> stageVoiceChannelConverter = FallbackCo
 );
 
 FutureOr<IRole?> snowflakeToRole(Snowflake snowflake, IChatContext context) {
-  if (context.guild != null) {
-    IRole? cached = context.guild!.roles[snowflake];
-    if (cached != null) {
-      return cached;
-    }
+  if (context.guild == null) {
+    return null;
+  }
 
-    try {
-      return context.guild!.fetchRoles().firstWhere((role) => role.id == snowflake);
-    } on StateError {
-      return null;
-    }
+  IRole? cached = context.guild!.roles[snowflake];
+  if (cached != null) {
+    return cached;
+  }
+
+  try {
+    return context.guild!.fetchRoles().firstWhere((role) => role.id == snowflake);
+  } on StateError {
+    return null;
   }
 }
 

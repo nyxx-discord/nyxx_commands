@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 import 'package:nyxx_commands/nyxx_commands.dart';
-import 'package:nyxx_commands/src/commands.dart';
 import 'package:nyxx_commands/src/mirror_utils/mirror_utils.dart';
 import 'package:nyxx_commands/src/util/util.dart';
 
