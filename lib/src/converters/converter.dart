@@ -644,11 +644,14 @@ IGuildChannel? convertGuildChannel(StringView view, IChatContext context) {
         partial.add(channel);
       }
     }
+    if (channel.name.toLowerCase().startsWith(word.toLowerCase())) {
+      partial.add(channel);
+    }
+  }
 
-    for (final list in [caseInsensitive, partial]) {
-      if (list.length == 1) {
-        return list.first;
-      }
+  for (final list in [caseInsensitive, partial]) {
+    if (list.length == 1) {
+      return list.first;
     }
   }
 
@@ -776,17 +779,19 @@ const GuildChannelConverter<IStageVoiceGuildChannel> stageVoiceChannelConverter 
 ]);
 
 FutureOr<IRole?> snowflakeToRole(Snowflake snowflake, IChatContext context) {
-  if (context.guild != null) {
-    IRole? cached = context.guild!.roles[snowflake];
-    if (cached != null) {
-      return cached;
-    }
+  if (context.guild == null) {
+    return null;
+  }
 
-    try {
-      return context.guild!.fetchRoles().firstWhere((role) => role.id == snowflake);
-    } on StateError {
-      return null;
-    }
+  IRole? cached = context.guild!.roles[snowflake];
+  if (cached != null) {
+    return cached;
+  }
+
+  try {
+    return context.guild!.fetchRoles().firstWhere((role) => role.id == snowflake);
+  } on StateError {
+    return null;
   }
 
   return null;
