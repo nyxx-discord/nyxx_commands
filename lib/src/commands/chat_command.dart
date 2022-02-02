@@ -20,6 +20,7 @@ import 'package:nyxx_commands/src/commands.dart';
 import 'package:nyxx_commands/src/commands/interfaces.dart';
 import 'package:nyxx_commands/src/converters/converter.dart';
 import 'package:nyxx_commands/src/util/mixins.dart';
+import 'package:nyxx_commands/src/util/util.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 /// An enum used to specify how a [ChatCommand] can be executed.
@@ -322,7 +323,7 @@ class ChatCommand
   ChatCommand._(
     this.name,
     this.description,
-    this.execute,
+    Function execute,
     Type contextType, {
     this.aliases = const [],
     this.type = CommandType.all,
@@ -330,7 +331,8 @@ class ChatCommand
     Iterable<AbstractCheck> checks = const [],
     Iterable<AbstractCheck> singleChecks = const [],
     this.options = const CommandOptions(),
-  }) {
+    // Unwrap function if it was wrapped
+  }) : execute = wrappedMap[execute.hashCode] ?? execute {
     if (!commandNameRegexp.hasMatch(name) || name != name.toLowerCase()) {
       throw CommandRegistrationError('Invalid command name "$name"');
     }
