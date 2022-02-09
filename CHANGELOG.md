@@ -1,7 +1,7 @@
 ## 4.0.0-dev.0
 __Breaking changes__:
 - The names of command classes have changed. The old class `Command` is now named `ChatCommand` and `Group` is now `ChatGroup`.
-- The names of context classes have changed. The old class `Context` is not named `IChatContext`, `MessageContext` is `MessageChatContext` and `InteractionContext` is now `InteractionChatContext`.
+- The names of context classes have changed. The old class `Context` is now named `IChatContext`, `MessageContext` is `MessageChatContext` and `InteractionContext` is now `InteractionChatContext`.
 - All deprecated members have been removed.
 - The `hideOriginalResponse` parameter has been removed from the `ChatCommand` constructor. Use the new `options` parameter and specify `hideOriginalResponse` there instead.
 
