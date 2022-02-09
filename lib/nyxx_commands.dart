@@ -2,17 +2,8 @@
 /// [nyxx](https://pub.dev/packages/nyxx) library.
 library nyxx_commands;
 
-export 'src/checks/checks.dart'
-    show
-        AbstractCheck,
-        Check,
-        CooldownCheck,
-        CooldownType,
-        GuildCheck,
-        InteractionCheck,
-        MessageCheck,
-        RoleCheck,
-        UserCheck;
+export 'src/checks/checks.dart' show AbstractCheck, Check, GuildCheck, RoleCheck, UserCheck;
+export 'src/checks/cooldown.dart' show CooldownCheck, CooldownType;
 export 'src/commands.dart' show CommandsPlugin;
 export 'src/commands/chat_command.dart' show ChatCommand, ChatGroup, CommandType;
 export 'src/commands/message_command.dart' show MessageCommand;
