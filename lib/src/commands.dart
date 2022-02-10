@@ -575,7 +575,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
       if (logWarn) {
         logger.warning('Using assembled converter for type $type. If this is intentional, you '
             'should register a custom converter for that type using '
-            '`addConverter(converterFor($type, logWarn: false) as Converter<$type>)`');
+            '`addConverter(getConverter($type, logWarn: false) as Converter<$type>)`');
       }
       return FallbackConverter(assignable);
     }
