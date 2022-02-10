@@ -1,6 +1,14 @@
+import 'dart:async';
+
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/nyxx_commands.dart';
+import 'package:nyxx_commands/src/context/interaction_context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+
+/// A check that checks that an [ICommand] is invokedd from an interaction.
+class InteractionCommandCheck extends Check {
+  InteractionCommandCheck() : super((context) => context is InteractionContextMixin);
+}
 
 /// A check that checks that an [ICommand] invocation is a [MessageCommand].
 class MessageCommandCheck extends Check {

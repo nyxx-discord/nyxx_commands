@@ -15,7 +15,6 @@
 import 'dart:async';
 
 import 'package:nyxx_commands/nyxx_commands.dart';
-import 'package:nyxx_commands/src/commands/interfaces.dart';
 import 'package:nyxx_commands/src/util/mixins.dart';
 
 /// Represents a User Application Command.

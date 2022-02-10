@@ -485,6 +485,8 @@ T? snowflakeToGuildChannel<T extends IGuildChannel>(Snowflake snowflake, IChatCo
       return null;
     }
   }
+
+  return null;
 }
 
 T? convertGuildChannel<T extends IGuildChannel>(StringView view, IChatContext context) {
@@ -510,6 +512,8 @@ T? convertGuildChannel<T extends IGuildChannel>(StringView view, IChatContext co
       }
     }
   }
+
+  return null;
 }
 
 /// Converter to convert input to [IGuildChannel]s.
@@ -620,6 +624,8 @@ FutureOr<IRole?> snowflakeToRole(Snowflake snowflake, IChatContext context) {
       return null;
     }
   }
+
+  return null;
 }
 
 FutureOr<IRole?> convertRole(StringView view, IChatContext context) async {
