@@ -6,7 +6,7 @@ import '../../bin/compile/generator.dart';
 
 void main() {
   test('Compilation script', () async {
-    expect(generate('example/example.dart', 'out.g.dart'), completes);
+    expect(generate('example/example.dart', 'out.g.dart', true), completes);
 
     expect(File('out.g.dart').exists(), completion(equals(true)));
 
