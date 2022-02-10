@@ -81,9 +81,9 @@ mixin ComponentWrappersMixin implements IContext {
     }
 
     ButtonBuilder confirmButton =
-        ButtonBuilder(confirmMessage, randomAlpha(10), ComponentStyle.success);
+        ButtonBuilder(confirmMessage, randomAlpha(10), ButtonStyle.success);
 
-    ButtonBuilder denyButton = ButtonBuilder(denyMessage, randomAlpha(10), ComponentStyle.danger);
+    ButtonBuilder denyButton = ButtonBuilder(denyMessage, randomAlpha(10), ButtonStyle.danger);
 
     componentMessageBuilder.addComponentRow(ComponentRowBuilder()
       ..addComponent(confirmButton)
