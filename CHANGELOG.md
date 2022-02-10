@@ -1,3 +1,7 @@
+## 4.0.0-dev.1.2
+__Bug fixes__:
+- Fixed a bug affecting command syncing with external sharding
+
 ## 4.0.0-dev.1.1
 __Bug fixes__:
 - Fixed a bug affecting registration of slash commands nested two layers deep
