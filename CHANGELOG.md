@@ -1,3 +1,7 @@
+## 4.0.0-dev.1.1
+__Bug fixes__:
+- Fixed a bug affecting registration of slash commands nested two layers deep
+
 ## 4.0.0-dev.1
 __New features__:
 - Export the command types for better typing. See the documentation for `ICallHooked`, `IChatCommandComponent`, `IChecked`, `ICommand`, `ICommandGroup`, `ICommandRegisterable` and `IOptions` for more information.
