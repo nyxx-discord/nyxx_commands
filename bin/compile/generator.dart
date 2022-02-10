@@ -38,7 +38,7 @@ import 'type_tree/type_data.dart';
 
 final Logger logger = Logger('Commands Compiler');
 
-Future<void> generate(String path, String outPath) async {
+Future<void> generate(String path, String outPath, bool formatOutput) async {
   path = normalize(absolute(path));
 
   logger.info('Analyzing file "$path"');
@@ -77,6 +77,7 @@ Future<void> generate(String path, String outPath) async {
     functions,
     result.libraryElement.source.uri.toString(),
     result.libraryElement.entryPoint!.parameters.isNotEmpty,
+    formatOutput,
   );
 
   logger.info('Writing output to file "$outPath"');
@@ -128,6 +129,7 @@ String generateOutput(
   Iterable<CompileTimeFunctionData> functionData,
   String pathToMainFile,
   bool hasArgsArgument,
+  bool formatOutput,
 ) {
   logger.info('Generating output');
 
@@ -344,6 +346,10 @@ String generateOutput(
   logger.fine('Formatting output');
 
   result = StringBuffer(imports.join('\n'))..write(result.toString());
+
+  if (!formatOutput) {
+    return result.toString();
+  }
 
   return DartFormatter(lineEnding: '\n').format(result.toString());
 }
