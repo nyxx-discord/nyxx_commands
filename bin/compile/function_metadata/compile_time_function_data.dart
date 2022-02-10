@@ -34,7 +34,7 @@ class CompileTimeParameterData {
 
   final Expression? defaultValue;
 
-  final Map<String, dynamic>? choices;
+  final Expression? choices;
 
   final Annotation? converterOverride;
 
