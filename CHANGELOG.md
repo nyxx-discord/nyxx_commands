@@ -1,3 +1,10 @@
+## 4.0.0-dev.1:
+__New features__:
+- Export the command types for better typing. See the documentation for `ICallHooked`, `IChatCommandComponent`, `IChecked`, `ICommand`, `ICommandGroup`, `ICommandRegisterable` and `IOptions` for more information.
+- Add new checks for allowing certain checks to be bypassed by certain command types. See the documentation for `ChatCommandCheck`, `InteractionCommandCheck`, `InterationChatCommandCheck`, `MessageChatCommandCheck`, `MessageCommandCheck` and `UserCommandCheck` for more info.
+- Export `registerDefaultConverters` and `parse` for users wanting to implement their own commands plugin.
+
+
 ## 4.0.0-dev.0
 __Breaking changes__:
 - The names of command classes have changed. The old class `Command` is now named `ChatCommand` and `Group` is now `ChatGroup`.
