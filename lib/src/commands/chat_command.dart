@@ -17,8 +17,6 @@ import 'dart:async';
 import 'package:nyxx_commands/src/mirror_utils/mirror_utils.dart';
 import 'package:nyxx_commands/nyxx_commands.dart';
 import 'package:nyxx_commands/src/commands.dart';
-import 'package:nyxx_commands/src/commands/interfaces.dart';
-import 'package:nyxx_commands/src/converters/converter.dart';
 import 'package:nyxx_commands/src/util/mixins.dart';
 import 'package:nyxx_commands/src/util/util.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';

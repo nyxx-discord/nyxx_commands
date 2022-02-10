@@ -16,19 +16,27 @@
 /// [nyxx](https://pub.dev/packages/nyxx) library.
 library nyxx_commands;
 
-export 'src/checks/checks.dart'
+export 'src/checks/checks.dart' show AbstractCheck, Check, GuildCheck, RoleCheck, UserCheck;
+export 'src/checks/context_type.dart'
     show
-        AbstractCheck,
-        Check,
-        CooldownCheck,
-        CooldownType,
-        GuildCheck,
-        InteractionCheck,
-        MessageCheck,
-        RoleCheck,
-        UserCheck;
+        ChatCommandCheck,
+        InteractionCommandCheck,
+        InteractionChatCommandCheck,
+        MessageChatCommandCheck,
+        MessageCommandCheck,
+        UserCommandCheck;
+export 'src/checks/cooldown.dart' show CooldownCheck, CooldownType;
 export 'src/commands.dart' show CommandsPlugin;
 export 'src/commands/chat_command.dart' show ChatCommand, ChatGroup, CommandType;
+export 'src/commands/interfaces.dart'
+    show
+        ICallHooked,
+        IChatCommandComponent,
+        IChecked,
+        ICommand,
+        ICommandGroup,
+        ICommandRegisterable,
+        IOptions;
 export 'src/commands/message_command.dart' show MessageCommand;
 export 'src/commands/options.dart' show CommandOptions;
 export 'src/commands/user_command.dart' show UserCommand;
@@ -55,7 +63,9 @@ export 'src/converters/converter.dart'
         stringConverter,
         textGuildChannelConverter,
         userConverter,
-        voiceGuildChannelConverter;
+        voiceGuildChannelConverter,
+        registerDefaultConverters,
+        parse;
 export 'src/errors.dart'
     show
         BadInputException,

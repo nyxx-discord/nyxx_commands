@@ -1,7 +1,18 @@
+## 4.0.0-dev.1.1
+__Bug fixes__:
+- Fixed a bug affecting registration of slash commands nested two layers deep
+
+## 4.0.0-dev.1
+__New features__:
+- Export the command types for better typing. See the documentation for `ICallHooked`, `IChatCommandComponent`, `IChecked`, `ICommand`, `ICommandGroup`, `ICommandRegisterable` and `IOptions` for more information.
+- Add new checks for allowing certain checks to be bypassed by certain command types. See the documentation for `ChatCommandCheck`, `InteractionCommandCheck`, `InterationChatCommandCheck`, `MessageChatCommandCheck`, `MessageCommandCheck` and `UserCommandCheck` for more info.
+- Export `registerDefaultConverters` and `parse` for users wanting to implement their own commands plugin.
+
+
 ## 4.0.0-dev.0
 __Breaking changes__:
 - The names of command classes have changed. The old class `Command` is now named `ChatCommand` and `Group` is now `ChatGroup`.
-- The names of context classes have changed. The old class `Context` is not named `IChatContext`, `MessageContext` is `MessageChatContext` and `InteractionContext` is now `InteractionChatContext`.
+- The names of context classes have changed. The old class `Context` is now named `IChatContext`, `MessageContext` is `MessageChatContext` and `InteractionContext` is now `InteractionChatContext`.
 - All deprecated members have been removed.
 - The `hideOriginalResponse` parameter has been removed from the `ChatCommand` constructor. Use the new `options` parameter and specify `hideOriginalResponse` there instead.
 
