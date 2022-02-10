@@ -123,20 +123,21 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     }
 
     if (nyxx.ready) {
-      for (final builder in await _getSlashBuilders()) {
-        interactions.registerSlashCommand(builder);
-      }
-
-      interactions.sync();
+      await _syncWithInteractions();
     } else {
       nyxx.onReady.listen((event) async {
-        for (final builder in await _getSlashBuilders()) {
-          interactions.registerSlashCommand(builder);
-        }
-
-        interactions.sync();
+        await _syncWithInteractions();
       });
     }
+  }
+
+  Future<void> _syncWithInteractions() async {
+    for (final builder in await _getSlashBuilders()) {
+      interactions.registerSlashCommand(builder);
+    }
+
+    interactions.sync(
+        syncRule: ManualCommandSync(sync: client?.options.shardIds?.contains(0) ?? true));
   }
 
   Future<void> _processMessage(IMessage message) async {
@@ -571,7 +572,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
       if (logWarn) {
         logger.warning('Using assembled converter for type $type. If this is intentional, you '
             'should register a custom converter for that type using '
-            '`addConverter(converterFor($type, logWarn: false) as Converter<$type>)`');
+            '`addConverter(getConverter($type, logWarn: false) as Converter<$type>)`');
       }
       return FallbackConverter(assignable);
     }
@@ -632,7 +633,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     if (client?.ready ?? false) {
       logger.warning('Registering commands after bot is ready might cause global commands to be '
           'deleted');
-      interactions.sync();
+      _syncWithInteractions();
     }
   }
 

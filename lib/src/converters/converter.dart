@@ -485,6 +485,8 @@ T? snowflakeToGuildChannel<T extends IGuildChannel>(Snowflake snowflake, IChatCo
   } on StateError {
     return null;
   }
+
+  return null;
 }
 
 T? convertGuildChannel<T extends IGuildChannel>(StringView view, IChatContext context) {
@@ -626,6 +628,8 @@ FutureOr<IRole?> snowflakeToRole(Snowflake snowflake, IChatContext context) {
   } on StateError {
     return null;
   }
+
+  return null;
 }
 
 FutureOr<IRole?> convertRole(StringView view, IChatContext context) async {
