@@ -514,13 +514,13 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
         builder.registerHandler(
           (interaction) => _processChatInteraction(
             interaction,
-            current.children.where((child) => child.name == builder.name).first as ChatCommand,
+            current.children.where((child) => child.name == builder.name).first as IChatCommandComponent,
           ),
         );
       } else if (builder.type == CommandOptionType.subCommandGroup) {
         _processHandlerRegistration(
           builder.options!,
-          current.children.where((child) => child.name == builder.name).first as ChatCommand,
+          current.children.where((child) => child.name == builder.name).first as IChatCommandComponent,
         );
       }
     }
