@@ -47,24 +47,25 @@ void main(List<String> args) async {
       abbr: 'c',
       defaultsTo: true,
       help: 'Compile the generated file with `dart compile exe`',
+    )
+    ..addFlag(
+      'format',
+      abbr: 'f',
+      defaultsTo: true,
+      help: 'Format the generated output before compiling',
     );
+
+  if (args.isEmpty) {
+    printHelp(parser);
+    return;
+  }
 
   ArgResults result = parser.parse(args);
 
   // Help
 
   if (result['help'] as bool) {
-    print(
-      '''
-Generate code from a Dart program that contains metadata about types and function metadata, and can
-be compiled to run a program written with nyxx_commands.
-
-Usage: nyxx-compile [options] <file>
-
-Options:
-''',
-    );
-    print(parser.usage);
+    printHelp(parser);
     return;
   }
 
@@ -79,7 +80,7 @@ Options:
 
   // Generation
 
-  await generate(result.rest.first, result['output'] as String);
+  await generate(result.rest.first, result['output'] as String, result['format'] as bool);
 
   // Compilation
 
@@ -91,4 +92,18 @@ Options:
     compiler.stdout.transform(utf8.decoder).listen(stdout.write);
     compiler.stderr.transform(utf8.decoder).listen(stderr.write);
   }
+}
+
+void printHelp(ArgParser p) {
+  print(
+    '''
+Generate code from a Dart program that contains metadata about types and function metadata, and can
+be compiled to run a program written with nyxx_commands.
+
+Usage: nyxx-compile [options] <file>
+
+Options:
+''',
+  );
+  print(p.usage);
 }
