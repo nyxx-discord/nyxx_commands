@@ -277,6 +277,23 @@ String generateOutput(
         defaultValueSource = defaultValueData.first;
       }
 
+      String? choicesSource;
+
+      if (parameter.choices != null) {
+        List<String>? choicesData = toExpressionSource(parameter.choices!);
+
+        if (choicesData == null) {
+          logger.warning(
+            'Unable to resolve choices for parameter ${parameter.name}, skipping function',
+          );
+          continue outerLoop;
+        }
+
+        imports.addAll(choicesData.skip(1));
+
+        choicesSource = choicesData.first;
+      }
+
       parameterDataSource += '''
         ParameterData(
           "${parameter.name}",
@@ -284,7 +301,7 @@ String generateOutput(
           ${parameter.isOptional},
           ${parameter.description == null ? 'null' : '"${parameter.description}"'},
           $defaultValueSource,
-          ${parameter.choices == null ? 'null' : '{${parameter.choices!.entries.map((e) => '${e.key}:${e.value}')}}'},
+          $choicesSource,
           $converterSource,
         ),
       ''';

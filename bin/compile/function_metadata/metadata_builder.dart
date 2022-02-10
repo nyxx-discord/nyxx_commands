@@ -84,27 +84,9 @@ Iterable<CompileTimeFunctionData> getFunctionData(
             .toStringValue()!;
       }
 
-      Map<String, dynamic>? choices;
+      Expression? choices;
       if (choicesAnnotations.isNotEmpty) {
-        Map<String, DartObject> unresolvedChoices =
-            getAnnotationData(choicesAnnotations.first.elementAnnotation!)
-                .getField('choices')!
-                .toMapValue()!
-                .map((key, value) => MapEntry(key!.toStringValue()!, value!));
-
-        choices = {};
-
-        for (final key in unresolvedChoices.keys) {
-          DartObject value = unresolvedChoices[key]!;
-
-          dynamic resolved = value.toStringValue() ?? value.toIntValue();
-
-          if (resolved == null) {
-            throw CommandsError('Only `int` and `String` can be used as a value for choices.');
-          }
-
-          choices[key] = resolved;
-        }
+        choices = choicesAnnotations.first.arguments!.arguments.first;
       }
 
       // Get default value
