@@ -89,7 +89,7 @@ FunctionData loadFunctionData(Function fn) {
       type,
       parameterMirror.isOptional,
       description,
-      parameterMirror.defaultValue,
+      parameterMirror.defaultValue.reflectee,
       choices,
       converterOverride,
     ));
