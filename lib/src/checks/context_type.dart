@@ -4,7 +4,20 @@ import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/nyxx_commands.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
+/// A check that succeeds if the context was created from an interaction.
+///
+/// This is generally used in combination with [Check.any] and/or [Check.deny] to only apply another
+/// check to contexts created from interaction, while still registering this check to
+/// [CommandsPlugin].
+///
+/// See [Check.any] for an example of how to implement this.
+///
+/// You might also be interested in:
+/// - [MessageCommandCheck], for checking that the command being invoked is a [MessageCommand];
+/// - [UserCommandCheck], for checking that the command being invoked is a [UserCommand];
+/// - [ChatCommandCheck], for checking that the command being invoked is a [ChatCommand].
 class InteractionCommandCheck extends Check {
+  /// Create a new [InteractionChatCommandCheck].
   InteractionCommandCheck() : super((context) => context is IInteractionContext);
 }
 
