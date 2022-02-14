@@ -19,73 +19,33 @@ import 'package:nyxx_commands/nyxx_commands.dart';
 import 'package:nyxx_commands/src/commands.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
-/// Represents a check executed on a [IChecked].
-///
-/// All checks must succeed in order for a [ICommand] to be executed. Each check is executed and if
-/// any return `false`, command execution is cancelled and a [CheckFailedException] is added to
-/// [CommandsPlugin.onCommandError].
 abstract class AbstractCheck {
-  /// The name of the check.
   final String name;
 
-  /// Create a new [AbstractCheck] with a given name.
   AbstractCheck(this.name);
 
-  /// The method called to validate this check.
-  ///
-  /// Should not change the check's internal state.
   FutureOr<bool> check(IContext context);
 
-  /// An Iterable of permission overrides that will be used on slash commands using this check.
   Future<Iterable<CommandPermissionBuilderAbstract>> get permissions;
 
-  /// An Iterable of pre-call hooks that will be called when a command this check is on emits to
-  /// [ChatCommand.onPreCall].
-  ///
-  /// Should be used by checks that have internal state to update that state, instead of updating it
-  /// in [check].
   Iterable<void Function(IContext)> get preCallHooks;
 
-  /// An Iterable of post-call hooks that will be called when a command this check is on emits to
-  /// [ChatCommand.onPostCall].
-  ///
-  /// Should be used by checks that have internal state to update that state, instead of updating it
-  /// in [check].
   Iterable<void Function(IContext)> get postCallHooks;
 
   @override
   String toString() => 'Check[name=$name]';
 }
 
-/// Represents a simple stateless check.
 class Check extends AbstractCheck {
   final FutureOr<bool> Function(IContext) _check;
 
-  /// Creates a new [Check].
-  ///
-  /// [check] should return a bool indicating whether this check succeeded.
-  /// It should not throw.
   Check(this._check, [String name = 'Check']) : super(name);
 
-  /// Creates a new [AbstractCheck] that succeeds if at least one of the supplied checks succeed.
   static AbstractCheck any(Iterable<AbstractCheck> checks, [String? name]) =>
       _AnyCheck(checks, name);
 
-  /// Creates a new [AbstractCheck] that inverts the result of the supplied check. Use this to allow use of
-  /// commands by default but deny it for certain users.
-  ///
-  /// Passing custom checks directly implementing [AbstractCheck] should be done with care, as pre-
-  /// and post- call hooks will be called if the internal check *fails*, and uncalled if the
-  /// internal check *succeeds*.
   static AbstractCheck deny(AbstractCheck check, [String? name]) => _DenyCheck(check, name);
 
-  /// Creates a new [AbstractCheck] that succeeds if all of the supplied checks succeeds, and fails
-  /// otherwise.
-  ///
-  /// This effectively functions the same as [GroupMixin.checks] and [ChatCommand.singleChecks], but can
-  /// be used to group common patterns of checks together.
-  ///
-  /// Stateful checks in [checks] will share their state for all uses of this check group.
   static AbstractCheck all(Iterable<AbstractCheck> checks, [String? name]) =>
       _GroupCheck(checks, name);
 
@@ -245,19 +205,11 @@ class _GroupCheck extends Check {
       checks.map((e) => e.postCallHooks).expand((_) => _);
 }
 
-/// A [Check] thats checks for a specific role or roles.
-///
-/// Integrates with Discord slash command permissions:
-/// - Denies use by default
-/// - Allows use for the specified role(s)
 class RoleCheck extends Check {
-  /// The roles this check allows.
   Iterable<Snowflake> roleIds;
 
-  /// Create a new Role Check based on a role.
   RoleCheck(IRole role, [String? name]) : this.id(role.id, name);
 
-  /// Create a new Role Check based on a role id.
   RoleCheck.id(Snowflake id, [String? name])
       : roleIds = [id],
         super(
@@ -265,11 +217,9 @@ class RoleCheck extends Check {
           name ?? 'Role Check on $id',
         );
 
-  /// Create a new Role Check based on multiple roles.
   RoleCheck.any(Iterable<IRole> roles, [String? name])
       : this.anyId(roles.map((role) => role.id), name);
 
-  /// Create a new Role Check based on multiple role ids.
   RoleCheck.anyId(Iterable<Snowflake> roles, [String? name])
       : roleIds = roles,
         super(
@@ -284,28 +234,18 @@ class RoleCheck extends Check {
       ]);
 }
 
-/// A [Check] that checks for a specific user or users.
-///
-/// Integrates with Discord slash command permissions:
-/// - Denies use by default
-/// - Allows use for the specified user(s)
 class UserCheck extends Check {
-  /// The users this check allows.
   Iterable<Snowflake> userIds;
 
-  /// Create a User Check based on a user.
   UserCheck(IUser user, [String? name]) : this.id(user.id, name);
 
-  /// Create a User Check based on a user id.
   UserCheck.id(Snowflake id, [String? name])
       : userIds = [id],
         super((context) => context.user.id == id, name ?? 'User Check on $id');
 
-  /// Create a User Check based on multiple users.
   UserCheck.any(Iterable<IUser> users, [String? name])
       : this.anyId(users.map((user) => user.id), name);
 
-  /// Create a User Check based on multiple user ids.
   UserCheck.anyId(Iterable<Snowflake> ids, [String? name])
       : userIds = ids,
         super(
@@ -320,37 +260,19 @@ class UserCheck extends Check {
       ]);
 }
 
-/// A [Check] that checks for a specific guild.
-///
-/// This check is treated specially by [CommandsPlugin]:
-/// - There can only be one [GuildCheck] per command
-/// - Commands will be registered as guild commands in the specified guilds. This overrides
-/// [CommandsPlugin.guild]
 class GuildCheck extends Check {
-  /// The guilds this check allows.
-  ///
-  /// `null` indicates that all guilds are allowed.
   Iterable<Snowflake?> guildIds;
 
-  /// Create a Guild Check based on a guild.
   GuildCheck(IGuild guild, [String? name]) : this.id(guild.id, name);
 
-  /// Create a Guild Check based on a guild id.
   GuildCheck.id(Snowflake id, [String? name])
       : guildIds = [id],
         super((context) => context.guild?.id == id, name ?? 'Guild Check on $id');
 
-  /// Create a Guild Check that allows no guilds.
-  ///
-  /// This means that this command can only be executed as a text command in DMs with the bot.
   GuildCheck.none([String? name])
       : guildIds = [],
         super((context) => context.guild == null, name ?? 'Guild Check on <none>');
 
-  /// Create a Guild Check that allows all guilds, but denies DMs.
-  ///
-  /// This means that this command will be registered globally or, if it is set, the guild specified
-  /// by [CommandsPlugin.guild], and cannot be used in DMs with the bot.
   GuildCheck.all([String? name])
       : guildIds = [null],
         super(
@@ -358,11 +280,9 @@ class GuildCheck extends Check {
           name ?? 'Guild Check on <any>',
         );
 
-  /// Create a Guild Check based on multiple guilds.
   GuildCheck.any(Iterable<IGuild> guilds, [String? name])
       : this.anyId(guilds.map((guild) => guild.id), name);
 
-  /// Create a Guild Check based on multiple guild ids.
   GuildCheck.anyId(Iterable<Snowflake> ids, [String? name])
       : guildIds = ids,
         super(

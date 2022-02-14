@@ -17,7 +17,6 @@ import 'dart:async';
 import 'package:nyxx_commands/nyxx_commands.dart';
 import 'package:nyxx_commands/src/util/mixins.dart';
 
-/// Represents a User Application Command.
 class UserCommand
     with ParentMixin<UserContext>, CheckMixin<UserContext>, OptionsMixin<UserContext>
     implements ICommand<UserContext> {

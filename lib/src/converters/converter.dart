@@ -21,33 +21,15 @@ import 'package:nyxx_commands/src/errors.dart';
 import 'package:nyxx_commands/src/util/view.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
-/// Object used to convert raw argument strings to the type required by the
-/// command using them.
 class Converter<T> {
-  /// The function called to process the input.
-  ///
-  /// If this function returns null, a [BadInputException] is thrown.
-  ///
-  /// The first [StringView] parameter should be left with its index pointing to the position from
-  /// which the next argument should be parsed.
   final FutureOr<T?> Function(StringView view, IChatContext context) convert;
 
-  /// A Iterable of choices users can choose from.
-  ///
-  /// There is a maximum of 25 choices per option.
   final Iterable<ArgChoiceBuilder>? choices;
 
-  /// The [CommandOptionType] that arguments using this converter will use for Discord slash
-  /// commands.
   final CommandOptionType type;
 
-  /// The output [Type] of this converter.
   final Type output;
 
-  /// Construct a new [Converter].
-  ///
-  /// This must then be registered to a [CommandsPlugin] instance with
-  /// [CommandsPlugin.addConverter].
   const Converter(
     this.convert, {
     this.choices,
@@ -58,37 +40,17 @@ class Converter<T> {
   String toString() => 'Converter<$T>';
 }
 
-/// Object used to combine converters.
-///
-/// This is useful in cases where a preliminary parsing can then be refined by applying a filter
-/// to the output, especially if the preliminary parsing can be done on Discord in the case of slash
-/// commands.
 class CombineConverter<R, T> implements Converter<T> {
-  /// The initial [Converter].
-  ///
-  /// The output of this converter will be fed into [process] along with the context.
   final Converter<R> converter;
 
-  /// The function used to further process the output of [converter].
   final FutureOr<T?> Function(R, IChatContext) process;
 
-  /// The output [Type] of this converter.
   @override
   final Type output;
 
   final Iterable<ArgChoiceBuilder>? _choices;
   final CommandOptionType? _type;
 
-  /// Construct a new [CombineConverter].
-  ///
-  /// This must then be registered to a [CommandsPlugin] instance with
-  /// [CommandsPlugin.addConverter].
-  ///
-  /// The choices for this converter will be inherited from [converter], but can be overridden by
-  /// passing [choices].
-  ///
-  /// The type for this converter will be inherited from [converter], but can be overridden by
-  /// passing [type].
   const CombineConverter(
     this.converter,
     this.process, {
@@ -119,28 +81,15 @@ class CombineConverter<R, T> implements Converter<T> {
   String toString() => 'CombineConverter<$R, $T>[converter=$converter]';
 }
 
-/// Object used to successivly try similar [Converter]s until a successful parsing is found.
 class FallbackConverter<T> implements Converter<T> {
-  /// A list of [Converter]s this [FallbackConverter] will try in succession.
   final Iterable<Converter<T>> converters;
 
   final Iterable<ArgChoiceBuilder>? _choices;
   final CommandOptionType? _type;
 
-  /// The output [Type] of this converter.
   @override
   final Type output;
 
-  /// Construct a new [FallbackConverter].
-  ///
-  /// This must then be registered to a [CommandsPlugin] instance with
-  /// [CommandsPlugin.addConverter].
-  ///
-  /// The choices for this converter will be inherited from [converters], but can be overridden by
-  /// passing [choices].
-  ///
-  /// The type for this converter will be inferred from [converters], but can be overridden by
-  /// passing [type].
   const FallbackConverter(
     this.converters, {
     Iterable<ArgChoiceBuilder>? choices,
@@ -228,9 +177,6 @@ class FallbackConverter<T> implements Converter<T> {
 
 String? convertString(StringView view, IChatContext context) => view.getQuotedWord();
 
-/// Converter to convert input to [String]s.
-///
-/// This simply returns the next quoted word in the arguments view.
 const Converter<String> stringConverter = Converter<String>(
   convertString,
   type: CommandOptionType.string,
@@ -238,9 +184,6 @@ const Converter<String> stringConverter = Converter<String>(
 
 int? convertInt(StringView view, IChatContext context) => int.tryParse(view.getQuotedWord());
 
-/// Converter to convert input to [int]s.
-///
-/// This attempts to parse the next quoted word in the input as a base-10 integer.
 const Converter<int> intConverter = Converter<int>(
   convertInt,
   type: CommandOptionType.integer,
@@ -249,9 +192,6 @@ const Converter<int> intConverter = Converter<int>(
 double? convertDouble(StringView view, IChatContext context) =>
     double.tryParse(view.getQuotedWord());
 
-/// Converter to convert input to [double]s.
-///
-/// This attempts to parse the next quoted word in the input as a base-10 decimal number.
 const Converter<double> doubleConverter = Converter<double>(
   convertDouble,
   type: CommandOptionType.number,
@@ -272,13 +212,6 @@ bool? convertBool(StringView view, IChatContext context) {
   return null;
 }
 
-/// Converter to convert input to [bool]s.
-///
-/// This checks two lists of truthy/falsy values, listed below:
-/// - Truthy: `['y', 'yes', '+', '1', 'true']`
-/// - Falsy: `['n', 'no', '-', '0', 'false']`
-///
-/// This converter is case insensitive.
 const Converter<bool> boolConverter = Converter<bool>(
   convertBool,
   type: CommandOptionType.boolean,
@@ -298,9 +231,6 @@ Snowflake? convertSnowflake(StringView view, IChatContext context) {
   return Snowflake(match.group(1) ?? match.group(2));
 }
 
-/// Converter to convert input to [Snowflake]s.
-///
-/// This tries to parse the next word in the input as a raw snowflake (integer), or as a mention.
 const Converter<Snowflake> snowflakeConverter = Converter<Snowflake>(
   convertSnowflake,
 );
@@ -378,19 +308,6 @@ Future<IMember?> convertMember(StringView view, IChatContext context) async {
   return null;
 }
 
-/// Converter to convert input to [IMember]s.
-///
-/// This uses multiple strategies to look up members, in the order below:
-/// - ID lookup (parse input as snowflake or mention)
-/// - Exact username match
-/// - Exact nickname match
-/// - Full case insensitive username match
-/// - Full case insensitive nickname match
-/// - Partial case insensitive username match (username starts with input)
-/// - Partial case insensitive nickname match (nickname starts with input)
-///
-/// Note that for all of these strategies, if multiple members match any condition then no results
-/// will be given based off of that condition.
 const Converter<IMember> memberConverter = FallbackConverter<IMember>(
   [
     // Get member from mention or snowflake.
@@ -455,17 +372,6 @@ FutureOr<IUser?> convertUser(StringView view, IChatContext context) {
   return null;
 }
 
-/// Converter to convert input to [IUser]s.
-///
-/// This uses multiple strategies to look up users, in the order below:
-/// - ID lookup (parse input as snowflake)
-/// - Member lookup (convert to member using [memberConverter] and extract [IMember.user])
-/// - Exact username match
-/// - Full case insensitive username match
-/// - Partial case insensitive username match (username starts with input)
-///
-/// Note that for all of these strategies, if multiple users match any condition then no results
-/// will be given based off of that condition.
 const Converter<IUser> userConverter = FallbackConverter<IUser>(
   [
     CombineConverter<Snowflake, IUser>(snowflakeConverter, snowflakeToUser),
@@ -516,16 +422,6 @@ T? convertGuildChannel<T extends IGuildChannel>(StringView view, IChatContext co
   return null;
 }
 
-/// Converter to convert input to [IGuildChannel]s.
-///
-/// This uses multiple strategies to look up channels, in the order below:
-/// - ID lookup (parse input as snowflake)
-/// - Full case insensitive channel name match
-/// - Partial case insensitive channel name match (channel name starts with
-/// input)
-///
-/// Note that for all of these strategies, if multiple channels match any condition then no results
-/// will be given based off of that condition.
 const Converter<IGuildChannel> guildChannelConverter = FallbackConverter(
   [
     CombineConverter<Snowflake, IGuildChannel>(
@@ -535,16 +431,6 @@ const Converter<IGuildChannel> guildChannelConverter = FallbackConverter(
   type: CommandOptionType.channel,
 );
 
-/// Converter to convert input to [ITextGuildChannel]s.
-///
-/// This uses multiple strategies to look up channels, in the order below:
-/// - ID lookup (parse input as snowflake)
-/// - Full case insensitive channel name match
-/// - Partial case insensitive channel name match (channel name starts with
-/// input)
-///
-/// Note that for all of these strategies, if multiple channels match any condition then no results
-/// will be given based off of that condition.
 const Converter<ITextGuildChannel> textGuildChannelConverter = FallbackConverter(
   [
     CombineConverter<Snowflake, ITextGuildChannel>(
@@ -554,16 +440,6 @@ const Converter<ITextGuildChannel> textGuildChannelConverter = FallbackConverter
   type: CommandOptionType.channel,
 );
 
-/// Converter to convert input to [IVoiceGuildChannel]s.
-///
-/// This uses multiple strategies to look up channels, in the order below:
-/// - ID lookup (parse input as snowflake)
-/// - Full case insensitive channel name match
-/// - Partial case insensitive channel name match (channel name starts with
-/// input)
-///
-/// Note that for all of these strategies, if multiple channels match any condition then no results
-/// will be given based off of that condition.
 const Converter<IVoiceGuildChannel> voiceGuildChannelConverter = FallbackConverter(
   [
     CombineConverter<Snowflake, IVoiceGuildChannel>(
@@ -573,16 +449,6 @@ const Converter<IVoiceGuildChannel> voiceGuildChannelConverter = FallbackConvert
   type: CommandOptionType.channel,
 );
 
-/// Converter to convert input to [ICategoryGuildChannel]s.
-///
-/// This uses multiple strategies to look up channels, in the order below:
-/// - ID lookup (parse input as snowflake)
-/// - Full case insensitive channel name match
-/// - Partial case insensitive channel name match (channel name starts with
-/// input)
-///
-/// Note that for all of these strategies, if multiple channels match any condition then no results
-/// will be given based off of that condition.
 const Converter<ICategoryGuildChannel> categoryGuildChannelConverter = FallbackConverter(
   [
     CombineConverter<Snowflake, ICategoryGuildChannel>(
@@ -592,16 +458,6 @@ const Converter<ICategoryGuildChannel> categoryGuildChannelConverter = FallbackC
   type: CommandOptionType.channel,
 );
 
-/// Converter to convert input to [IStageVoiceGuildChannel]s.
-///
-/// This uses multiple strategies to look up channels, in the order below:
-/// - ID lookup (parse input as snowflake)
-/// - Full case insensitive channel name match
-/// - Partial case insensitive channel name match (channel name starts with
-/// input)
-///
-/// Note that for all of these strategies, if multiple channels match any condition then no results
-/// will be given based off of that condition.
 const Converter<IStageVoiceGuildChannel> stageVoiceChannelConverter = FallbackConverter(
   [
     CombineConverter<Snowflake, IStageVoiceGuildChannel>(
@@ -658,17 +514,6 @@ FutureOr<IRole?> convertRole(StringView view, IChatContext context) async {
   return null;
 }
 
-/// Converter to convert input to [IRole]s.
-///
-/// This uses multiple strategies to look up roles, in the order below:
-/// - ID lookup (parse input as snowflake)
-/// - Exact role name match
-/// - Full case insensitive role name match
-/// - Partial case insensitive role name match (role name starts with
-/// input)
-///
-/// Note that for all of these strategies, if multiple channels match any condition then no results
-/// will be given based off of that condition.
 const Converter<IRole> roleConverter = FallbackConverter<IRole>(
   [
     CombineConverter<Snowflake, IRole>(snowflakeConverter, snowflakeToRole),
@@ -677,11 +522,6 @@ const Converter<IRole> roleConverter = FallbackConverter<IRole>(
   type: CommandOptionType.role,
 );
 
-/// Converter to convert input to [Mentionable]s.
-///
-/// This uses multiple strategiiees to look up mentionables, in the order below:
-/// - Member lookup, see [memberConverter] for details
-/// - Role lookup, see [roleConverter] for details.
 const Converter<Mentionable> mentionableConverter = FallbackConverter(
   [
     memberConverter,
@@ -752,10 +592,6 @@ const Converter<IAttachment> attachmentConverter = FallbackConverter(
   type: CommandOptionType.attachment,
 );
 
-/// Attempt to parse a single argument from an argument view.
-///
-/// [commands] is the [CommandsPlugin] used for retrieving the converters for a specific [Type]. If
-/// no converter for [expectedType] is found, a [NoConverterException] is thrown.
 Future<dynamic> parse(
   CommandsPlugin commands,
   IChatContext context,
@@ -781,9 +617,6 @@ Future<dynamic> parse(
   }
 }
 
-/// Register default converters for a [CommandsPlugin].
-///
-/// This registers converters for commonly used types such as [String]s, [int]s or [double]s.
 void registerDefaultConverters(CommandsPlugin commands) {
   commands
     ..addConverter(stringConverter)

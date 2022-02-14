@@ -20,17 +20,11 @@ import 'package:nyxx_commands/src/commands.dart';
 import 'package:nyxx_commands/src/util/mixins.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
-/// An enum used to specify how a [ChatCommand] can be executed.
 enum CommandType {
-  /// Only allow execution by message.
-  ///
-  /// [textOnly] commands will not be registered as a slash command to Discord.
   textOnly,
 
-  /// Only allow execution by slash command.
   slashOnly,
 
-  /// Do not restrict execution.
   all,
 }
 
@@ -196,15 +190,6 @@ class ChatGroup
   }
 }
 
-/// A [ChatCommand] is a function bound to a name and arguments.
-///
-/// [ChatCommand]s can be text-only (meaning they can only be executed through sending a message with
-/// the bot's prefix) or slash-only (meaning they can only be executed through the means of a slash
-/// command). They can also be both, meaning they can be used both as a text and as a slash command.
-///
-/// Note that text-only commands can be [Group]s containing slash commands and vice versa, but slash
-/// commands cannot be groups containing other slash commands due to
-/// [limitations on Discord](https://discord.com/developers/docs/interactions/application-commands#subcommands-and-subcommand-groups).
 class ChatCommand
     with
         ChatGroupMixin,
@@ -221,22 +206,11 @@ class ChatCommand
   @override
   final String description;
 
-  /// The type of the command.
-  ///
-  /// A command's type indicates how it can be invoked; text-only commands can only be executed by
-  /// sending a text message on Discord and slash commands can only be invoked by executing a slash
-  /// command on Discord.
-  ///
-  /// Note that a command's type does not influence what type of children a command can have.
   final CommandType type;
 
   @override
   final Function execute;
 
-  /// Similar to [checks] but only applies to this command.
-  ///
-  /// Normally checks are inherited from parent to child, but [singleChecks] will only ever apply to
-  /// this command and not its children.
   final List<AbstractCheck> singleChecks = [];
 
   @override
@@ -252,8 +226,6 @@ class ChatCommand
   final Map<String, Choices> _mappedChoices = {};
   final Map<String, UseConverter> _mappedConverterOverrides = {};
 
-  /// Create a new [ChatCommand]. This must then be registered with [CommandsPlugin.addCommand] or
-  /// [GroupMixin.addCommand] before it can be used.
   ChatCommand(
     String name,
     String description,
@@ -277,8 +249,6 @@ class ChatCommand
           options: options,
         );
 
-  /// Create a new text-only [ChatCommand]. This must then be registered with
-  /// [CommandsPlugin.addCommand] or [GroupMixin.addCommand] before it can be used.
   ChatCommand.textOnly(
     String name,
     String description,
@@ -301,8 +271,6 @@ class ChatCommand
           options: options,
         );
 
-  /// Create a new slash-only [ChatCommand]. This must then be registered with
-  /// [CommandsPlugin.addCommand] or [GroupMixin.addCommand] before it can be used.
   ChatCommand.slashOnly(
     String name,
     String description,
@@ -480,18 +448,6 @@ class ChatCommand
     }
   }
 
-  /// Parse arguments contained in the context and call [execute].
-  ///
-  /// If not enough arguments are provided, [NotEnoughArgumentsException] is thrown. Remaining
-  /// data after all optional and non-optional arguments have been parsed is discarded.
-  /// If an exception is thrown from [execute], it is caught and rethrown as an [UncaughtException].
-  ///
-  /// The arguments, if the context is a [MessageChatContext], will be parsed using the relevant
-  /// converter on the [commands]. If no converter is found, the command execution will fail.
-  ///
-  /// If the context is an [IInteractionContext], the arguments will either be parsed from their raw
-  /// string representations or will not be parsed at all if the type received from the API is
-  /// correct.
   @override
   Future<void> invoke(IContext context) async {
     if (context is! IChatContext) {
@@ -627,7 +583,6 @@ class ChatCommand
     super.addCommand(command);
   }
 
-  /// Add a check to this commands [singleChecks].
   void singleCheck(AbstractCheck check) {
     for (final preCallHook in check.preCallHooks) {
       onPreCall.listen(preCallHook);

@@ -21,9 +21,7 @@ import 'package:nyxx_interactions/nyxx_interactions.dart';
 import '../commands.dart';
 import '../commands/chat_command.dart';
 
-/// Represents a [IContext] in which a [ChatCommand] was executed.
 abstract class IChatContext implements IContext {
-  /// The list of arguments parsed from this context.
   Iterable<dynamic> get arguments;
   set arguments(Iterable<dynamic> value);
 
@@ -31,16 +29,11 @@ abstract class IChatContext implements IContext {
   ChatCommand get command;
 }
 
-/// Represents a [IChatContext] triggered by a message sent in a text channel.
 class MessageChatContext with ComponentWrappersMixin implements IChatContext {
-  /// The prefix that triggered this context's execution.
   final String prefix;
 
-  /// The [IMessage] that triggered this context's execution.
   final IMessage message;
 
-  /// The raw [String] that was used to parse this context's arguments, i.e the [message]s content
-  /// with prefix and command [ChatCommand.fullName] stripped.
   final String rawArguments;
 
   @override
@@ -80,17 +73,6 @@ class MessageChatContext with ComponentWrappersMixin implements IChatContext {
     required this.user,
   });
 
-  /// Send a response to the command.
-  ///
-  /// Setting `private` to true will ensure only the user that invoked the command sees the
-  /// response:
-  /// - For message contexts, a DM is sent to the invoking user;
-  /// - For interaction contexts, an ephemeral response is used.
-  ///
-  /// You can set [mention] to `false` to prevent the reply from mentionning the user.
-  /// If [MessageBuilder.allowedMentions] is not `null` on [builder], [mention] will be ignored. If
-  /// not, the allowed mentions for [builder] will be set to allow all, with the exception of reply
-  /// mentions being set to [mention].
   @override
   Future<IMessage> respond(MessageBuilder builder,
       {bool mention = true, bool private = false}) async {
@@ -117,11 +99,9 @@ class MessageChatContext with ComponentWrappersMixin implements IChatContext {
   String toString() => 'MessageContext[message=$message, message.content=${message.content}]';
 }
 
-/// Represents a [IChatContext] triggered by a slash command ([ISlashCommandInteraction]).
 class InteractionChatContext
     with InteractionContextMixin, ComponentWrappersMixin
     implements IChatContext, IInteractionContext {
-  /// The raw arguments received from the API, mapped by name to value.
   final Map<String, dynamic> rawArguments;
 
   @override

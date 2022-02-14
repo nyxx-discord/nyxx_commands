@@ -34,13 +34,7 @@ import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 final Logger logger = Logger('Commands');
 
-/// The base plugin class. Add this to your [INyxx] instance with [INyxx.registerPlugin] to use
-/// `nyxx_commands`.
 class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
-  /// The current prefix for this [CommandsPlugin].
-  ///
-  /// This is called for each message sent in any of [client]'s Guilds or Direct Messages to
-  /// determine the prefix that message has to match to be parsed and interpreted as a command.
   final String Function(IMessage) prefix;
 
   final StreamController<CommandsException> _onCommandErrorController =
@@ -48,7 +42,6 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
   final StreamController<IContext> _onPreCallController = StreamController.broadcast();
   final StreamController<IContext> _onPostCallController = StreamController.broadcast();
 
-  /// A [Stream] of [CommandsException]s that are emitted during execution of a command.
   late final Stream<CommandsException> onCommandError = _onCommandErrorController.stream;
 
   @override
@@ -59,25 +52,13 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
 
   final Map<Type, Converter<dynamic>> _converters = {};
 
-  /// The [IInteractions] instance that this [CommandsPlugin] uses to manage commands.
-  ///
-  /// Use this instance if you wish to use `nyxx_interactions` features along with `nyxx_commands`.
-  /// This instance's [IInteractions.sync] is called automatically when [client] is ready, so there
-  /// is no need to call it yourself.
   late final IInteractions interactions;
 
-  /// The options this [CommandsPlugin] uses.
   @override
   final CommandsOptions options;
 
-  /// The guild for this [CommandsPlugin]. Unless a guild override is present (using [GuildCheck]),
-  /// all commands registered by this bot will be registered in this guild.
-  ///
-  /// This does not prevent commands from being executed from elsewhere and should only be used for
-  /// testing. Set to `null` to register commands globally.
   Snowflake? guild;
 
-  /// The client that this [CommandsPlugin] was added to.
   INyxx? client;
 
   @override
@@ -529,18 +510,10 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     return options;
   }
 
-  /// Add a [Converter] to this [CommandsPlugin]'s converters.
   void addConverter<T>(Converter<T> converter) {
     _converters[T] = converter;
   }
 
-  /// Get the converter for a given [Type].
-  ///
-  /// If no converter registered with [addConverter] or present in the default converter set can be
-  /// used to parse arguments of type [target], a new [Converter] will be created with all the
-  /// converters thhat *might* convert to [target].
-  ///
-  /// If this occurs and [logWarn] is set to false, a warning will be issued.
   Converter<dynamic>? getConverter(Type type, {bool logWarn = true}) {
     if (_converters.containsKey(type)) {
       return _converters[type]!;
@@ -641,13 +614,6 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     }
   }
 
-  /// Get a [Command] based off a [StringView].
-  ///
-  /// This is usually used to obtain the command being executed in a message, after the prefix has
-  /// been skipped in the view.
-  ///
-  /// This will not search registered User or Message commands, as the only command type to have to
-  /// search it's command based on a [StringView] are text Chat commands.
   @override
   ChatCommand? getCommand(StringView view) {
     String name = view.getWord();

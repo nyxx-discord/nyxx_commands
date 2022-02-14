@@ -4,62 +4,25 @@ import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/nyxx_commands.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
-/// Represents different types of cooldown
 class CooldownType extends IEnum<int> {
-  /// Cooldown is per category.
-  ///
-  /// If the command is executed in a guild channel belonging to a category, the cooldown is set for
-  /// all users in all channels belonging to that category.
-  ///
-  /// If the channel does not belong to a category or is not a guild channel, the cooldown works in
-  /// the same way as [channel].
   static const CooldownType category = CooldownType(1 << 0);
 
-  /// Cooldown is per channel.
-  ///
-  /// If the command is executed in a channel, then the cooldown is set for all users in that
-  /// channel.
   static const CooldownType channel = CooldownType(1 << 1);
 
-  /// Cooldown is per command.
-  ///
-  /// If the command is executed, then the cooldown is set for all users in all channels for that
-  /// command.
   static const CooldownType command = CooldownType(1 << 2);
 
-  /// Cooldown is global.
-  ///
-  /// Generally works in the same was as [command], but if the same [CooldownCheck] instance is used
-  /// in multiple commands' [GroupMixin.checks] or [ChatCommand.singleChecks] then the cooldown will be
-  /// set for all users in all channels for the commands sharing the [CooldownCheck] instance.
   static const CooldownType global = CooldownType(1 << 3);
 
-  /// Cooldown is per guild.
-  ///
-  /// If the command is executed in a guild, then the cooldown is set for all users in all channels
-  /// in that guild. If the command is executed outside of a guild, then the cooldown works in the
-  /// same way as [channel].
   static const CooldownType guild = CooldownType(1 << 4);
 
-  /// Cooldown is per role.
-  ///
-  /// If the command is executed in a guild by a member, then the command is set for all channels
-  /// for all members with the same highest role as the member. If the command is executed by a
-  /// member with no roles, the cooldown is set for all members with no roles. If the command is
-  /// executed outside of a guild, the cooldown works in the same way as [channel].
   static const CooldownType role = CooldownType(1 << 5);
 
-  /// Cooldown is per user.
-  ///
-  /// If the command is executed by a user, then the cooldown is set for all channels for that user.
   static const CooldownType user = CooldownType(1 << 6);
 
   const CooldownType(int value) : super(value);
 
-  /// Combines two [CooldownType]s.
   CooldownType operator |(CooldownType other) => CooldownType(value | other.value);
 
-  /// Returns `true` if all the types in [instance] are present in [check].
   static bool applies(CooldownType instance, CooldownType check) =>
       instance.value & check.value == check.value;
 
@@ -94,7 +57,6 @@ class _BucketEntry {
   _BucketEntry(this.start);
 }
 
-/// A [Check] that checks that a [ChatCommand] is not on cooldown.
 class CooldownCheck extends AbstractCheck {
   // Implementation of a cooldown system that does not store last-used times forever, does not use
   // [Timer]s and does not perform a filtering pass on the entire data set.
@@ -108,29 +70,13 @@ class CooldownCheck extends AbstractCheck {
   // period, then it is certainly not active, meaning that only last-used times for the current and
   // previous periods need to be stored.
 
-  /// Create a new [CooldownCheck] with a specific type, period and token count.
-  ///
-  /// [type] can be any combination of [CooldownType]s. For example, to have a cooldown per command
-  /// per user per guild, use the following type:
-  /// `CooldownType.command | CooldownType.user | CooldownType.guild`
-  ///
-  /// Placing this check on the root [CommandsPlugin] will result in each command registered on the
-  /// bot to apply an individual cooldown for each user in each guild.
   CooldownCheck(this.type, this.duration, [this.tokensPer = 1, String? name])
       : super(name ?? 'Cooldown Check on $type');
 
-  /// The number of tokens per [duration].
-  ///
-  /// A command can be executed [tokensPer] times each [duration] before this check fails. The
-  /// cooldown starts as soon as the first token is consumed, not when the last token is consumed.
   int tokensPer;
 
-  /// The duration of this cooldown.
   Duration duration;
 
-  /// The type of this cooldown.
-  ///
-  /// See [CooldownType] for details on how each type is handled.
   final CooldownType type;
 
   Map<int, _BucketEntry> _currentBucket = {};
@@ -162,7 +108,6 @@ class CooldownCheck extends AbstractCheck {
 
   bool _isActive(_BucketEntry entry) => entry.start.add(duration).isAfter(DateTime.now());
 
-  /// Get a key representing a [IContext] depending on [type].
   int getKey(IContext context) {
     List<int> keys = [];
 
@@ -209,9 +154,6 @@ class CooldownCheck extends AbstractCheck {
     return Object.hashAll(keys);
   }
 
-  /// Get the remaining cooldown time for a context.
-  ///
-  /// If the context is not on cooldown, [Duration.zero] is returned.
   Duration remaining(IContext context) {
     if (check(context) as bool) {
       return Duration.zero;

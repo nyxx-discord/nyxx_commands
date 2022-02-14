@@ -17,7 +17,6 @@ import 'dart:async';
 import 'package:nyxx_commands/nyxx_commands.dart';
 import 'package:nyxx_commands/src/util/mixins.dart';
 
-/// Represents a Message Application Command.
 class MessageCommand
     with ParentMixin<MessageContext>, CheckMixin<MessageContext>, OptionsMixin<MessageContext>
     implements ICommand<MessageContext> {
