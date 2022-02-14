@@ -96,16 +96,109 @@ abstract class AbstractCheck {
   String toString() => 'Check[name=$name]';
 }
 
+/// A simple, stateless check for commands.
+///
+/// See [AbstractCheck] for a description of what a *check* is.
+///
+/// A [Check] is a simple check with no state, which validates [IContext]s with a single callback.
+/// The check succeeds if the callback returns `true` and fails if the callback returns `false`.
+///
+/// For example, to only allow users with "evrything" in their name to execute a command:
+/// ```dart
+/// Check check = Check(
+///   (context) => context.user.username.contains('evrything'),
+/// );
+///
+/// commands.addCommand(ChatCommand(
+///   'test',
+///   'A test command',
+///   (IChatContext context) => context.respond(MessageBuilder.content('Hi there!')),
+///   checks: [check],
+/// ));
+///
+/// commands.onCommandError.listen((error) {
+///   if (error is CheckFailedException) {
+///     error.context.respond(MessageBuilder.content("Sorry, you can't use that command!"));
+///   }
+/// });
+/// ```
+///
+/// ![](https://user-images.githubusercontent.com/54505189/153870085-6d27e4d2-1392-420e-9634-aa75648b93f1.png)
+///
+/// Since some checks are so common, nyxx_commands provides a set of in-built checks that also
+/// integrate with the [Discord Slash Command Permissions](https://discord.com/developers/docs/interactions/application-commands#permissions)
+/// API:
+/// - [GuildCheck], for checking if a command was invoked in a specific guild;
+/// - [RoleCheck], for checking if a command was invoked by a member with a specific role;
+/// - [UserCheck], for checking if a command was invoked by a specific user.
+///
+/// You might also be interested in:
+/// - [Check.any], [Check.deny] and [Check.all], for modifying the behaviour of checks;
+/// - [AbstractCheck], which allows developers to create checks with state.
 class Check extends AbstractCheck {
   final FutureOr<bool> Function(IContext) _check;
 
+  /// Create a new [Check].
+  ///
+  /// [_check] should be a callback that returns `true` or `false` to indicate check success or
+  /// failure respectively. [_check] should not throw to indicate failure.
+  ///
+  /// [name] can optionally be provided and will be used in error messages to identify this check.
   Check(this._check, [String name = 'Check']) : super(name);
 
+  /// Creates a check that succeeds if any of [checks] succeeds.
+  ///
+  /// When this check is queried, each of [checks] is queried and if any are successful then this
+  /// check is successful. If all of [checks] fail, then this check is failed.
+  ///
+  /// Sometimes, developers might want to apply a check to all commands of a certain type. Instead
+  /// of adding a check on each command of that type, nyxx_commands provides checks that will
+  /// succeed when the context being checked is of a certain type:
+  /// - [InteractionCommandCheck], to check if the context originated from an interaction;
+  /// - [ChatCommandCheck], to check if the command being invoked is a chat command;
+  /// - [MessageChatCommandCheck], to check if the context originated from a text message (only
+  ///   applies to chat commands);
+  /// - [InteractionChatCommandCheck], to check if the command being executed is a chat command and
+  ///   that the context originated from an interaction;
+  /// - [MessageCommandCheck], to check if the command being executed is a Message Command;
+  /// - [UserCommandCheck], to check if the command being executed is a User Command.
+  ///
+  /// For example, to only apply a check only to commands invoked from a message command:
+  ///
+  /// ```dart
+  /// commands.check(Check.any([
+  ///   InteractionCommandCheck(),
+  ///   Check((context) => context.user.username.contains('evrything')),
+  /// ]));
+  ///
+  /// commands.addCommand(ChatCommand(
+  ///   'test',
+  ///   'A test command',
+  ///   (IChatContext context) => context.respond(MessageBuilder.content('Hi there!')),
+  /// ));
+  ///
+  /// commands.onCommandError.listen((error) {
+  ///   if (error is CheckFailedException) {
+  ///     error.context.respond(MessageBuilder.content("Sorry, you can't use that command!"));
+  ///   }
+  /// });
+  /// ```
+  ///
+  /// ![](https://user-images.githubusercontent.com/54505189/153872224-b8a5f752-3ced-44ab-95f7-e6bb8058ba79.png)
   static AbstractCheck any(Iterable<AbstractCheck> checks, [String? name]) =>
       _AnyCheck(checks, name);
 
+  /// Creates a check that succeeds if [check] fails.
+  ///
+  /// Note that [check.preCallHooks] and [check.postCallHooks] will therefore be executed if [check]
+  /// *fails*, and not when [check] succeeds. Therefore, developers should take care that [check]
+  /// does not assume it succeeded in its call hooks.
   static AbstractCheck deny(AbstractCheck check, [String? name]) => _DenyCheck(check, name);
 
+  /// Creates a check that succeeds if all of [checks] succeed.
+  ///
+  /// This can be used to group checks that are commonly used together into a single, reusable
+  /// check.
   static AbstractCheck all(Iterable<AbstractCheck> checks, [String? name]) =>
       _GroupCheck(checks, name);
 
