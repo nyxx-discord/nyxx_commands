@@ -21,7 +21,15 @@ class InteractionCommandCheck extends Check {
   InteractionCommandCheck() : super((context) => context is IInteractionContext);
 }
 
+/// A check that succeeds if the command being invoked is a [MessageCommand].
+///
+/// This is generally used in combination with [Check.any] and/or [Check.deny] to only apply another
+/// check to [MessageCommand]s, while still registering this check to [CommandsPlugin].
+///
+/// You might also be interested in:
+/// - [InteractionCommandCheck], for checking that a command was invoked from an interaction.
 class MessageCommandCheck extends Check {
+  /// Create a new [MessageCommandCheck].
   MessageCommandCheck() : super((context) => context is MessageContext);
 }
 
