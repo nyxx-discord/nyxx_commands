@@ -387,18 +387,36 @@ class RoleCheck extends Check {
       ]);
 }
 
+/// A check that checks that a command was executed by a specific user.
+///
+/// This check integrates with the [Discord Slash Command Permissions](https://discord.com/developers/docs/interactions/application-commands#permissions)
+/// API, so users that cannot use a command because of this check will have that command appear
+/// grayed out in their Discord client.
 class UserCheck extends Check {
+  /// The IDs of the users this check allows.
   Iterable<Snowflake> userIds;
 
+  /// Create a new [UserCheck] that succeeds if the context was created by [user].
+  ///
+  /// You might also be interested in:
+  /// - [UserCheck.id], for creating this same check without an instance of [IUser],
+  /// - [UserCheck.any], for checking that a context was created by a user in a set or users.
   UserCheck(IUser user, [String? name]) : this.id(user.id, name);
 
+  /// Create a new [UserCheck] that succeeds if the ID of the user that created the context is [id].
   UserCheck.id(Snowflake id, [String? name])
       : userIds = [id],
         super((context) => context.user.id == id, name ?? 'User Check on $id');
 
+  /// Create a new [UserCheck] that succeeds if the context was created by any one of [users].
+  ///
+  /// You might also be interested in:
+  /// - [UserCheck.anyId], for creating this same check without instance of [IUser].
   UserCheck.any(Iterable<IUser> users, [String? name])
       : this.anyId(users.map((user) => user.id), name);
 
+  /// Create a new [UserCheck] that succeeds if the ID of the user that created the context is in
+  /// [ids].
   UserCheck.anyId(Iterable<Snowflake> ids, [String? name])
       : userIds = ids,
         super(
