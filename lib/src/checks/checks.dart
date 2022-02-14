@@ -358,11 +358,25 @@ class _GroupCheck extends Check {
       checks.map((e) => e.postCallHooks).expand((_) => _);
 }
 
+/// A check that checks that the user that executes a command has a specific role.
+///
+/// This check integrates with the [Discord Slash Command Permissions](https://discord.com/developers/docs/interactions/application-commands#permissions)
+/// API, so users that cannot use a command because of this check will have that command appear
+/// grayed out in their Discord client.
 class RoleCheck extends Check {
+  /// The IDs of the roles this check allows.
   Iterable<Snowflake> roleIds;
 
+  /// Create a new [RoleCheck] that succeeds if the user that created the context has [role].
+  ///
+  /// You might also be interested in:
+  /// - [RoleCheck.id], for creating this same check without an instance of [IRole];
+  /// - [RoleCheck.any], for checking that the user that created a context has one of a set or
+  ///   roles.
   RoleCheck(IRole role, [String? name]) : this.id(role.id, name);
 
+  /// Create a new [RoleCheck] that succeeds if the user that created the context has a role with
+  /// the id [id].
   RoleCheck.id(Snowflake id, [String? name])
       : roleIds = [id],
         super(
@@ -370,9 +384,15 @@ class RoleCheck extends Check {
           name ?? 'Role Check on $id',
         );
 
+  /// Create a new [RoleCheck] that succeeds if the user that created the context has any of [roles].
+  ///
+  /// You might also be interested in:
+  /// - [RoleCheck.anyId], for creating this same check without instances of [IRole].
   RoleCheck.any(Iterable<IRole> roles, [String? name])
       : this.anyId(roles.map((role) => role.id), name);
 
+  /// Create a new [RoleCheck] that succeeds if the user that created the context has any role for
+  /// which the role's id is in [roles].
   RoleCheck.anyId(Iterable<Snowflake> roles, [String? name])
       : roleIds = roles,
         super(
