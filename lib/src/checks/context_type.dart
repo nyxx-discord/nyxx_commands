@@ -21,6 +21,8 @@ class UserCommandCheck extends Check {
 /// This is generally used in combination with [Check.any] and/or [Check.deny] to only apply this
 /// check to [ChatCommand]s, while still registering this check to [CommandsPlugin].
 ///
+/// See [Check.any] for an example of how to implement this.
+///
 /// You might also be interested in:
 /// - [InteractionChatCommandCheck], for checking that the command being executed is a [ChatCommand]
 ///   and that it was invoked from an interaction;
