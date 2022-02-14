@@ -57,6 +57,50 @@ class _BucketEntry {
   _BucketEntry(this.start);
 }
 
+/// A check that succeeds if a command is not on cooldown for a given context.
+///
+/// Every context can be sorted into "buckets", determined by [type]. See [getKey] for more
+/// information on how these buckets are created.
+///
+/// Each bucket is allowed to execute commands a certain number of times before being put on
+/// cooldown. This number is determined by [tokensPer], and the cooldown for a bucket starts as soon
+/// as the bucket uses its first token. Once the cooldown is over, the number of tokens for that
+/// bucket is reset to [tokensPer].
+///
+/// For example, a cooldown that puts individual users on cooldown for 2 minutes:
+///
+/// ```dart
+///commands.check(CooldownCheck(
+///   CooldownType.user,
+///   Duration(minutes: 2),
+/// ));
+///
+/// commands.addCommand(ChatCommand(
+///   'test',
+///   'A test command',
+///   (IChatContext context) => context.respond(MessageBuilder.content('Hi there!')),
+/// ));
+///
+/// commands.onCommandError.listen((error) {
+///   if (error is CheckFailedException) {
+///     AbstractCheck failed = error.failed;
+///
+///     if (failed is CooldownCheck) {
+///       error.context.respond(MessageBuilder.content(
+///         'Wait ${failed.remaining(error.context).inSeconds} '
+///         'seconds before using that command again!',
+///       ));
+///     }
+///   }
+/// });
+/// ```
+///
+/// *Notice the times at which the commands were executed, and that other users are not put on
+/// cooldown*
+/// ![](https://user-images.githubusercontent.com/54505189/153884640-4098fd83-3a39-41a6-bdf9-e79102d73b60.png)
+///
+/// You might also be interested in:
+/// - [CooldownType], for determining how to sort contexts into buckets.
 class CooldownCheck extends AbstractCheck {
   // Implementation of a cooldown system that does not store last-used times forever, does not use
   // [Timer]s and does not perform a filtering pass on the entire data set.
@@ -70,13 +114,20 @@ class CooldownCheck extends AbstractCheck {
   // period, then it is certainly not active, meaning that only last-used times for the current and
   // previous periods need to be stored.
 
+  /// Create a new [CooldownCheck] with a given [type] and [duration].
+  ///
+  /// [tokensPer] is optional and defaults to one, meaning a bucket can execute one before it is
+  /// considered "on cooldown" for a given bucket.
   CooldownCheck(this.type, this.duration, [this.tokensPer = 1, String? name])
       : super(name ?? 'Cooldown Check on $type');
 
+  /// The number of times a bucket can execute commands before this check fails.
   int tokensPer;
 
+  /// The duration of the cooldown.
   Duration duration;
 
+  /// The cooldown type, used to sort contexts into buckets.
   final CooldownType type;
 
   Map<int, _BucketEntry> _currentBucket = {};
@@ -108,6 +159,24 @@ class CooldownCheck extends AbstractCheck {
 
   bool _isActive(_BucketEntry entry) => entry.start.add(duration).isAfter(DateTime.now());
 
+  /// Returns an ID that uniquely represents the bucket [context] was sorted on, based on [type].
+  ///
+  /// For simple [type]s, this process is simple enough. For example, if [type] is
+  /// [CooldownType.channel], then this method returns an ID that uniquely represents the context's
+  /// ID (more precisely, `Object.hashAll([context.channel.id.id])`), and all contexts executed in that
+  /// channel will be given the same ID.
+  ///
+  /// For combined [type]s, the process is different. For example, if [type] is
+  /// `CooldownType.guild | CooldownType.user`, then this method returns an ID that uniquely
+  /// represents the *combination* of the context's user and guild (more precisely,
+  /// `Object.hashAll([context.guild.id.id, context.user.id.id])`). This means that:
+  /// - Same user, same guild: same key;
+  /// - Different user, different guild: different key;
+  /// - Same guild, different user: different key;
+  /// - Different guild, Different user: different key.
+  ///
+  /// You might also be interested in:
+  /// - [type], which determines which values from [context] are combined to create a key.
   int getKey(IContext context) {
     List<int> keys = [];
 
@@ -154,6 +223,12 @@ class CooldownCheck extends AbstractCheck {
     return Object.hashAll(keys);
   }
 
+  /// Return the remaining cooldown time for a given context.
+  ///
+  /// If the context is not on cooldown, [Duration.zero] is returned.
+  ///
+  /// You might also be interested in:
+  /// - [getKey], for getting the ID of the bucket the context was sorted into.
   Duration remaining(IContext context) {
     if (check(context) as bool) {
       return Duration.zero;
