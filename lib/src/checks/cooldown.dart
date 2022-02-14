@@ -4,25 +4,62 @@ import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/nyxx_commands.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
+/// An enum that represents the different ways to sort contexts into buckets.
+///
+/// Coolown types can be combined with the binary OR operator (`|`). For details on how this affects
+/// how contexts are sorted into buckets, see [CooldownCheck.getKey].
+///
+/// You might also be interested in:
+/// - [CooldownCheck], the check that uses this enum.
 class CooldownType extends IEnum<int> {
+  /// A cooldown type that sorts contexts depending on the category they were invoked from.
+  ///
+  /// If the channel the context was created in is not part of a category, then this type behaves
+  /// the same as [channel].
   static const CooldownType category = CooldownType(1 << 0);
 
+  /// A cooldown type that sorts contexts depending on the channel they were invoked from.
   static const CooldownType channel = CooldownType(1 << 1);
 
+  /// A cooldown type that sorts contexts depending on the command being invoked.
   static const CooldownType command = CooldownType(1 << 2);
 
+  /// A cooldown type that sorts all contexts into the same bucket.
   static const CooldownType global = CooldownType(1 << 3);
 
+  /// A cooldown type that sorts contexts depending on the guild they were invoked from.
+  ///
+  /// If the context was not invoked from a guild, then this type behaves the same as [channel].
   static const CooldownType guild = CooldownType(1 << 4);
 
+  /// A cooldown type that sorts contexts depending on the highest-level role the user invoking the
+  /// command has.
+  ///
+  /// If the user has no role, then the [IGuild.everyoneRole] for that guild is used.
+  /// If the context was not invoked from a guild, then this type behaves the same as [user].
   static const CooldownType role = CooldownType(1 << 5);
 
+  /// A cooldown type that sorts contexts depending on the user that invoked them.
   static const CooldownType user = CooldownType(1 << 6);
 
+  /// Create a new [CooldownType].
+  ///
+  /// Using a [value] other than the predefined ones will not result in any new behaviour, so using
+  /// this constructor is discouraged.
   const CooldownType(int value) : super(value);
 
+  /// Combine two cooldown types.
+  ///
+  /// For details on how cooldown types are combined, see [CooldownCheck.getKey].
   CooldownType operator |(CooldownType other) => CooldownType(value | other.value);
 
+  /// Return whether [check] applies to [instance].
+  ///
+  /// A type is considered to *apply* to another if all the values making up that type are also
+  /// present in the other type.
+  ///
+  /// For example, `CooldownType.user` applies to `CooldownType.user | CooldownType.guild` while
+  /// `CooldownType.channel` does not.
   static bool applies(CooldownType instance, CooldownType check) =>
       instance.value & check.value == check.value;
 
