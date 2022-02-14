@@ -19,17 +19,77 @@ import 'package:nyxx_commands/nyxx_commands.dart';
 import 'package:nyxx_commands/src/commands.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
+/// Represents a check on a command.
+///
+/// A *check* is a function that is executed when a command is about to be invoked. A check can
+/// either fail or succeed; if any of a command's checks fail then the execution of that command is
+/// cancelled.
+///
+/// You might also be interested in:
+/// - [Check], which allows you to construct checks with a simple callback;
+/// - [IChecked.check], which allows you to add checks to a command or command group;
+/// - [CheckFailedException], the exception that is thrown and added to
+///   [CommandsPlugin.onCommandError] when a check fails.
 abstract class AbstractCheck {
+  /// The name of this check.
+  ///
+  /// The name of a check has no effect. Instead, it can be used by the developer to identify the
+  /// check that failed when a [CheckFailedException] is thrown.
   final String name;
 
+  /// Create a new [AbstractCheck].
+  ///
+  /// Most developers will not need to extend [AbstractCheck] themselves. Instead, [Check] is more
+  /// appropriate for checks that do not need to maintain state.
   AbstractCheck(this.name);
 
+  /// Validate [context] against this check.
+  ///
+  /// If `true` is returned from this method, this check is considered to be *successful*, in which
+  /// case the next check on the command is checked. Else, if `false` is returned, this check is
+  /// considered to have *failed*, and the command will not be executed.
+  ///
+  /// This check's state should not be changed in [check]; instead, developers should use
+  /// [preCallHooks] and [postCallHooks] to update the check's state.
   FutureOr<bool> check(IContext context);
 
+  /// The set of [Discord Slash Command Permissions](https://discord.com/developers/docs/interactions/application-commands#permissions)
+  /// this check represents.
+  ///
+  /// Any [ICommand] (excluding text-only [ChatCommands]) will have the permissions from all the
+  /// checks on that command applied through the Discord Slash Command API. This can allow users to
+  /// see whether a command is executable from within their Discord client, instead of nyxx_commands
+  /// rejecting the command once received.
+  ///
+  /// A [CommandPermissionBuilderAbstract] with a target ID of `0` will be considered to be the
+  /// default permission for this check.
+  ///
+  /// You might also be interested in:
+  /// - [CommandPermissionBuilderAbstract.role], for creating slash command permissions that apply
+  ///   to a given role;
+  /// - [CommandPermissionBuilderAbstract.user], for creating slash command permissions that apply
+  ///   to a given user.
   Future<Iterable<CommandPermissionBuilderAbstract>> get permissions;
 
+  /// An iterable of callbacks executed before a command is executed but after all the checks for
+  /// that command have succeeded.
+  ///
+  /// These callbacks should be used to update this check's state.
+  ///
+  /// You might also be interested in:
+  /// - [ICallHooked.onPreCall], for registering arbitrary callbacks to be executed before a command
+  ///   is executed but after all checks have succeeded;
+  /// - [CommandsPlugin.onCommandError], where a [CheckFailedException] is added when a check for a
+  ///   command fails.
   Iterable<void Function(IContext)> get preCallHooks;
 
+  /// An iterable of callbacks executed after a command is executed.
+  ///
+  /// These callbacks should be used to update this check's state.
+  ///
+  /// You might also be interested in:
+  /// - [ICallHooked.onPostCall], for registering arbitrary callbacks to be executed after a command
+  ///   is executed but after all checks have succeeded.
   Iterable<void Function(IContext)> get postCallHooks;
 
   @override
