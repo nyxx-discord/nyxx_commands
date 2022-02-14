@@ -47,7 +47,20 @@ class ChatCommandCheck extends Check {
   ChatCommandCheck() : super((context) => context is IChatContext);
 }
 
+/// A check that succeeds if the command being invoked is a [ChatCommand] and that the context was
+/// created from an interaction.
+///
+/// This is generally used in combination with [Check.any] and/or [Check.deny] to only apply another
+/// check to [ChatCommand]s invoked from interactions, while still registering this check to
+/// [CommandsPlugin].
+///
+/// See [Check.any] for an example of how to implement this.
+///
+/// You might also be interested in:
+/// - [ChatCommandCheck], for checking that the command being exected is a [ChatCommand];
+/// - [InteractionCommandCheck], for checking that a command was invoked from an interaction.
 class InteractionChatCommandCheck extends Check {
+  /// Create a new [InteractionChatCommandCheck].
   InteractionChatCommandCheck() : super((context) => context is InteractionChatContext);
 }
 
