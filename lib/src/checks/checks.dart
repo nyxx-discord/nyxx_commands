@@ -413,19 +413,49 @@ class UserCheck extends Check {
       ]);
 }
 
+/// A check that checks that a command was executed in a particular guild, or in a channel that is
+/// not in a guild.
+///
+/// This check is special as commands with this check will only be registered as slash commands in
+/// the guilds specified by this guild check. For this functionality to work, however, this check
+/// must be a "top-level" check - that is, a check that is not nested within a modifier such as
+/// [Check.any], [Check.deny] or [Check.all].
+///
+/// The value of this check overrides [CommandsPlugin.guild].
+///
+/// You might also be interested in:
+/// - [CommandsPlugin.guild], for globally setting a guild to register slash commands to.
 class GuildCheck extends Check {
+  /// The IDs of the guilds that this check allows.
+  ///
+  /// If [guildIds] is `[null]`, then any guild is allowed, but not channels outside of guilds/
   Iterable<Snowflake?> guildIds;
 
+  /// Create a [GuildCheck] that succeeds if the context originated in [guild].
+  ///
+  /// You might also be interested in:
+  /// - [GuildCheck.id], for creating this same check without an instance of [IGuild];
+  /// - [GuildCheck.any], for checking if the context originated in any of a set of guilds.
   GuildCheck(IGuild guild, [String? name]) : this.id(guild.id, name);
 
+  /// Create a [GuildCheck] that succeeds if the ID of the guild the context originated in is [id].
   GuildCheck.id(Snowflake id, [String? name])
       : guildIds = [id],
         super((context) => context.guild?.id == id, name ?? 'Guild Check on $id');
 
+  /// Create a [GuildCheck] that succeeds if the context originated outside of a guild (generally,
+  /// in private messages).
+  ///
+  /// You might also be interested in:
+  /// - [GuildCheck.all], for checking that a context originated in a guild.
   GuildCheck.none([String? name])
       : guildIds = [],
         super((context) => context.guild == null, name ?? 'Guild Check on <none>');
 
+  /// Create a [GuildCheck] that succeeds if the context originated in a guild.
+  ///
+  /// You might also be interested in:
+  /// - [GuildCheck.none], for checking that a context originated outside a guild.
   GuildCheck.all([String? name])
       : guildIds = [null],
         super(
@@ -433,9 +463,15 @@ class GuildCheck extends Check {
           name ?? 'Guild Check on <any>',
         );
 
+  /// Create a [GuildCheck] that succeeds if the context originated in any of [guilds].
+  ///
+  /// You might also be interested in:
+  /// - [GuildCheck.anyId], for creating the same check without instances of [IGuild].
   GuildCheck.any(Iterable<IGuild> guilds, [String? name])
       : this.anyId(guilds.map((guild) => guild.id), name);
 
+  /// Create a [GuildCheck] that succeeds if the id of the guild the context originated in is in
+  /// [ids].
   GuildCheck.anyId(Iterable<Snowflake> ids, [String? name])
       : guildIds = ids,
         super(
