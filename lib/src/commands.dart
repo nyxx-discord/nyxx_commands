@@ -34,7 +34,60 @@ import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 final Logger logger = Logger('Commands');
 
+/// The base plugin used to interact with nyxx_commands.
+///
+/// Since nyxx 3.0.0, classes can extend [BasePlugin] and be registered as plugins to an existing
+/// nyxx client by calling [INyxx.registerPlugin]. nyxx_commands uses that interface, which avoids
+/// the need for a seperate wrapper class.
+///
+/// Commands can be added to nyxx_commands with the [addCommand] method. Once you've added the
+/// [CommandsPlugin] to your nyxx client, these commands will automatically become available once
+/// the client is ready.
+///
+/// The [CommandsPlugin] will automatically subscribe to all the event streams it needs, as well as
+/// create its own instance of [IInteractions] for using slash commands. If you want to access this
+/// instance for your own use, it is available through the [interactions] getter.
+///
+/// For example, here is how you would create and register [CommandsPlugin]:
+/// ```dart
+/// INyxxWebsocket client = NyxxFactory.createNyxxWebsocket(...);
+///
+/// CommandsPlugin commands = CommandsPlugin(
+///   prefix: (_) => '!',
+/// );
+///
+/// client.registerPlugin(commands);
+/// client.connect();
+/// ```
+///
+/// [CommandsPlugin] is also where [Converter]s are managed and stored. New developers need not
+/// think about this as nyxx_commands comes with a set of default converters, but interested
+/// developers can take a look at [addConverter] and the [Converter] class.
+///
+/// You might also be interested in:
+/// - [ChatCommand], for creating commands that can be executed through Slash Commands or text
+///   messages;
+/// - [addCommand], for adding commands to your bot;
+/// - [check], for adding checks to your bot;
+/// - [MessageCommand] and [UserCommand], for creating Message and User Commands respectively.
 class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
+  /// A function called to determine the prefix for a specific message.
+  ///
+  /// This function should return a [String] representing the prefix to use for a given message.
+  ///
+  /// For example, for a prefix of `!`:
+  /// ```dart
+  /// (_) => '!'
+  /// ```
+  ///
+  /// Or, for either `!` or `$` as a prefix:
+  /// ```dart
+  /// (message) => message.content.startsWith('!') ? '!' : '$'
+  /// ```
+  ///
+  /// You might also be interested in:
+  /// - [dmOr], which allows for commands in private messages to omit the prefix;
+  /// - [mentionOr], which allows for commands to be executed with the client's mention (ping).
   final String Function(IMessage) prefix;
 
   final StreamController<CommandsException> _onCommandErrorController =
@@ -42,6 +95,25 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
   final StreamController<IContext> _onPreCallController = StreamController.broadcast();
   final StreamController<IContext> _onPostCallController = StreamController.broadcast();
 
+  /// A stream of [CommandsException]s that occur during a command's execution.
+  ///
+  /// Any error that occurs during the execution of a command will be added here, allowing you to
+  /// respond to errors you might encounter during a command's execution. Notably,
+  /// [CheckFailedException]s are added to this stream, so you can respond to a failed check here.
+  ///
+  /// [CommandsError]s that occur during the registration of a command will not be added to this
+  /// stream, now will any object thrown that is not an [Exception].
+  ///
+  /// Exceptions thrown from within a command will be wrapped in an [UncaughtException], allowing
+  /// you to access the context in which a command was thrown.
+  ///
+  /// By default, nyxx_commands logs all exceptions added to this stream. This behaviour can be
+  /// changed in [options].
+  ///
+  /// You might also be interested in:
+  /// - [CommandsException], the class all exceptions in nyxx_commands subclass;
+  /// - [ICallHooked.onPostCall], a stream that emits [IContext]s once a command completes
+  /// successfully.
   late final Stream<CommandsException> onCommandError = _onCommandErrorController.stream;
 
   @override
@@ -52,13 +124,36 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
 
   final Map<Type, Converter<dynamic>> _converters = {};
 
+  /// The [IInteractions] instance used by this [CommandsPlugin].
+  ///
+  /// [IInteractions] is the backend for the [Discord Application Command API](https://discord.com/developers/docs/interactions/application-commands)
+  /// and is used by nyxx_commands to register and handle slash commands.
+  ///
+  /// Because [IInteractions] also allows you to use [Message Components](https://discord.com/developers/docs/interactions/message-components),
+  /// developers might need to use this instance of [IInteractions]. It is not recommended to create
+  /// your own instance alongside nyxx_commands as that might result in commands being deleted.
   late final IInteractions interactions;
 
   @override
   final CommandsOptions options;
 
+  /// The guild to register commands to.
+  ///
+  /// If [guild] is set, commands will be registered to that guild and will update immediately
+  /// without the 1 hour delay global commands have. If [guild] is null, commands will be registered
+  /// globally.
+  ///
+  /// You might also be interested in:
+  /// - [GuildCheck], a check that allows developers to override the guild a command is registered
+  ///   to.
   Snowflake? guild;
 
+  /// The client this [CommandsPlugin] instance is attached to.
+  ///
+  /// Will be `null` if the plugin has not been added to a client.
+  ///
+  /// You might also be interested in:
+  /// - [INyxx.registerPlugin], for adding plugins to clients.
   INyxx? client;
 
   @override
@@ -72,6 +167,10 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
   Iterable<ICommandRegisterable> get children =>
       {..._userCommands.values, ..._messageCommands.values, ..._chatCommands.values};
 
+  /// Create a new [CommandsPlugin].
+  ///
+  /// Note that the plugin must then be added to a nyxx client with [INyxx.registerPlugin] before it
+  /// can be used.
   CommandsPlugin({
     required this.prefix,
     this.guild,
@@ -510,10 +609,30 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     return options;
   }
 
+  /// Adds a converter to this [CommandsPlugin].
+  ///
+  /// Converters can be used to convert user input ([String]s) to the type required by the command's
+  /// callback function.
+  ///
+  /// See the [Converter] docs for more info.
+  ///
+  /// You might also be interested in:
+  /// - [Converter], for creating your own converters;
+  /// - [registerDefaultConverters], for adding the default converters to a [CommandsPlugin];
+  /// - [getConverter], for retrieving the [Converter] for a specific type.
   void addConverter<T>(Converter<T> converter) {
     _converters[T] = converter;
   }
 
+  /// Gets a [Converter] for a specific type.
+  ///
+  /// If no converter has been registered for that type, nyxx_commands will try to find existing
+  /// converters that can also convert that type. For example, a `Converter<String>` would be able
+  /// to convert to `Object`s. Converters created like this are known as *assembled converters* and
+  /// will log a warning when used by default.
+  ///
+  /// You might also be interested in:
+  /// - [addConverter], for adding converters to this [CommandsPlugin].
   Converter<dynamic>? getConverter(Type type, {bool logWarn = true}) {
     if (_converters.containsKey(type)) {
       return _converters[type]!;
