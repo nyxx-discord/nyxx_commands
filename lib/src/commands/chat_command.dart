@@ -149,6 +149,14 @@ mixin ChatGroupMixin implements IChatCommandComponent {
   }
 }
 
+/// Represents a [Subcommand Group](https://discord.com/developers/docs/interactions/application-commands#subcommands-and-subcommand-groups).
+///
+/// [ChatGroup]s can be used to organise chat commands into groups of similar commands to avoid
+/// filling up a user's UI. Instead, commands are organised into a tree, with only the root of the
+/// tree being shown to the user until they select it.
+///
+/// You might also be interested in:
+/// - [ChatCommand], for creating commands that can be added to groups.
 class ChatGroup
     with
         ChatGroupMixin,
@@ -168,6 +176,7 @@ class ChatGroup
   @override
   final CommandOptions options;
 
+  /// Create a new [ChatGroup].
   ChatGroup(
     this.name,
     this.description, {
