@@ -132,9 +132,23 @@ abstract class ICommandGroup<T extends IContext> implements ICallHooked<T>, IChe
   ICommand<T>? getCommand(StringView view);
 }
 
+/// An entity capable of being invoked by users.
+///
+/// You might also be interested in:
+/// - [ChatCommand], [MessageCommand] and [UserCommand], the three types of commands nyxx_commands
+///   supports.
 abstract class ICommand<T extends IContext> implements ICommandRegisterable<T> {
+  /// The function called to execute this command.
+  ///
+  /// If any exception occurs while calling this function, it will be caught and added to
+  /// [CommandsPlugin.onCommandError], wrapped in an [UncaughtException].
   Function get execute;
 
+  /// Parse arguments, verify checks, call [execute] and handle call hooks.
+  ///
+  /// This method might throw uncaught [CommandsException]s and should be handled with care. Thrown
+  /// exceptions will not be added to [CommandsPlugin.onCommandError] unless called from within a
+  /// "safe" context where uncuaght exceptions are caught anyways.
   void invoke(T context);
 }
 
