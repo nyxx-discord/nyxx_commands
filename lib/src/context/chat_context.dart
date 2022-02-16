@@ -120,7 +120,7 @@ class MessageChatContext with ComponentWrappersMixin implements IChatContext {
 /// Represents a [IChatContext] triggered by a slash command ([ISlashCommandInteraction]).
 class InteractionChatContext
     with InteractionContextMixin, ComponentWrappersMixin
-    implements IChatContext {
+    implements IChatContext, IInteractionContext {
   /// The raw arguments received from the API, mapped by name to value.
   final Map<String, dynamic> rawArguments;
 

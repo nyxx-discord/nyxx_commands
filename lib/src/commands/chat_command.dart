@@ -489,7 +489,7 @@ class ChatCommand
   /// The arguments, if the context is a [MessageChatContext], will be parsed using the relevant
   /// converter on the [commands]. If no converter is found, the command execution will fail.
   ///
-  /// If the context is an [InteractionContext], the arguments will either be parsed from their raw
+  /// If the context is an [IInteractionContext], the arguments will either be parsed from their raw
   /// string representations or will not be parsed at all if the type received from the API is
   /// correct.
   @override

@@ -22,7 +22,9 @@ import 'package:nyxx_interactions/src/models/interaction.dart';
 import 'package:nyxx_interactions/src/events/interaction_event.dart';
 
 /// Represents a [IContext] in which a [UserCommand] was executed.
-class UserContext with InteractionContextMixin, ComponentWrappersMixin implements IContext {
+class UserContext
+    with InteractionContextMixin, ComponentWrappersMixin
+    implements IInteractionContext {
   /// The target member for this context.
   final IMember? targetMember;
 

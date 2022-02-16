@@ -16,15 +16,12 @@ import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/src/context/context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
-mixin InteractionContextMixin implements IContext {
+abstract class IInteractionContext implements IContext {
   /// The [ISlashCommandInteraction] that triggered this context's execution.
   ISlashCommandInteraction get interaction;
 
   /// The [ISlashCommandInteractionEvent] that triggered this context's exeecution.
   ISlashCommandInteractionEvent get interactionEvent;
-
-  bool _hasCorrectlyAcked = false;
-  late bool _originalAckHidden = commands.options.hideOriginalResponse;
 
   /// Send a response to the command.
   ///
@@ -40,6 +37,30 @@ mixin InteractionContextMixin implements IContext {
   /// for [hidden] as this invocation will prevent this unusual behaviour from happening.
   ///
   /// [hidden] will override the value of [private] if both are provided.
+  @override
+  Future<IMessage> respond(MessageBuilder builder, {bool private = false, bool? hidden});
+
+  /// Acknowledge the underlying [interactionEvent].
+  ///
+  /// This allows you to acknowledge the interaction with a different hidden state that
+  /// [CommandsOptions.hideOriginalResponse].
+  ///
+  /// If unspecified, [hidden] will be set to [CommandsOptions.hideOriginalResponse].
+  ///
+  /// Prefer using this method over calling [ISlashCommandInteractionEvent.acknowledge] on
+  /// [interactionEvent] as this method will fix any unusual behaviour with [respond].
+  ///
+  /// If called within 2 seconds of command execution, this will override the auto-acknowledge
+  /// induced by [CommandsOptions.autoAcknowledgeInteractions].
+  /// If called  after 2 seconds, an [AlreadyRespondedError] will be thrown as nyxx_commands will
+  /// automatically responded to avoid a token timeout.
+  Future<void> acknowledge({bool? hidden});
+}
+
+mixin InteractionContextMixin implements IInteractionContext {
+  bool _hasCorrectlyAcked = false;
+  late bool _originalAckHidden = commands.options.hideOriginalResponse;
+
   @override
   Future<IMessage> respond(MessageBuilder builder, {bool private = false, bool? hidden}) async {
     hidden ??= private;
@@ -66,20 +87,7 @@ mixin InteractionContextMixin implements IContext {
     }
   }
 
-  /// Acknowledge the underlying [interactionEvent].
-  ///
-  /// This allows you to acknowledge the interaction with a different hidden state that
-  /// [CommandsOptions.hideOriginalResponse].
-  ///
-  /// If unspecified, [hidden] will be set to [CommandsOptions.hideOriginalResponse].
-  ///
-  /// Prefer using this method over calling [ISlashCommandInteractionEvent.acknowledge] on
-  /// [interactionEvent] as this method will fix any unusual behaviour with [respond].
-  ///
-  /// If called within 2 seconds of command execution, this will override the auto-acknowledge
-  /// induced by [CommandsOptions.autoAcknowledgeInteractions].
-  /// If called  after 2 seconds, an [AlreadyRespondedError] will be thrown as nyxx_commands will
-  /// automatically responded to avoid a token timeout.
+  @override
   Future<void> acknowledge({bool? hidden}) async {
     await interactionEvent.acknowledge(hidden: hidden ?? commands.options.hideOriginalResponse);
     _originalAckHidden = hidden ?? commands.options.hideOriginalResponse;
