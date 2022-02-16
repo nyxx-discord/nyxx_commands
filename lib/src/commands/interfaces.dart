@@ -39,9 +39,19 @@ abstract class ICallHooked<T extends IContext> {
   Stream<T> get onPostCall;
 }
 
+/// Represents an entity that can handle checks.
+///
+/// See [AbstractCheck] for an explanation of checks.
 abstract class IChecked {
+  /// The checks that should be applied to this entity.
+  ///
+  /// Check are inherited, so this will include checks from any parent entities.
   Iterable<AbstractCheck> get checks;
 
+  /// Add a check to this entity.
+  ///
+  /// You might also be interested in:
+  /// - [ChatCommand.singleCheck], for registering checks that are not inherited.
   void check(AbstractCheck check);
 }
 
