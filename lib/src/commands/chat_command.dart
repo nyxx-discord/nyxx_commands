@@ -227,6 +227,21 @@ class ChatGroup
 /// interaction or through a text message sent by a user. In both cases, the arguments received from
 /// the Discord API are parsed using [Converter]s to the type that your command expects.
 ///
+/// For example, a simple command that responds with "Hi there!":
+/// ```dart
+/// ChatCommand test = ChatCommand(
+///   'test',
+///   'A test command',
+///   (IChatContext context) async {
+///     context.respond(MessageBuilder.content('Hi there!'));
+///   },
+/// );
+///
+/// commands.addCommand(test);
+/// ```
+///
+/// ![](https://user-images.githubusercontent.com/54505189/154318791-11b12542-fe70-4b17-8df8-b578ce6e0a77.png)
+///
 /// You might also be interested in:
 /// - [CommandsPlugin.addCommand], for adding [ChatCommand]s to your bot;
 /// - [ChatGroup], for creating command groups,
