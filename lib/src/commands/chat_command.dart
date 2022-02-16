@@ -21,6 +21,20 @@ import 'package:nyxx_commands/src/util/mixins.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 /// Indicates the ways a [ChatCommand] can be executed.
+///
+/// For example, a command with type [slashOnly] cannot be executed with a text message:
+/// ```dart
+/// ChatCommand test = ChatCommand.slashOnly(
+///   'test',
+///   'A test command',
+///   (IChatContext context) async {
+///     context.respond(MessageBuilder.content('Hi there!'));
+///   },
+/// );
+///
+/// commands.addCommand(test);
+/// ```
+/// ![](https://user-images.githubusercontent.com/54505189/154319432-0120f3eb-ce71-44a2-8587-38b090c1a307.png)
 enum CommandType {
   /// Indicates that a [ChatCommand] should only be executable through text messages (sent with the
   /// bot prefix).
