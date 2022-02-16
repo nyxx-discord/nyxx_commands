@@ -64,13 +64,36 @@ abstract class IOptions {
   CommandOptions get options;
 }
 
+/// Represents an entity that can be added as a child to a command group.
+///
+/// You might also be interested in:
+/// - [ICommandGroup], the interface for groups that [ICommandRegisterable]s can be added to.
 abstract class ICommandRegisterable<T extends IContext>
     implements ICallHooked<T>, IChecked, IOptions {
+  /// The name of this child.
+  ///
+  /// Generally, this will have to obey [Discord's command naming restrictions](https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-naming)
+  /// and be unique to this child.
   String get name;
 
+  /// The parent of this child.
+  ///
+  /// Once a parent is added to a group, that group is considered to be this child's parent and this
+  /// child cannot be added to any more groups. Attempting to do so will result in a [CommandError].
   ICommandGroup<IContext>? get parent;
+
+  /// Set the parent of this child. Should not be used unless you are implementing your own command
+  /// group.
   set parent(ICommandGroup<IContext>? parent);
 
+  /// Get the resolvec options for this child.
+  ///
+  /// Since [ICommandRegisterable] implements [IOptions], any class implementing this interface can
+  /// provide options. However, since options are designed to be inherited, this getter provides a
+  /// quick way to access options merged with those of this child's parent, if any.
+  ///
+  /// You might also be interested in:
+  /// - [options], for getting the options unique to this child.
   CommandOptions get resolvedOptions;
 }
 
