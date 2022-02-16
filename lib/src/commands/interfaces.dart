@@ -152,15 +152,53 @@ abstract class ICommand<T extends IContext> implements ICommandRegisterable<T> {
   void invoke(T context);
 }
 
+/// An entity that is part of a chat command tree.
+///
+/// You might also be interested in:
+/// - [ChatCommand] and [ChatGroup], the concrete implementations of elements in a chat command
+///   tree.
 abstract class IChatCommandComponent
     implements ICommandRegisterable<IChatContext>, ICommandGroup<IChatContext> {
+  /// The description of this entity.
+  ///
+  /// This must be a non-empty string less than 100 characters in length.
   String get description;
 
+  /// The full name of this command.
+  ///
+  /// A command's full name is a combination of its own name and its parent's name, allowing
+  /// developers to quickly identify commands in error messages and logs.
+  ///
+  /// You might also be interested in:
+  /// - [name], this entity's own name.
   String get fullName;
 
+  /// The aliases for this entity.
+  ///
+  /// Since chat commands can be invoked from text messages and are not displayed in the UI (unless
+  /// they are registered as slash commands), aliases can be used to refer to the same command with
+  /// multiple different names.
+  ///
+  /// For example, a command that can be invoked with both `test` and `t`:
+  /// ```dart
+  /// ChatCommand test = ChatCommand(
+  ///   'test',
+  ///   'A test command',
+  ///   (IChatContext context) async {
+  ///     context.respond(MessageBuilder.content('Hi there!'));
+  ///   },
+  ///   aliases: ['t'],
+  /// );
+  ///
+  /// commands.addCommand(test);
+  /// ```
+  ///
+  /// ![](https://user-images.githubusercontent.com/54505189/154336688-f7ebcc15-8bb7-4ef7-bbd2-f5842acc3b19.png)
   Iterable<String> get aliases;
 
+  /// Whether this entity has a child entity that is a slash command or has a slash command itself.
   bool get hasSlashCommand;
 
+  /// Return the [CommandOptionBuilder]s that represent this entity for slash command registration.
   Iterable<CommandOptionBuilder> getOptions(CommandsPlugin commands);
 }
