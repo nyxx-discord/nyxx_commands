@@ -244,7 +244,7 @@ class ChatGroup
 ///
 /// You might also be interested in:
 /// - [CommandsPlugin.addCommand], for adding [ChatCommand]s to your bot;
-/// - [ChatGroup], for creating command groups,
+/// - [ChatGroup], for creating command groups;
 /// - [MessageCommand], for creating Message Commands;
 /// - [UserCommand], for creating User Commands.
 class ChatCommand
