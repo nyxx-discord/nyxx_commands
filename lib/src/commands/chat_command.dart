@@ -110,7 +110,7 @@ mixin ChatGroupMixin implements IChatCommandComponent {
 
         return found;
       } else {
-        return child.getCommand(view) as ChatCommand;
+        return child.getCommand(view) as ChatCommand?;
       }
     }
 
