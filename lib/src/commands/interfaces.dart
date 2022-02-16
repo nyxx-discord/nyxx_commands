@@ -55,7 +55,12 @@ abstract class IChecked {
   void check(AbstractCheck check);
 }
 
+/// Represents an entity that supports command options.
+///
+/// Command options can influence a command's behaviour and how it can be invoked. Options are
+/// inherited.
 abstract class IOptions {
+  /// The options to use for this entity.
   CommandOptions get options;
 }
 
