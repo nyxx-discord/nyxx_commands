@@ -17,6 +17,28 @@ import 'dart:async';
 import 'package:nyxx_commands/nyxx_commands.dart';
 import 'package:nyxx_commands/src/util/mixins.dart';
 
+/// Represents a [Discord User Command](https://discord.com/developers/docs/interactions/application-commands#user-commands).
+///
+/// [UserCommand]s are commands that can be invoked on a target user from the Discord client.
+///
+/// For example, a simple command that mentions the target user:
+/// ```dart
+/// test = UserCommand(
+///   'Test',
+///   (UserContext context) {
+///     context.respond(MessageBuilder.content('${context.targetMember?.mention} was the target!'));
+///   },
+/// );
+///
+/// commands.addCommand(test);
+/// ```
+///
+/// ![](https://user-images.githubusercontent.com/54505189/154343978-dd0a2155-d6fb-42f1-afe5-eb9701e43122.png)
+///
+/// You might also be interested in:
+/// - [CommandsPlugin.addCommand], for adding commands to your bot;
+/// - [ChatCommand], for creating chat commands;
+/// - [MessageCommand], for creating message commands.
 class UserCommand
     with ParentMixin<UserContext>, CheckMixin<UserContext>, OptionsMixin<UserContext>
     implements ICommand<UserContext> {
@@ -38,6 +60,7 @@ class UserCommand
   @override
   final CommandOptions options;
 
+  /// Create a new [UserCommand].
   UserCommand(
     this.name,
     this.execute, {
