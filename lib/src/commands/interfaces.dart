@@ -97,13 +97,38 @@ abstract class ICommandRegisterable<T extends IContext>
   CommandOptions get resolvedOptions;
 }
 
+/// An entity capable of having multiple child entities.
+///
+/// You might also be interested in:
+/// - [ICommandRegisterable], the type that all children must implement;
+/// - [ICommand], the executable command type.
 abstract class ICommandGroup<T extends IContext> implements ICallHooked<T>, IChecked, IOptions {
+  /// A list of all the children of this group
   Iterable<ICommandRegisterable<T>> get children;
 
+  /// Returns an iterable that recursively iterates over all the [ICommand]s in this group.
+  ///
+  /// This will return all the [ICommand]s in this group, whether they be direct children or
+  /// children of children. If you want all the direct [ICommand] children, consider using
+  /// `children.whereType<ICommand>()` instead.
   Iterable<ICommand<T>> walkCommands();
 
+  /// Add a command to this group.
+  ///
+  /// A command can be added to a group at most once; trying to do so will result in a
+  /// [CommandsError] being thrown.
   void addCommand(ICommandRegisterable<T> command);
 
+  /// Attempt to get a command from a string.
+  ///
+  /// In cases where multiple commands with the same name might exist, this method will only return
+  /// the command most likely to be queried from a string input. For example,
+  /// [CommandsPlugin.getCommand] will only return [ChatCommand]s and not [MessageCommand]s or
+  /// [UserCommand]s.
+  ///
+  /// You might also be interested in:
+  /// - [walkCommands], for iterating over all commands in this group;
+  /// - [children], for iterating over the children of this group.
   ICommand<T>? getCommand(StringView view);
 }
 
