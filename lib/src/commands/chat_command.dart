@@ -278,8 +278,18 @@ class ChatCommand
   /// The argument types for the function are dynamically loaded, so you should specify the types of
   /// the arguments in your function declaration.
   ///
+  /// Additionally, the names of the arguments are converted from snakeCase Dart identifiers to
+  /// kebab-case Discord argument names. If the generated name does not suit you, use the @[Name]
+  /// decorator to manually set a name.
+  ///
   /// If any exception occurs while calling this function, it will be caught and added to
   /// [CommandsPlugin.onCommandError], wrapped in an [UncaughtException].
+  ///
+  /// You might also be interested in:
+  /// - [Name], for explicitely setting an argument's name;
+  /// - [Description], for adding descriptions to arguments;
+  /// - [Choices], for specifiying the choices for an argument;
+  /// - [UseConverter], for overriding the [Converter] used for a specific argument.
   @override
   final Function execute;
 
