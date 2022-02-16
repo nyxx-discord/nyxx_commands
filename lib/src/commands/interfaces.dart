@@ -21,9 +21,21 @@ import 'package:nyxx_commands/src/errors.dart';
 import 'package:nyxx_commands/src/util/view.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
+/// Represents an entity which can handle command callback hooks.
 abstract class ICallHooked<T extends IContext> {
+  /// A stream that emits contexts *before* the command callback is executed.
+  ///
+  /// This stream emits before the callback is executed, but after checks and argument parsing is
+  /// complete.
+  ///
+  /// You might also be interested in:
+  /// -[onPostCall], for listening to the end of a command execution.
   Stream<T> get onPreCall;
 
+  /// A stream that emits contexts *after* the command callback is executed.
+  ///
+  /// You might also be interested in:
+  /// - [onPreCall], for listening to the start of a command execution.
   Stream<T> get onPostCall;
 }
 
