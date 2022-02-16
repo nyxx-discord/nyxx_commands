@@ -20,11 +20,19 @@ import 'package:nyxx_commands/src/commands.dart';
 import 'package:nyxx_commands/src/util/mixins.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
+/// Indicates the ways a [ChatCommand] can be executed.
 enum CommandType {
+  /// Indicates that a [ChatCommand] should only be executable through text messages (sent with the
+  /// bot prefix).
+  ///
+  /// If this is the type of a [ChatCommand], then that command will not be registered as a Slash
+  /// Command in the Discord API.
   textOnly,
 
+  /// Indicates that a [ChatCommand] should only be executable through Slash Commands.
   slashOnly,
 
+  /// Indicates that a [ChatCommand] can be executed by both Slash Commands and text messages.
   all,
 }
 
