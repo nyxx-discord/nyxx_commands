@@ -190,6 +190,17 @@ class ChatGroup
   }
 }
 
+/// Represents a [Discord Slash Command](https://discord.com/developers/docs/interactions/application-commands#slash-commands).
+///
+/// [ChatCommand]s are commands with arguments. They can be invoked in two ways: through an
+/// interaction or through a text message sent by a user. In both cases, the arguments received from
+/// the Discord API are parsed using [Converter]s to the type that your command expects.
+///
+/// You might also be interested in:
+/// - [CommandsPlugin.addCommand], for adding [ChatCommand]s to your bot;
+/// - [ChatGroup], for creating command groups,
+/// - [MessageCommand], for creating Message Commands;
+/// - [UserCommand], for creating User Commands.
 class ChatCommand
     with
         ChatGroupMixin,
@@ -206,11 +217,36 @@ class ChatCommand
   @override
   final String description;
 
+  /// The type of this [ChatCommand].
+  ///
+  /// The type of a [ChatCommand] influences how it can be invoked and can be used to make chat
+  /// commands executable only through Slash Commands, or only through text messages.
+  ///
+  /// You might also be interested in:
+  /// - [ChatCommand.slashOnly], for creating [ChatCommand]s with type [CommandType.slashOnly];
+  /// - [ChatCommand.textOnly], for creating [ChatCommand]s with type [CommandType.textOnly].
   final CommandType type;
 
+  /// The function called to execute this command.
+  ///
+  /// The argument types for the function are dynamically loaded, so you should specify the types of
+  /// the arguments in your function declaration.
+  ///
+  /// If any exception occurs while calling this function, it will be caught and added to
+  /// [CommandsPlugin.onCommandError], wrapped in an [UncaughtException].
   @override
   final Function execute;
 
+  /// A list of checks that apply only to this command.
+  ///
+  /// Since chat commands can double as a command group when using text only commands, developers
+  /// might want to add checks that only apply to a command and not to its children. [singleChecks]
+  /// is how to accomplish this, as they are applied to this command but not inherited by its
+  /// children.
+  ///
+  /// You might also be interested in:
+  /// - [singleCheck], for adding single checks to chat commands;
+  /// - [checks] and [check], the equivalent for inherited checks.
   final List<AbstractCheck> singleChecks = [];
 
   @override
@@ -226,6 +262,11 @@ class ChatCommand
   final Map<String, Choices> _mappedChoices = {};
   final Map<String, UseConverter> _mappedConverterOverrides = {};
 
+  /// Create a new [ChatCommand].
+  ///
+  /// You might also be interested in:
+  /// - [ChatCommand.slashOnly], for creating [ChatCommand]s with type [CommandType.slashOnly];
+  /// - [ChatCommand.textOnly], for creating [ChatCommand]s with type [CommandType.textOnly].
   ChatCommand(
     String name,
     String description,
@@ -249,6 +290,7 @@ class ChatCommand
           options: options,
         );
 
+  /// Create a new [ChatCommand] with type [CommandType.textOnly].
   ChatCommand.textOnly(
     String name,
     String description,
@@ -271,6 +313,7 @@ class ChatCommand
           options: options,
         );
 
+  /// Create a new [ChatCommand] with type [CommandType.slashOnly].
   ChatCommand.slashOnly(
     String name,
     String description,
@@ -583,6 +626,10 @@ class ChatCommand
     super.addCommand(command);
   }
 
+  /// Add a check to this command that does not apply to this commands children.
+  ///
+  /// You might also be interested in:
+  /// - [check], the equivalent method for inherited checks.
   void singleCheck(AbstractCheck check) {
     for (final preCallHook in check.preCallHooks) {
       onPreCall.listen(preCallHook);
