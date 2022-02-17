@@ -21,9 +21,11 @@ import 'package:nyxx_commands/src/context/interaction_context.dart';
 import 'package:nyxx_interactions/src/models/interaction.dart';
 import 'package:nyxx_interactions/src/events/interaction_event.dart';
 
+/// Representsa  context in which a [MessageCommand] was executed.
 class MessageContext
     with InteractionContextMixin, ComponentWrappersMixin
     implements IInteractionContext {
+  /// The messsage that the user selected when running this command.
   final IMessage targetMessage;
 
   @override
@@ -53,6 +55,7 @@ class MessageContext
   @override
   final IUser user;
 
+  /// Create a new [MessageContext].
   MessageContext({
     required this.targetMessage,
     required this.channel,
