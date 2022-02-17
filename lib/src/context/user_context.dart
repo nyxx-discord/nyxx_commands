@@ -21,11 +21,15 @@ import 'package:nyxx_commands/src/context/interaction_context.dart';
 import 'package:nyxx_interactions/src/models/interaction.dart';
 import 'package:nyxx_interactions/src/events/interaction_event.dart';
 
+/// Represents a context in which a [UserCommand] was executed.
 class UserContext
     with InteractionContextMixin, ComponentWrappersMixin
     implements IInteractionContext {
+  /// The member that was selected by the user when running the command if the command was invoked
+  /// in a guild, `null` otherwise.
   final IMember? targetMember;
 
+  /// The user that was selected by the user when running the command.
   final IUser targetUser;
 
   @override
