@@ -21,8 +21,26 @@ import 'package:nyxx_interactions/nyxx_interactions.dart';
 import '../commands.dart';
 import '../commands/chat_command.dart';
 
+/// Represents a context in which a [ChatCommand] was invoked.
+///
+/// You might also be interested in:
+/// - [MessageChatContext], for chat commands invoked from text messages;
+/// - [InteractionChatContext], for chat commands invoked from slash commands.
 abstract class IChatContext implements IContext {
+  /// The arguments parsed from the user input.
+  ///
+  /// The arguments are ordered by the order in which they appear in the function delcaration. Since
+  /// slash commands can specify optional arguments in any order, optional arguments declared before
+  /// the last provided argument will be set to their default value (or `null` if unspecified).
+  ///
+  /// You might also be interested in:
+  /// - [ChatCommand.execute], the function that dictates the order in which arguments are provided;
+  /// - [Converter], the means by which these arguments are parsed.
   Iterable<dynamic> get arguments;
+
+  /// Set the arguments used by this context.
+  ///
+  /// Should not be used unless you are implementing your own commannd handler.
   set arguments(Iterable<dynamic> value);
 
   @override
