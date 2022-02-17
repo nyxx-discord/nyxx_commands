@@ -134,9 +134,17 @@ class MessageChatContext with ComponentWrappersMixin implements IChatContext {
   String toString() => 'MessageContext[message=$message, message.content=${message.content}]';
 }
 
+/// Represents a context in which a [ChatCommand] was invoked from an interaction.
+///
+/// You might also be interested in:
+/// - [MessageChatContext], for chat commands invoked from text messages.
 class InteractionChatContext
     with InteractionContextMixin, ComponentWrappersMixin
     implements IChatContext, IInteractionContext {
+  /// The unparsed arguments from the interaction.
+  ///
+  /// You might also be interested in:
+  /// - [arguments], for getting the parsed arguments from this context.
   final Map<String, dynamic> rawArguments;
 
   @override
@@ -169,6 +177,7 @@ class InteractionChatContext
   @override
   final IUser user;
 
+  /// Create a new [InteractionChatContext].
   InteractionChatContext({
     required this.rawArguments,
     required this.channel,
