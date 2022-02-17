@@ -47,11 +47,27 @@ abstract class IChatContext implements IContext {
   ChatCommand get command;
 }
 
+/// Represents a context in which a [ChatCommand] was invoked from a text message.
+///
+/// You might also be interested in:
+/// - [InteractionChatContext], for chat commands invoked from slash commands.
 class MessageChatContext with ComponentWrappersMixin implements IChatContext {
+  /// The prefix that was used to invoke this command.
+  ///
+  /// You might also be interested in:
+  /// - [CommandsPlugin.prefix], the function called to determine the prefix to use for a given
+  ///   message.
   final String prefix;
 
+  /// The message that triggered this command.
   final IMessage message;
 
+  /// The unparsed arguments from the message.
+  ///
+  /// This is the content of the message stripped of the [prefix] and the full command name.
+  ///
+  /// You might also be interested in:
+  /// - [arguments], for getting the parsed arguments from this context.
   final String rawArguments;
 
   @override
@@ -78,6 +94,7 @@ class MessageChatContext with ComponentWrappersMixin implements IChatContext {
   @override
   final IUser user;
 
+  /// Create a new [MessageChatContext].
   MessageChatContext({
     required this.prefix,
     required this.message,
