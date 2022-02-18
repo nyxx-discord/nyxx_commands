@@ -21,6 +21,9 @@ class CompileTimeFunctionData {
   final List<CompileTimeParameterData> parametersData;
 
   const CompileTimeFunctionData(this.id, this.parametersData);
+
+  @override
+  String toString() => 'CompileTimeFunctionData[id=$id, parameters=$parametersData]';
 }
 
 class CompileTimeParameterData {
@@ -47,4 +50,13 @@ class CompileTimeParameterData {
     this.choices,
     this.converterOverride,
   );
+
+  @override
+  String toString() => 'CompileTimeParameterData[name=$name, '
+      'type=${type.getDisplayString(withNullability: true)}, '
+      'isOptional=$isOptional, '
+      'description=$description, '
+      'defaultValue=$defaultValue, '
+      'choices=$choices, '
+      'converterOverride=$converterOverride]';
 }

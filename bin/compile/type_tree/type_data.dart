@@ -60,6 +60,15 @@ class InterfaceTypeData implements TypeData, NullableTypeData {
 
   @override
   operator ==(Object other) => identical(this, other) || (other is TypeData && other.id == id);
+
+  @override
+  String toString() => 'InterfaceTypeData[id=$id, '
+      'source=$source, '
+      'name=$name, '
+      'strippedId=$strippedId, '
+      'superClasses=$superClasses, '
+      'typeArguments=$typeArguments, '
+      'isNullable=$isNullable]';
 }
 
 class FunctionTypeData implements TypeData, NullableTypeData {
@@ -87,6 +96,14 @@ class FunctionTypeData implements TypeData, NullableTypeData {
 
   @override
   operator ==(Object other) => identical(this, other) || (other is TypeData && other.id == id);
+
+  @override
+  String toString() => 'FunctionTypeData[id=$id, '
+      'source=$source, '
+      'name=$name, '
+      'returnType=$returnType, '
+      'parameterTypes=$parameterTypes, '
+      'isNullable=$isNullable]';
 }
 
 class DynamicTypeData implements TypeData {
@@ -104,6 +121,9 @@ class DynamicTypeData implements TypeData {
 
   @override
   operator ==(Object other) => identical(this, other) || (other is TypeData && other.id == id);
+
+  @override
+  String toString() => 'DynamicTypeData';
 }
 
 class VoidTypeData implements TypeData {
@@ -121,6 +141,9 @@ class VoidTypeData implements TypeData {
 
   @override
   operator ==(Object other) => identical(this, other) || (other is TypeData && other.id == id);
+
+  @override
+  String toString() => 'VoidTypeData';
 }
 
 class NeverTypeData implements TypeData {
@@ -138,4 +161,7 @@ class NeverTypeData implements TypeData {
 
   @override
   operator ==(Object other) => identical(this, other) || (other is TypeData && other.id == id);
+
+  @override
+  String toString() => 'NeverTypeData';
 }
