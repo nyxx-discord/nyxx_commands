@@ -21,15 +21,71 @@ import 'package:nyxx_commands/src/errors.dart';
 import 'package:nyxx_commands/src/util/view.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
+/// Contains metadata and parsing capabilities for a given type.
+///
+/// A [Converter] will convert textual user input received from the Discord API to the type
+/// requested by the current command. It also contains metadata about the type it converts.
+///
+/// nyxx_commands provides a set of converters for common argument types, a list of which can be
+/// found below. These converters are automatically added to [CommandsPlugin] instances and do not
+/// need to be added manually.
+///
+/// The list of default converters is as follows:
+/// - [stringConverter], which converts [String]s;
+/// - [intConverter], which converts [int]s;
+/// - [doubleConverter], which converts [double]s;
+/// - [boolConverter], which converts [bool]s;
+/// - [snowflakeConverter], which converts [Snowflake]s;
+/// - [memberConverter], which converts [IMember]s;
+/// - [userConverter], which converts [IUser]s;
+/// - [guildChannelConverter], which converts [IGuildChannel]s;
+/// - [textGuildChannelConverter], which converts [ITextGuildChannel]s;
+/// - [voiceGuildChannelConverter], which converts [IVoiceGuildChannel]s;
+/// - [stageVoiceChannelConverter], which converts [IStageVoiceGuildChannel]s;
+/// - [roleConverter], which converts [IRole]s;
+/// - [mentionableConverter], which converts [Mentionable]s.
+///
+/// You can override these default implementations with your own by calling
+/// [CommandsPlugin.addConverter] with your own converter for one of the types mentioned above.
+///
+/// You might also be interested in:
+/// - [CommandsPlugin.addConverter], for adding your own converters to your bot;
+/// - [FallbackConverter], for successively trying converters until one succeeds;
+/// - [CombineConverter], for piping the output of one converter into another.
 class Converter<T> {
+  /// The function called to perform the conversion.
+  ///
+  /// [view] is a view on the current argument string. For text commands, this will contain the
+  /// entire content of the message. For Slash Commands, this will contain the content provided by
+  /// the user for the current argument.
+  ///
+  /// This function should not throw if parsing fails, it should instead return `null` to indicate
+  /// failure. A [BadInputException] will then be added to [CommandsPlugin.onCommandError] where it
+  /// can be handled appropriately.
   final FutureOr<T?> Function(StringView view, IChatContext context) convert;
 
+  /// The choices for this type.
+  ///
+  /// Choices will be the only options choosable in Slash Commands, however text commands might
+  /// still pass any content to this converter.
   final Iterable<ArgChoiceBuilder>? choices;
 
+  /// The [Discord Slash Command Argument Type](https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-option-type)
+  /// of the type that this converter parses.
+  ///
+  /// Setting this to [CommandOptionType.subCommand] or [CommandOptionType.subCommandGroup] will
+  /// result in an error. Use [ChatGroup] instead.
   final CommandOptionType type;
 
+  /// The type that this converter parses.
+  ///
+  /// Used by [CommandsPlugin.getConverter] to construct assembled converters.
   final Type output;
 
+  /// Create a new converter.
+  ///
+  /// Strongly typing converter variables is recommended (i.e use `Converter<String>(...)` instead
+  /// of `Converter(...)`).
   const Converter(
     this.convert, {
     this.choices,
