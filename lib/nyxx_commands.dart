@@ -37,6 +37,7 @@ export 'src/converters/converter.dart'
         CombineConverter,
         Converter,
         FallbackConverter,
+        attachmentConverter,
         boolConverter,
         categoryGuildChannelConverter,
         doubleConverter,
