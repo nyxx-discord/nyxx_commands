@@ -490,6 +490,13 @@ FutureOr<IUser?> convertUser(StringView view, IChatContext context) {
   return null;
 }
 
+/// A converter that converts input to an [IUser].
+///
+/// This will first attempt to parse the input to a snowflake which will then be converted to an
+/// [IUser]. If this fails, the input will be parsed as an [IMember] which will then be converted to
+/// an [IUser]. If this fails, the user will be looked up by name.
+///
+/// This converter has a Discord Slash Command Argument Type of [CommandOptionType.user].
 const Converter<IUser> userConverter = FallbackConverter<IUser>(
   [
     CombineConverter<Snowflake, IUser>(snowflakeConverter, snowflakeToUser),
