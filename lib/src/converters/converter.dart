@@ -96,9 +96,22 @@ class Converter<T> {
   String toString() => 'Converter<$T>';
 }
 
+/// A converter that extends the functionality of an existing converter, piping its output through
+/// another function.
+///
+/// This has the effect of allowing further processing of the output of a converter, for example to
+/// transform a [Snowflake] into a [IMember].
+///
+/// You might also be interested in:
+/// - [FallbackConverter], a converter that tries multiple converters succesively.
 class CombineConverter<R, T> implements Converter<T> {
+  /// The converter used to parse the original input to the intermidate type.
   final Converter<R> converter;
 
+  /// The function that transforms the intermediate type into the output type.
+  ///
+  /// As with normal converters, this function should not throw but can return `null` to indicate
+  /// parsing failure.
   final FutureOr<T?> Function(R, IChatContext) process;
 
   @override
@@ -107,6 +120,7 @@ class CombineConverter<R, T> implements Converter<T> {
   final Iterable<ArgChoiceBuilder>? _choices;
   final CommandOptionType? _type;
 
+  /// Create a new [CombineConverter].
   const CombineConverter(
     this.converter,
     this.process, {
