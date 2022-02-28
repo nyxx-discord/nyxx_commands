@@ -151,7 +151,17 @@ class CombineConverter<R, T> implements Converter<T> {
   String toString() => 'CombineConverter<$R, $T>[converter=$converter]';
 }
 
+/// A converter that successively tries a list of converters until one succeeds.
+///
+/// Given three converters *a*, *b* and *c*, a [FallbackConverter] will first try to convert the
+/// input using *a*, then, if *a* failed, using *b*, then, if *b* failed, using *c*. If all of *a*,
+/// *b* and *c* fail, then the [FallbackConverter] will also fail. If at least one of *a*, *b* or
+/// *c* succeed, the [FallbackConverter] will return the result of that conversion.
+///
+/// You might also be interested in:
+/// - [CombineConverter], for further processing the output of another converter.
 class FallbackConverter<T> implements Converter<T> {
+  /// The converters this [FallbackConverter] will attempt to use.
   final Iterable<Converter<T>> converters;
 
   final Iterable<ArgChoiceBuilder>? _choices;
@@ -160,6 +170,7 @@ class FallbackConverter<T> implements Converter<T> {
   @override
   final Type output;
 
+  /// Create a new [FallbackConverter].
   const FallbackConverter(
     this.converters, {
     Iterable<ArgChoiceBuilder>? choices,
