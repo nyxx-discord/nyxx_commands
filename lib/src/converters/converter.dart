@@ -258,6 +258,12 @@ class FallbackConverter<T> implements Converter<T> {
 
 String? convertString(StringView view, IChatContext context) => view.getQuotedWord();
 
+/// A [Converter] that converts input to a [String].
+///
+/// This converter returns the next space-seperated word in the input, or, if the next word in the
+/// input is quoted, the next quoted section of the input.
+///
+/// This converter has a Discord Slash Command Argument Type of [CommandOptionType.string].
 const Converter<String> stringConverter = Converter<String>(
   convertString,
   type: CommandOptionType.string,
