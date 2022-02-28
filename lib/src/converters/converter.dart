@@ -420,6 +420,12 @@ Future<IMember?> convertMember(StringView view, IChatContext context) async {
   return null;
 }
 
+/// A converter that converts input to an [IMember].
+///
+/// This will first attempt to parse the input to a snowflake which will then be converted to an
+/// [IMember]. If this fails, the member will be looked up by name.
+///
+/// This converter has a Discord Slash Command Argument Type of [CommandOptionType.user].
 const Converter<IMember> memberConverter = FallbackConverter<IMember>(
   [
     // Get member from mention or snowflake.
