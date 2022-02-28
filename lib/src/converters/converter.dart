@@ -284,6 +284,12 @@ const Converter<int> intConverter = Converter<int>(
 double? convertDouble(StringView view, IChatContext context) =>
     double.tryParse(view.getQuotedWord());
 
+/// A [Converter] that converts input to a [double].
+///
+/// This converter attempts to parse the next word or quoted section of the input with
+/// [double.parse].
+///
+/// This converter has a Discord Slash Command Argument Type of [CommandOptionType.number].
 const Converter<double> doubleConverter = Converter<double>(
   convertDouble,
   type: CommandOptionType.number,
