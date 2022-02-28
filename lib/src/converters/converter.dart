@@ -271,6 +271,11 @@ const Converter<String> stringConverter = Converter<String>(
 
 int? convertInt(StringView view, IChatContext context) => int.tryParse(view.getQuotedWord());
 
+/// A [Converter] that converts input to an [int].
+///
+/// This converter attempts to parse the next word or quoted section of the input with [int.parse].
+///
+/// This converter has a Discord Slash Command Argument Type of [CommandOptionType.integer].
 const Converter<int> intConverter = Converter<int>(
   convertInt,
   type: CommandOptionType.integer,
