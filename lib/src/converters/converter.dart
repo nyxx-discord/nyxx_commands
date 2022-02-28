@@ -339,6 +339,10 @@ Snowflake? convertSnowflake(StringView view, IChatContext context) {
   return Snowflake(match.group(1) ?? match.group(2));
 }
 
+/// A converter that converts input to a [Snowflake].
+///
+/// This converter will parse user mentions, member mentions, channel mentions or raw integers as
+/// snowflakes.
 const Converter<Snowflake> snowflakeConverter = Converter<Snowflake>(
   convertSnowflake,
 );
