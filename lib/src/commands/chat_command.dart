@@ -498,7 +498,7 @@ class ChatCommand
       return;
     }
 
-    List<Future<dynamic>> arguments = [];
+    List<dynamic> arguments = [];
 
     if (context is MessageChatContext) {
       StringView argumentsView = StringView(context.rawArguments);
@@ -510,7 +510,7 @@ class ChatCommand
 
         Type expectedType = _mappedArgumentTypes[argumentName]!;
 
-        arguments.add(parse(
+        arguments.add(await parse(
           context.commands,
           context,
           argumentsView,
@@ -538,7 +538,7 @@ class ChatCommand
           continue;
         }
 
-        arguments.add(parse(
+        arguments.add(await parse(
           context.commands,
           context,
           StringView(rawArgument.toString()),
@@ -548,7 +548,7 @@ class ChatCommand
       }
     }
 
-    context.arguments = await Future.wait(arguments);
+    context.arguments = arguments;
 
     for (final check in [...checks, ...singleChecks]) {
       if (!await check.check(context)) {
