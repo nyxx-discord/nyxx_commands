@@ -547,6 +547,12 @@ T? convertGuildChannel<T extends IGuildChannel>(StringView view, IChatContext co
   return null;
 }
 
+/// A converter that converts input to an [IGuildChannel].
+///
+/// This will first attempt to parse the input as a [Snowflake] that will then be converted to an
+/// [IGuildChannel]. If this fails, the channel will be looked up by name in the current guild.
+///
+/// This converter has a Discord Slash Command argument type of [CommandOptionType.channel].
 const Converter<IGuildChannel> guildChannelConverter = FallbackConverter(
   [
     CombineConverter<Snowflake, IGuildChannel>(
