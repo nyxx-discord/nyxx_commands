@@ -685,6 +685,11 @@ const Converter<IRole> roleConverter = FallbackConverter<IRole>(
   type: CommandOptionType.role,
 );
 
+/// A converter that converts input to a [Mentionable].
+///
+/// This will first attempt to convert the input as a member, then as a role.
+///
+/// THis converter has a Discord Slash Command argument type of [CommandOptionType.mentionable].
 const Converter<Mentionable> mentionableConverter = FallbackConverter(
   [
     memberConverter,
