@@ -562,6 +562,12 @@ const Converter<IGuildChannel> guildChannelConverter = FallbackConverter(
   type: CommandOptionType.channel,
 );
 
+/// A converter that converts input to an [ITextGuildChannel].
+///
+/// This will first attempt to parse the input as a [Snowflake] that will then be converted to an
+/// [ITextGuildChannel]. If this fails, the channel will be looked up by name in the current guild.
+///
+/// This converter has a Discord Slash Command argument type of [CommandOptionType.channel].
 const Converter<ITextGuildChannel> textGuildChannelConverter = FallbackConverter(
   [
     CombineConverter<Snowflake, ITextGuildChannel>(
