@@ -671,6 +671,12 @@ FutureOr<IRole?> convertRole(StringView view, IChatContext context) async {
   return null;
 }
 
+/// A converter that converts input to an [IRole].
+///
+/// This will first attempt to parse the input as a snowflake that will then be converted to an
+/// [IRole]. If this fails, then the role will be looked up by name in the current guild.
+///
+/// This converter has a Discord Slash Command argument type of [CommandOptionType.role].
 const Converter<IRole> roleConverter = FallbackConverter<IRole>(
   [
     CombineConverter<Snowflake, IRole>(snowflakeConverter, snowflakeToRole),
