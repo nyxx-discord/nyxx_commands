@@ -592,6 +592,13 @@ const Converter<IVoiceGuildChannel> voiceGuildChannelConverter = FallbackConvert
   type: CommandOptionType.channel,
 );
 
+/// A converter that converts input to an [ICategoryGuildChannel].
+///
+/// This will first attempt to parse the input as a [Snowflake] that will then be converted to an
+/// [ICategoryGuildChannel]. If this fails, the channel will be looked up by name in the current
+/// guild.
+///
+/// This converter has a Discord Slash Command argument type of [CommandOptionType.channel].
 const Converter<ICategoryGuildChannel> categoryGuildChannelConverter = FallbackConverter(
   [
     CombineConverter<Snowflake, ICategoryGuildChannel>(
