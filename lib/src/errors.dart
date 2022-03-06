@@ -94,9 +94,15 @@ class CheckFailedException extends CommandInvocationException {
       : super('Check "${failed.name}" failed', context);
 }
 
+/// An exception thrown when no [Converter] was found or created for a type.
+///
+/// You might also be interested in:
+/// - [CommandsPlugin.addConverter], for adding your own [Converter]s to your bot.
 class NoConverterException extends CommandInvocationException {
+  /// The type that the converter was requested for.
   final Type expectedType;
 
+  /// Create a new [NoConverterException].
   NoConverterException(this.expectedType, IChatContext context)
       : super('No converter found for type "$expectedType"', context);
 }
