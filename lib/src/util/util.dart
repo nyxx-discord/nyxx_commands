@@ -84,11 +84,47 @@ class Description {
   String toString() => 'Description[value="$value"]';
 }
 
+/// An annotation used to restrict input to a set of choices for a given parameter.
+///
+/// Note that this is only a client-side verification for Slash Commands only, input from text
+/// commands might not be one of the options.
+///
+/// For example, adding three choices to a command:
+/// ```dart
+/// ChatCommand test = ChatCommand(
+///   'test',
+///   'A test command',
+///   (
+///     IChatContext context,
+///     @Choices({'Foo': 'foo', 'Bar': 'bar', 'Baz': 'baz'}) String message,
+///   ) async {
+///     context.respond(MessageBuilder.content(message));
+///   },
+/// );
+///
+/// commands.addCommand(test);
+/// ```
+///
+/// ![](https://user-images.githubusercontent.com/54505189/156936191-d35e18d0-5e03-414d-938e-b14c80071175.png)
 class Choices {
+  /// The choices for this command.
+  ///
+  /// The keys are what is displayed in the Discord UI when the user selects your command and the
+  /// values are what actually get sent to your command.
+  ///
+  /// The values can be either [String]s or [int]s.
+  ///
+  /// You might also be interested in:
+  /// - [ArgChoiceBuilder], the nyxx_interactions builder these entries are converted to.
   final Map<String, dynamic> choices;
 
+  /// Create a new [Choices].
+  ///
+  /// This is intended to be used as an `@Choices(...)` annotation, and has no functionality as
+  /// a standalone class.
   const Choices(this.choices);
 
+  /// Get the builders that this [Choices] represents.
   Iterable<ArgChoiceBuilder> get builders =>
       choices.entries.map((entry) => ArgChoiceBuilder(entry.key, entry.value));
 
