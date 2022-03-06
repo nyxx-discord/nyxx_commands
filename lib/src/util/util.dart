@@ -38,9 +38,46 @@ String convertToKebabCase(String camelCase) {
   return res;
 }
 
+/// An annotation used to add a description to Slash Command arguments.
+///
+/// For example, these two snippets of code produce different results:
+/// ```dart
+/// ChatCommand test = ChatCommand(
+///   'test',
+///   'A test command',
+///   (IChatContext context, String message) async {
+///     context.respond(MessageBuilder.content(message));
+///   },
+/// );
+///
+/// commands.addCommand(test);
+/// ```
+/// and
+/// ```dart
+/// ChatCommand test = ChatCommand(
+///   'test',
+///   'A test command',
+///   (
+///     IChatContext context,
+///     @Description('The message to send') String message,
+///   ) async {
+///     context.respond(MessageBuilder.content(message));
+///   },
+/// );
+///
+/// commands.addCommand(test);
+/// ```
+///
+/// ![](https://user-images.githubusercontent.com/54505189/156934401-67535127-d768-4687-b4b4-d279e4362e16.png)
+/// ![](https://user-images.githubusercontent.com/54505189/156934465-18693d88-66f4-41a0-8615-f7d18293fb86.png)
 class Description {
+  /// The value of the description.
   final String value;
 
+  /// Create a new [Description].
+  ///
+  /// This is intended to be used as an `@Description(...)` annotation, and has no functionality as
+  /// a standalone class.
   const Description(this.value);
 
   @override
