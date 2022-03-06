@@ -107,9 +107,15 @@ class NoConverterException extends CommandInvocationException {
       : super('No converter found for type "$expectedType"', context);
 }
 
+/// An exception thrown when a message command matching [CommandsPlugin.prefix] is found, but no
+/// command could be resolved from the rest of the message.
+///
+/// This exception can safely be ignored.
 class CommandNotFoundException extends CommandsException {
+  /// The text input that was received.
   final StringView input;
 
+  /// Create a new [CommandNotFoundException].
   CommandNotFoundException(this.input) : super('Command "${input.buffer}" not found');
 }
 
