@@ -132,9 +132,33 @@ class Choices {
   String toString() => 'Choices[choices=$choices]';
 }
 
+/// An annotation used to change the name displayed in the Discord UI for a given command argument.
+///
+/// For example, changing the name of an argument from 'foo' to 'message':
+/// ```dart
+/// ChatCommand test = ChatCommand(
+///   'test',
+///   'A test command',
+///   (
+///     IChatContext context,
+///     @Name('message') String foo,
+///   ) async {
+///     context.respond(MessageBuilder.content(foo));
+///   },
+/// );
+///
+/// commands.addCommand(test);
+/// ```
+///
+/// ![](https://user-images.githubusercontent.com/54505189/156937204-bbcd5c95-ff0f-40c2-944d-9988fd7b6a60.png)
 class Name {
+  /// The custom name to use.
   final String name;
 
+  /// Create a new [Name].
+  ///
+  /// This is intended to be used as an `@Name(...)` annotation, and has no functionality as
+  /// a standalone class.
   const Name(this.name);
 
   @override
