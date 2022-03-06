@@ -796,6 +796,11 @@ Future<dynamic> parse(
   }
 }
 
+/// Adds the default converters to an instance of [CommandsPlugin].
+///
+/// This function is called automatically and you do not need to call it yourself.
+///
+/// The list of converters this function adds can be found in the [Converter] documentation.
 void registerDefaultConverters(CommandsPlugin commands) {
   commands
     ..addConverter(stringConverter)
