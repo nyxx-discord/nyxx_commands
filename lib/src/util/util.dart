@@ -185,7 +185,7 @@ class UseConverter {
 
 final RegExp _mentionPattern = RegExp(r'^<@!?([0-9]{15,20})>');
 
-/// A wrapper function for prefixes that allow commands to be invoked with a mention prefix.
+/// A wrapper function for prefixes that allows commands to be invoked with a mention prefix.
 ///
 /// For example:
 /// ```dart
@@ -211,6 +211,19 @@ String Function(IMessage) mentionOr(String Function(IMessage) defaultPrefix) {
   };
 }
 
+/// A wrapper function for prefixes that allows commands to be invoked from messages without a
+/// prefix in Direct Messages.
+///
+/// For example:
+/// ```dart
+/// CommandsPlugin commands = CommandsPlugin(
+///   prefix: dmOr((_) => '!'),
+/// );
+///
+/// // Add a basic `test` command...
+/// ```
+/// ![](https://user-images.githubusercontent.com/54505189/156937528-df54a2ba-627d-4f54-b0bc-ad7cb6321965.png)
+/// ![](https://user-images.githubusercontent.com/54505189/156937561-9df9e6cf-6595-465d-895a-aaca5d6ff066.png)
 String Function(IMessage) dmOr(String Function(IMessage) defaultPrefix) {
   return (message) {
     String found = defaultPrefix(message);
