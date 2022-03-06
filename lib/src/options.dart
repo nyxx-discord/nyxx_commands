@@ -15,9 +15,25 @@
 import 'package:nyxx_commands/src/commands/options.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
+/// Options that modify how the [CommandsPlugin] instance works.
+///
+/// You might also be interested in:
+/// - [CommandOptions], the options for individual [IOptions] instances.
 class CommandsOptions implements CommandOptions {
+  /// Whether to automatically log exceptions.
+  ///
+  /// If this is `true`, exceptions added to [CommandsPlugin.onCommandError] will be added to
+  /// nyxx_commands' [Logger], which can then be printed. If this is `false`, no logs will be
+  /// created.
+  ///
+  /// You might also be interested in:
+  /// - [Logging], a plugin to automatically print logs to the console.
   final bool logErrors;
 
+  /// The [InteractionBackend] to use for creating the [IInteractions] instance.
+  ///
+  /// If this is set to null, then a [WebsocketInteractionBackend] will automatically be created,
+  /// using the client the [CommandsPlugin] was added to as the client.
   final InteractionBackend? backend;
 
   @override
@@ -32,6 +48,7 @@ class CommandsOptions implements CommandOptions {
   @override
   final bool hideOriginalResponse;
 
+  /// Create a new set of [CommandsOptions].
   const CommandsOptions({
     this.logErrors = true,
     this.autoAcknowledgeInteractions = true,
