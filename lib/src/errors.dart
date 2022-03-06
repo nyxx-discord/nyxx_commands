@@ -148,6 +148,8 @@ class CommandsError extends Error {
   String toString() => message;
 }
 
+/// An error that occurred during registration of a command.
 class CommandRegistrationError extends CommandsError {
+  /// Create a new [CommandRegistrationError].
   CommandRegistrationError(String message) : super(message);
 }
