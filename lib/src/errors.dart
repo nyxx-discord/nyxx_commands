@@ -84,9 +84,12 @@ class NotEnoughArgumentsException extends BadInputException {
         );
 }
 
+/// An exception thrown when an [AbstractCheck] fails.
 class CheckFailedException extends CommandInvocationException {
+  /// The check that failed.
   final AbstractCheck failed;
 
+  /// Create a new [CheckFailedException].
   CheckFailedException(this.failed, IContext context)
       : super('Check "${failed.name}" failed', context);
 }
