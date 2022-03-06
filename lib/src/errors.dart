@@ -72,7 +72,10 @@ class BadInputException extends CommandInvocationException {
   BadInputException(String message, IChatContext context) : super(message, context);
 }
 
+/// An exception thrown when the end of userr input is encountered before all the required arguments
+/// of a [ChatCommand] have been parsed.
 class NotEnoughArgumentsException extends BadInputException {
+  /// Create a new [NotEnoughArgumentsException].
   NotEnoughArgumentsException(MessageChatContext context)
       : super(
           'Not enough arguments for command "${context.command.fullName}": '
