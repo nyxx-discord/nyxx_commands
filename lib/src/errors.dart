@@ -18,9 +18,23 @@ import 'checks/checks.dart';
 import 'context/chat_context.dart';
 import 'util/view.dart';
 
+/// The base class for exceptions thrown by nyxx_commands.
+///
+/// All exceptions thrown by the library extend or implement this class, so you may use this as a
+/// catch-all type. Exceptions thrown by nyxx_commands are often caught internally by the library
+/// and added to [CommandsPlugin.onCommandError], so you need not catch exceptions yourself.
+///
+/// You might also be interested in:
+/// - [CommandsError], the base class for all errors thrown by nyxx_commands;
+/// - [CommandsPlugin.onCommandError], for handling exceptions thrown in commands.
 class CommandsException implements Exception {
+  /// The message for this exception.
+  ///
+  /// This might contain sensitive information, so it is not recommended to send this string to your
+  /// users. Checking the type of the error and reacting accordingly is recommended.
   String message;
 
+  /// Create a new [CommandsException].
   CommandsException(this.message);
 
   @override
