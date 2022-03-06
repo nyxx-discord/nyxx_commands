@@ -119,9 +119,14 @@ class CommandNotFoundException extends CommandsException {
   CommandNotFoundException(this.input) : super('Command "${input.buffer}" not found');
 }
 
+/// An exception that occurred while a [StringView] was parsing input.
+///
+/// When parsing user input, this will automatically be caught and wrapped in a [BadInputException].
 class ParsingException implements Exception {
+  /// The error message.
   final String message;
 
+  /// Create a new [ParsingException].
   ParsingException(this.message);
 
   @override
