@@ -12,8 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-import 'package:nyxx_commands/src/commands/options.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+
+import 'commands/options.dart';
 
 /// Options that modify how the [CommandsPlugin] instance works.
 ///

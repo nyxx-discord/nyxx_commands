@@ -12,14 +12,15 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-import 'package:nyxx_commands/src/checks/checks.dart';
-import 'package:nyxx_commands/src/commands.dart';
-import 'package:nyxx_commands/src/commands/options.dart';
-import 'package:nyxx_commands/src/context/chat_context.dart';
-import 'package:nyxx_commands/src/context/context.dart';
-import 'package:nyxx_commands/src/errors.dart';
-import 'package:nyxx_commands/src/util/view.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+
+import '../checks/checks.dart';
+import '../commands.dart';
+import '../context/chat_context.dart';
+import '../context/context.dart';
+import '../errors.dart';
+import '../util/view.dart';
+import 'options.dart';
 
 /// Represents an entity which can handle command callback hooks.
 abstract class ICallHooked<T extends IContext> {

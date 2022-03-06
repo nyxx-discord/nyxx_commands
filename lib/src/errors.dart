@@ -12,10 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-import 'package:nyxx_commands/src/context/context.dart';
-
 import 'checks/checks.dart';
 import 'context/chat_context.dart';
+import 'context/context.dart';
 import 'util/view.dart';
 
 /// The base class for exceptions thrown by nyxx_commands.

@@ -13,13 +13,13 @@
 //  limitations under the License.
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/commands.dart';
-import 'package:nyxx_commands/src/commands/message_command.dart';
-import 'package:nyxx_commands/src/context/component_wrappers.dart';
-import 'package:nyxx_commands/src/context/context.dart';
-import 'package:nyxx_commands/src/context/interaction_context.dart';
 import 'package:nyxx_interactions/src/models/interaction.dart';
 import 'package:nyxx_interactions/src/events/interaction_event.dart';
+
+import '../commands.dart';
+import '../commands/message_command.dart';
+import 'component_wrappers.dart';
+import 'interaction_context.dart';
 
 /// Representsa  context in which a [MessageCommand] was executed.
 class MessageContext

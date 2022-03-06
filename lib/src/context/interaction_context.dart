@@ -13,8 +13,9 @@
 //  limitations under the License.
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/context/context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+
+import '../context/context.dart';
 
 /// Represents a context that originated from an interaction.
 abstract class IInteractionContext implements IContext {

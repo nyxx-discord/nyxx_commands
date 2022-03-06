@@ -15,10 +15,19 @@
 import 'dart:async';
 import 'dart:mirrors';
 
-import 'package:nyxx_commands/nyxx_commands.dart';
-import 'package:nyxx_commands/src/commands.dart';
-import 'package:nyxx_commands/src/util/mixins.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+
+import '../checks/checks.dart';
+import '../commands.dart';
+import '../context/chat_context.dart';
+import '../context/context.dart';
+import '../converters/converter.dart';
+import '../errors.dart';
+import '../util/mixins.dart';
+import '../util/util.dart';
+import '../util/view.dart';
+import 'interfaces.dart';
+import 'options.dart';
 
 /// Indicates the ways a [ChatCommand] can be executed.
 ///

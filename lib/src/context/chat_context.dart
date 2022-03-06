@@ -13,13 +13,13 @@
 //  limitations under the License.
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/context/component_wrappers.dart';
-import 'package:nyxx_commands/src/context/context.dart';
-import 'package:nyxx_commands/src/context/interaction_context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands.dart';
 import '../commands/chat_command.dart';
+import '../context/component_wrappers.dart';
+import '../context/context.dart';
+import '../context/interaction_context.dart';
 
 /// Represents a context in which a [ChatCommand] was invoked.
 ///

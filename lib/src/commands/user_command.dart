@@ -14,8 +14,13 @@
 
 import 'dart:async';
 
-import 'package:nyxx_commands/nyxx_commands.dart';
-import 'package:nyxx_commands/src/util/mixins.dart';
+import '../checks/checks.dart';
+import '../context/context.dart';
+import '../context/user_context.dart';
+import '../errors.dart';
+import '../util/mixins.dart';
+import 'interfaces.dart';
+import 'options.dart';
 
 /// Represents a [Discord User Command](https://discord.com/developers/docs/interactions/application-commands#user-commands).
 ///

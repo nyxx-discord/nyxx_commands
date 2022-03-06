@@ -13,9 +13,10 @@
 //  limitations under the License.
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/converters/converter.dart';
-import 'package:nyxx_commands/src/util/view.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+
+import '../converters/converter.dart';
+import 'view.dart';
 
 /// Convert a camelCase string to kebab-case.
 ///

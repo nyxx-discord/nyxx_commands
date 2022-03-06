@@ -1,8 +1,13 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/nyxx_commands.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+
+import '../context/interaction_context.dart';
+import '../context/chat_context.dart';
+import '../context/message_context.dart';
+import '../context/user_context.dart';
+import 'checks.dart';
 
 /// A check that succeeds if the context was created from an interaction.
 ///

@@ -15,11 +15,12 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/commands.dart';
-import 'package:nyxx_commands/src/context/chat_context.dart';
-import 'package:nyxx_commands/src/errors.dart';
-import 'package:nyxx_commands/src/util/view.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+
+import '../commands.dart';
+import '../context/chat_context.dart';
+import '../errors.dart';
+import '../util/view.dart';
 
 /// Contains metadata and parsing capabilities for a given type.
 ///

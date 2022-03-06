@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/nyxx_commands.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+
+import '../context/context.dart';
+import 'checks.dart';
 
 /// An enum that represents the different ways to sort contexts into buckets.
 ///

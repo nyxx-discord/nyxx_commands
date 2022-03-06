@@ -15,9 +15,10 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/nyxx_commands.dart';
-import 'package:nyxx_commands/src/commands.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+
+import '../commands.dart';
+import '../context/context.dart';
 
 /// Represents a check on a command.
 ///

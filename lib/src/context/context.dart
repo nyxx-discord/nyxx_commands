@@ -13,9 +13,10 @@
 //  limitations under the License.
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/commands.dart';
-import 'package:nyxx_commands/src/commands/interfaces.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+
+import '../commands.dart';
+import '../commands/interfaces.dart';
 
 /// A context in which a command was executed.
 ///

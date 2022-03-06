@@ -13,9 +13,10 @@
 //  limitations under the License.
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/context/context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 import 'package:random_string/random_string.dart';
+
+import 'context.dart';
 
 mixin ComponentWrappersMixin implements IContext {
   @override
