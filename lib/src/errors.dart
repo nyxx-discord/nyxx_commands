@@ -64,7 +64,11 @@ class UncaughtException extends CommandInvocationException {
   UncaughtException(this.exception, IContext context) : super(exception.toString(), context);
 }
 
+/// An exception that occurred due to an invalid input from the user.
+///
+/// This generally indicates that nyxx_commands was unable to parse the user's input.
 class BadInputException extends CommandInvocationException {
+  /// Create a new [BadInputException].
   BadInputException(String message, IChatContext context) : super(message, context);
 }
 
