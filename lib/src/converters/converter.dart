@@ -752,6 +752,13 @@ IAttachment? convertAttachment(StringView view, IChatContext context) {
   return null;
 }
 
+/// A converter that converts input to an [IAttachment].
+///
+/// This will first attempt to parse the input to a snowflake that will then be resolved as the ID
+/// of one of the attachments in the message or interaction. If this fails, then the attachment will
+/// be looked up by name.
+///
+/// This converter has a Discord Slash Command argument type of [CommandOptionType.attachment].
 const Converter<IAttachment> attachmentConverter = FallbackConverter(
   [
     CombineConverter<Snowflake, IAttachment>(snowflakeConverter, snowflakeToAttachment),
