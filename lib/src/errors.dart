@@ -41,9 +41,12 @@ class CommandsException implements Exception {
   String toString() => 'Command Exception: $message';
 }
 
+/// An exception that occurred during the execution of a command.
 class CommandInvocationException extends CommandsException {
+  /// The context in which the exception occurred.
   final IContext context;
 
+  /// Create a new [CommandInvocationException].
   CommandInvocationException(String message, this.context) : super(message);
 }
 
