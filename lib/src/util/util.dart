@@ -165,9 +165,18 @@ class Name {
   String toString() => 'Name[name=$name]';
 }
 
+/// An annotation used to specify the converter to use for an argument, overriding the default
+/// converter for that type.
+///
+/// See example/example.dart for an example on how to use this annotation.
 class UseConverter {
+  /// The converter to use.
   final Converter<dynamic> converter;
 
+  /// Create a new [UseConverter].
+  ///
+  /// This is intended to be used as an `@UseConverter(...)` annotation, and has no functionality as
+  /// a standalone class.
   const UseConverter(this.converter);
 
   @override
