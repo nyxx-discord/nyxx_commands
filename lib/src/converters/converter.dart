@@ -690,6 +690,68 @@ const Converter<Mentionable> mentionableConverter = FallbackConverter(
   type: CommandOptionType.mentionable,
 );
 
+IAttachment? snowflakeToAttachment(Snowflake id, IChatContext context) {
+  Iterable<IAttachment>? attachments;
+  if (context is InteractionChatContext) {
+    attachments = context.interaction.resolved?.attachments ?? [];
+  } else if (context is MessageChatContext) {
+    attachments = context.message.attachments;
+  }
+
+  if (attachments == null) {
+    return null;
+  }
+
+  try {
+    return attachments.singleWhere((attachment) => attachment.id == id);
+  } on StateError {
+    return null;
+  }
+}
+
+IAttachment? convertAttachment(StringView view, IChatContext context) {
+  String fileName = view.getQuotedWord();
+
+  Iterable<IAttachment>? attachments;
+  if (context is InteractionChatContext) {
+    attachments = context.interaction.resolved?.attachments;
+  } else if (context is MessageChatContext) {
+    attachments = context.message.attachments;
+  }
+
+  if (attachments == null) {
+    return null;
+  }
+
+  Iterable<IAttachment> exactMatch = attachments.where(
+    (attachment) => attachment.filename == fileName,
+  );
+
+  Iterable<IAttachment> caseInsensitive = attachments.where(
+    (attachment) => attachment.filename.toLowerCase() == fileName.toLowerCase(),
+  );
+
+  Iterable<IAttachment> partialMatch = attachments.where(
+    (attachment) => attachment.filename.toLowerCase().startsWith(fileName.toLowerCase()),
+  );
+
+  for (final list in [exactMatch, caseInsensitive, partialMatch]) {
+    if (list.length == 1) {
+      return list.first;
+    }
+  }
+
+  return null;
+}
+
+const Converter<IAttachment> attachmentConverter = FallbackConverter(
+  [
+    CombineConverter<Snowflake, IAttachment>(snowflakeConverter, snowflakeToAttachment),
+    Converter(convertAttachment),
+  ],
+  type: CommandOptionType.attachment,
+);
+
 /// Attempt to parse a single argument from an argument view.
 ///
 /// [commands] is the [CommandsPlugin] used for retrieving the converters for a specific [Type]. If
@@ -736,5 +798,6 @@ void registerDefaultConverters(CommandsPlugin commands) {
     ..addConverter(voiceGuildChannelConverter)
     ..addConverter(stageVoiceChannelConverter)
     ..addConverter(roleConverter)
-    ..addConverter(mentionableConverter);
+    ..addConverter(mentionableConverter)
+    ..addConverter(attachmentConverter);
 }
