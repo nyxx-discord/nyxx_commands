@@ -1,3 +1,4 @@
+/// A framework for easily creating slash commands and text commands for Discord using the nyxx library.
 library nyxx_commands;
 
 export 'src/checks/checks.dart' show AbstractCheck, Check, GuildCheck, RoleCheck, UserCheck;
