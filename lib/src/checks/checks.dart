@@ -56,7 +56,7 @@ abstract class AbstractCheck {
   /// The set of [Discord Slash Command Permissions](https://discord.com/developers/docs/interactions/application-commands#permissions)
   /// this check represents.
   ///
-  /// Any [ICommand] (excluding text-only [ChatCommands]) will have the permissions from all the
+  /// Any [ICommand] (excluding text-only [ChatCommand]s) will have the permissions from all the
   /// checks on that command applied through the Discord Slash Command API. This can allow users to
   /// see whether a command is executable from within their Discord client, instead of nyxx_commands
   /// rejecting the command once received.
@@ -190,7 +190,7 @@ class Check extends AbstractCheck {
 
   /// Creates a check that succeeds if [check] fails.
   ///
-  /// Note that [check.preCallHooks] and [check.postCallHooks] will therefore be executed if [check]
+  /// Note that [AbstractCheck.preCallHooks] and [AbstractCheck.postCallHooks] will therefore be executed if [check]
   /// *fails*, and not when [check] succeeds. Therefore, developers should take care that [check]
   /// does not assume it succeeded in its call hooks.
   static AbstractCheck deny(AbstractCheck check, [String? name]) => _DenyCheck(check, name);

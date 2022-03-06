@@ -79,7 +79,8 @@ abstract class ICommandRegisterable<T extends IContext>
   /// The parent of this child.
   ///
   /// Once a parent is added to a group, that group is considered to be this child's parent and this
-  /// child cannot be added to any more groups. Attempting to do so will result in a [CommandError].
+  /// child cannot be added to any more groups. Attempting to do so will result in a
+  /// [CommandsError].
   ICommandGroup<IContext>? get parent;
 
   /// Set the parent of this child. Should not be used unless you are implementing your own command

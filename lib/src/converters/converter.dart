@@ -55,7 +55,7 @@ import 'package:nyxx_interactions/nyxx_interactions.dart';
 class Converter<T> {
   /// The function called to perform the conversion.
   ///
-  /// [view] is a view on the current argument string. For text commands, this will contain the
+  /// `view` is a view on the current argument string. For text commands, this will contain the
   /// entire content of the message. For Slash Commands, this will contain the content provided by
   /// the user for the current argument.
   ///
