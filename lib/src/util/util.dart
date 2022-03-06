@@ -185,6 +185,18 @@ class UseConverter {
 
 final RegExp _mentionPattern = RegExp(r'^<@!?([0-9]{15,20})>');
 
+/// A wrapper function for prefixes that allow commands to be invoked with a mention prefix.
+///
+/// For example:
+/// ```dart
+/// CommandsPlugin commands = CommandsPlugin(
+///   prefix: mentionOr((_) => '!'),
+/// );
+///
+/// // Add a basic `test` command...
+/// ```
+///
+/// ![](https://user-images.githubusercontent.com/54505189/156937410-73d19cc5-c018-40e4-97dd-b7fcc0be0b7d.png)
 String Function(IMessage) mentionOr(String Function(IMessage) defaultPrefix) {
   return (message) {
     RegExpMatch? match = _mentionPattern.firstMatch(message.content);
