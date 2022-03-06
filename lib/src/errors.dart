@@ -50,9 +50,17 @@ class CommandInvocationException extends CommandsException {
   CommandInvocationException(String message, this.context) : super(message);
 }
 
+/// A wrapper class for an exception that was thrown inside the [ICommand.execute] callback.
+///
+/// This generally indicates incorrect or incomplete code inside a command callback, and the
+/// developer should try to identify and fix the issue.
+///
+/// If you are throwing exceptions to indicate command failure, consider using [Check]s instead.
 class UncaughtException extends CommandInvocationException {
+  /// The exception that occurred.
   final Exception exception;
 
+  /// Create a new [UncaughtException].
   UncaughtException(this.exception, IContext context) : super(exception.toString(), context);
 }
 
