@@ -133,9 +133,15 @@ class ParsingException implements Exception {
   String toString() => message;
 }
 
+/// The base class for all errors thrown by nyxx_commands.
+///
+/// You might also be interested in:
+/// - [CommandsException], the base class for all exceptions thrown by nyxx_commands.
 class CommandsError extends Error {
+  /// The message for this error.
   final String message;
 
+  /// Create a new [CommandsError].
   CommandsError(this.message);
 
   @override
