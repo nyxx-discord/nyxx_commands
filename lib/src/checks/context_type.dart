@@ -42,7 +42,7 @@ class MessageCommandCheck extends Check {
 /// - [InteractionCommandCheck], for checking that a command was invoked from an interaction.
 class UserCommandCheck extends Check {
   /// Create a new [UserCommandCheck].
-  UserCommandCheck() : super((context) => context is UserCommandCheck);
+  UserCommandCheck() : super((context) => context is UserContext);
 }
 
 /// A check that succeeds if the command being invoked is a [ChatCommand].
