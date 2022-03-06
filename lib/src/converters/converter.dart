@@ -760,6 +760,17 @@ const Converter<IAttachment> attachmentConverter = FallbackConverter(
   type: CommandOptionType.attachment,
 );
 
+/// Apply a converter to an input and return the result.
+///
+/// - [commands] is the instance of [CommandsPlugin] used to retrieve the appropriate converter;
+/// - [context] is the context to parse arguments in;
+/// - [toParse] is the input to the converter;
+/// - [expectedType] is the type that should be returned from this function;
+/// - [converterOverride] can be specified to use that converter instead of querying [commands] for
+///   the converter to use.
+///
+/// You might also be interested in:
+/// - [ICommand.invoke], which parses multiple arguments and executes a command.
 Future<dynamic> parse(
   CommandsPlugin commands,
   IChatContext context,
