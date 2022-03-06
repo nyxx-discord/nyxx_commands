@@ -17,6 +17,13 @@ import 'package:nyxx_commands/src/converters/converter.dart';
 import 'package:nyxx_commands/src/util/view.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
+/// Convert a camelCase string to kebab-case.
+///
+/// This is used to convert camelCase Dart identifiers to kebab-case Discord Slash Command argument
+/// names.
+///
+/// You might also be interested in:
+/// - [Name], for setting a custom name to use for slash command argument names.
 String convertToKebabCase(String camelCase) {
   Iterable<String> split = camelCase.split('');
   String res = '';
