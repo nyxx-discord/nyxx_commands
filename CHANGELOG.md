@@ -1,4 +1,4 @@
-## 4.0.0
+## 4.0.0-dev.2.0
 __Breaking changes__:
 - Upgrade to `nyxx_interactions` 4.0.0
 
