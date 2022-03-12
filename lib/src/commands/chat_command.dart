@@ -15,22 +15,47 @@
 import 'dart:async';
 import 'dart:mirrors';
 
-import 'package:nyxx_commands/nyxx_commands.dart';
-import 'package:nyxx_commands/src/commands.dart';
-import 'package:nyxx_commands/src/util/mixins.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
-/// An enum used to specify how a [ChatCommand] can be executed.
+import '../checks/checks.dart';
+import '../commands.dart';
+import '../context/chat_context.dart';
+import '../context/context.dart';
+import '../converters/converter.dart';
+import '../errors.dart';
+import '../util/mixins.dart';
+import '../util/util.dart';
+import '../util/view.dart';
+import 'interfaces.dart';
+import 'options.dart';
+
+/// Indicates the ways a [ChatCommand] can be executed.
+///
+/// For example, a command with type [slashOnly] cannot be executed with a text message:
+/// ```dart
+/// ChatCommand test = ChatCommand.slashOnly(
+///   'test',
+///   'A test command',
+///   (IChatContext context) async {
+///     context.respond(MessageBuilder.content('Hi there!'));
+///   },
+/// );
+///
+/// commands.addCommand(test);
+/// ```
+/// ![](https://user-images.githubusercontent.com/54505189/154319432-0120f3eb-ce71-44a2-8587-38b090c1a307.png)
 enum CommandType {
-  /// Only allow execution by message.
+  /// Indicates that a [ChatCommand] should only be executable through text messages (sent with the
+  /// bot prefix).
   ///
-  /// [textOnly] commands will not be registered as a slash command to Discord.
+  /// If this is the type of a [ChatCommand], then that command will not be registered as a Slash
+  /// Command in the Discord API.
   textOnly,
 
-  /// Only allow execution by slash command.
+  /// Indicates that a [ChatCommand] should only be executable through Slash Commands.
   slashOnly,
 
-  /// Do not restrict execution.
+  /// Indicates that a [ChatCommand] can be executed by both Slash Commands and text messages.
   all,
 }
 
@@ -155,6 +180,14 @@ mixin ChatGroupMixin implements IChatCommandComponent {
   }
 }
 
+/// Represents a [Subcommand Group](https://discord.com/developers/docs/interactions/application-commands#subcommands-and-subcommand-groups).
+///
+/// [ChatGroup]s can be used to organise chat commands into groups of similar commands to avoid
+/// filling up a user's UI. Instead, commands are organised into a tree, with only the root of the
+/// tree being shown to the user until they select it.
+///
+/// You might also be interested in:
+/// - [ChatCommand], for creating commands that can be added to groups.
 class ChatGroup
     with
         ChatGroupMixin,
@@ -174,6 +207,7 @@ class ChatGroup
   @override
   final CommandOptions options;
 
+  /// Create a new [ChatGroup].
   ChatGroup(
     this.name,
     this.description, {
@@ -196,15 +230,32 @@ class ChatGroup
   }
 }
 
-/// A [ChatCommand] is a function bound to a name and arguments.
+/// Represents a [Discord Slash Command](https://discord.com/developers/docs/interactions/application-commands#slash-commands).
 ///
-/// [ChatCommand]s can be text-only (meaning they can only be executed through sending a message with
-/// the bot's prefix) or slash-only (meaning they can only be executed through the means of a slash
-/// command). They can also be both, meaning they can be used both as a text and as a slash command.
+/// [ChatCommand]s are commands with arguments. They can be invoked in two ways: through an
+/// interaction or through a text message sent by a user. In both cases, the arguments received from
+/// the Discord API are parsed using [Converter]s to the type that your command expects.
 ///
-/// Note that text-only commands can be [Group]s containing slash commands and vice versa, but slash
-/// commands cannot be groups containing other slash commands due to
-/// [limitations on Discord](https://discord.com/developers/docs/interactions/application-commands#subcommands-and-subcommand-groups).
+/// For example, a simple command that responds with "Hi there!":
+/// ```dart
+/// ChatCommand test = ChatCommand(
+///   'test',
+///   'A test command',
+///   (IChatContext context) async {
+///     context.respond(MessageBuilder.content('Hi there!'));
+///   },
+/// );
+///
+/// commands.addCommand(test);
+/// ```
+///
+/// ![](https://user-images.githubusercontent.com/54505189/154318791-11b12542-fe70-4b17-8df8-b578ce6e0a77.png)
+///
+/// You might also be interested in:
+/// - [CommandsPlugin.addCommand], for adding [ChatCommand]s to your bot;
+/// - [ChatGroup], for creating command groups;
+/// - [MessageCommand], for creating Message Commands;
+/// - [UserCommand], for creating User Commands.
 class ChatCommand
     with
         ChatGroupMixin,
@@ -221,22 +272,46 @@ class ChatCommand
   @override
   final String description;
 
-  /// The type of the command.
+  /// The type of this [ChatCommand].
   ///
-  /// A command's type indicates how it can be invoked; text-only commands can only be executed by
-  /// sending a text message on Discord and slash commands can only be invoked by executing a slash
-  /// command on Discord.
+  /// The type of a [ChatCommand] influences how it can be invoked and can be used to make chat
+  /// commands executable only through Slash Commands, or only through text messages.
   ///
-  /// Note that a command's type does not influence what type of children a command can have.
+  /// You might also be interested in:
+  /// - [ChatCommand.slashOnly], for creating [ChatCommand]s with type [CommandType.slashOnly];
+  /// - [ChatCommand.textOnly], for creating [ChatCommand]s with type [CommandType.textOnly].
   final CommandType type;
 
+  /// The function called to execute this command.
+  ///
+  /// The argument types for the function are dynamically loaded, so you should specify the types of
+  /// the arguments in your function declaration.
+  ///
+  /// Additionally, the names of the arguments are converted from snakeCase Dart identifiers to
+  /// kebab-case Discord argument names. If the generated name does not suit you, use the @[Name]
+  /// decorator to manually set a name.
+  ///
+  /// If any exception occurs while calling this function, it will be caught and added to
+  /// [CommandsPlugin.onCommandError], wrapped in an [UncaughtException].
+  ///
+  /// You might also be interested in:
+  /// - [Name], for explicitely setting an argument's name;
+  /// - [Description], for adding descriptions to arguments;
+  /// - [Choices], for specifiying the choices for an argument;
+  /// - [UseConverter], for overriding the [Converter] used for a specific argument.
   @override
   final Function execute;
 
-  /// Similar to [checks] but only applies to this command.
+  /// A list of checks that apply only to this command.
   ///
-  /// Normally checks are inherited from parent to child, but [singleChecks] will only ever apply to
-  /// this command and not its children.
+  /// Since chat commands can double as a command group when using text only commands, developers
+  /// might want to add checks that only apply to a command and not to its children. [singleChecks]
+  /// is how to accomplish this, as they are applied to this command but not inherited by its
+  /// children.
+  ///
+  /// You might also be interested in:
+  /// - [singleCheck], for adding single checks to chat commands;
+  /// - [checks] and [check], the equivalent for inherited checks.
   final List<AbstractCheck> singleChecks = [];
 
   @override
@@ -252,8 +327,11 @@ class ChatCommand
   final Map<String, Choices> _mappedChoices = {};
   final Map<String, UseConverter> _mappedConverterOverrides = {};
 
-  /// Create a new [ChatCommand]. This must then be registered with [CommandsPlugin.addCommand] or
-  /// [GroupMixin.addCommand] before it can be used.
+  /// Create a new [ChatCommand].
+  ///
+  /// You might also be interested in:
+  /// - [ChatCommand.slashOnly], for creating [ChatCommand]s with type [CommandType.slashOnly];
+  /// - [ChatCommand.textOnly], for creating [ChatCommand]s with type [CommandType.textOnly].
   ChatCommand(
     String name,
     String description,
@@ -277,8 +355,7 @@ class ChatCommand
           options: options,
         );
 
-  /// Create a new text-only [ChatCommand]. This must then be registered with
-  /// [CommandsPlugin.addCommand] or [GroupMixin.addCommand] before it can be used.
+  /// Create a new [ChatCommand] with type [CommandType.textOnly].
   ChatCommand.textOnly(
     String name,
     String description,
@@ -301,8 +378,7 @@ class ChatCommand
           options: options,
         );
 
-  /// Create a new slash-only [ChatCommand]. This must then be registered with
-  /// [CommandsPlugin.addCommand] or [GroupMixin.addCommand] before it can be used.
+  /// Create a new [ChatCommand] with type [CommandType.slashOnly].
   ChatCommand.slashOnly(
     String name,
     String description,
@@ -480,18 +556,6 @@ class ChatCommand
     }
   }
 
-  /// Parse arguments contained in the context and call [execute].
-  ///
-  /// If not enough arguments are provided, [NotEnoughArgumentsException] is thrown. Remaining
-  /// data after all optional and non-optional arguments have been parsed is discarded.
-  /// If an exception is thrown from [execute], it is caught and rethrown as an [UncaughtException].
-  ///
-  /// The arguments, if the context is a [MessageChatContext], will be parsed using the relevant
-  /// converter on the [commands]. If no converter is found, the command execution will fail.
-  ///
-  /// If the context is an [IInteractionContext], the arguments will either be parsed from their raw
-  /// string representations or will not be parsed at all if the type received from the API is
-  /// correct.
   @override
   Future<void> invoke(IContext context) async {
     if (context is! IChatContext) {
@@ -627,7 +691,10 @@ class ChatCommand
     super.addCommand(command);
   }
 
-  /// Add a check to this commands [singleChecks].
+  /// Add a check to this command that does not apply to this commands children.
+  ///
+  /// You might also be interested in:
+  /// - [check], the equivalent method for inherited checks.
   void singleCheck(AbstractCheck check) {
     for (final preCallHook in check.preCallHooks) {
       onPreCall.listen(preCallHook);

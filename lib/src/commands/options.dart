@@ -12,29 +12,57 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-/// Represents a set of options that can be applied globally, per-group or per-command.
+/// Options that modify how a command behaves.
+///
+/// You might also be interested in:
+/// - [IOptions], the interface for entities that support options;
+/// - [CommandsOptions], the settings for the entire nyxx_commands package.
 class CommandOptions {
-  /// Whether to automatically acknowledge slash command interactions if they are not acknowledged
-  /// or responded to within 2s of command invocation.
+  /// Whether to automatically acknowledge interactions before they expire.
   ///
-  /// If you set this to false, you *must* respond to the interaction yourself, or the command will fail.
+  /// Sometimes, commands can take longer to complete than expected. However, Discord interactions
+  /// have a 3 second timeout after receiving them, so nyxx_commands provides an automatic way to
+  /// acknowledge these interactions to extend that limit to 15 minutes if your command does not
+  /// respond fast enough.
+  ///
+  /// Setting this to false means that you must acknowledge the interaction yourself.
+  ///
+  /// You might also be interested in:
+  /// - [IInteractionContext.acknowledge], for manually acknowledging interactions.
   final bool? autoAcknowledgeInteractions;
 
-  /// Whether to process commands coming from bot users on Discord.
+  /// Whether to accept messages sent by bot accounts as possible commands.
+  ///
+  /// If this is set to false, then other bot users will not be able to execute commands from this
+  /// bot. If set to true, messages sent by other bots will be parsed anc checked for commands like
+  /// other messages sent by actual users.
+  ///
+  /// You might also be interested in:
+  /// - [acceptSelfCommands], for this same setting but for the current client.
   final bool? acceptBotCommands;
 
-  /// Whether to process commands coming from the bot's own user.
+  /// Whether to accept messages sent by the bot itself as possible commands.
   ///
-  /// Setting this to `true` might result in infinite loops.
-  /// [acceptBotCommands] must also be set to true for this to have any effect.
+  /// [acceptBotCommands] must also be set to `true` for this setting to allow the current bot to
+  /// execute its own commands. If this is set to false, messages sent by the bot itself are not
+  /// checked for commands. If it is true, messages sent by the bot itself will be checked for
+  /// commands like other messages sent by actual users.
+  ///
+  /// Care should be taken when setting this to `true` as it can potentially result in infinite
+  /// command loops.
   final bool? acceptSelfCommands;
 
-  /// Whether to set the EPHEMERAL flag in the original response to interaction events.
+  /// Whether to hide the response from other users when the command is invoked from an interaction.
   ///
-  /// This only has an effect is [autoAcknowledgeInteractions] is set to `true`.
+  /// This sets the EPHEMERAL flag on interactions responses when [IContext.respond] is used.
+  ///
+  /// You might also be interested in:
+  /// - [IInteractionContext.respond], which can override this setting by setting the `hidden` flag.
   final bool? hideOriginalResponse;
 
-  /// Create a new set of command options.
+  /// Create a set of command options.
+  ///
+  /// Options set to `null` will be inherited from the parent.
   const CommandOptions({
     this.autoAcknowledgeInteractions,
     this.acceptBotCommands,

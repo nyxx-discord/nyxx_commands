@@ -12,11 +12,11 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-import 'package:nyxx_commands/src/checks/checks.dart';
-import 'package:nyxx_commands/src/commands/interfaces.dart';
-import 'package:nyxx_commands/src/commands/options.dart';
-import 'package:nyxx_commands/src/context/context.dart';
-import 'package:nyxx_commands/src/errors.dart';
+import '../checks/checks.dart';
+import '../commands/interfaces.dart';
+import '../commands/options.dart';
+import '../context/context.dart';
+import '../errors.dart';
 
 mixin ParentMixin<T extends IContext> implements ICommandRegisterable<T> {
   ICommandGroup<IContext>? _parent;

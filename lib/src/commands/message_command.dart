@@ -14,10 +14,40 @@
 
 import 'dart:async';
 
-import 'package:nyxx_commands/nyxx_commands.dart';
-import 'package:nyxx_commands/src/util/mixins.dart';
+import '../checks/checks.dart';
+import '../context/context.dart';
+import '../context/message_context.dart';
+import '../errors.dart';
+import '../util/mixins.dart';
+import 'interfaces.dart';
+import 'options.dart';
 
-/// Represents a Message Application Command.
+/// Represents a [Discord Message Command](https://discord.com/developers/docs/interactions/application-commands#message-commands).
+///
+/// [MessageCommand]s are commands that can be invoked on a target message from the Discord client.
+///
+/// For example, a simple command that replies to the target message:
+/// ```dart
+/// MessageCommand test = MessageCommand(
+///   'Test',
+///   (MessageContext context) {
+///     context.respond(
+///       MessageBuilder()
+///         ..content = 'This was the target message!'
+///         ..replyBuilder = ReplyBuilder.fromMessage(context.targetMessage),
+///     );
+///   },
+/// );
+///
+/// commands.addCommand(test);
+/// ```
+///
+/// ![](https://user-images.githubusercontent.com/54505189/154338942-233ce3b0-5ccc-46f5-bf68-4e6dbaf8cdcd.png)
+///
+/// You might also be interested in:
+/// - [CommandsPlugin.addCommand], for adding commands to your bot;;
+/// - [ChatCommand], for creating chat commands;
+/// - [UserCommand], for creating user commands.
 class MessageCommand
     with ParentMixin<MessageContext>, CheckMixin<MessageContext>, OptionsMixin<MessageContext>
     implements ICommand<MessageContext> {
@@ -39,6 +69,7 @@ class MessageCommand
   @override
   final CommandOptions options;
 
+  /// Create a new [MessageCommand].
   MessageCommand(
     this.name,
     this.execute, {

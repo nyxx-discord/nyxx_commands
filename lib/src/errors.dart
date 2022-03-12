@@ -12,57 +12,69 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-import 'package:nyxx_commands/src/context/context.dart';
-
 import 'checks/checks.dart';
 import 'context/chat_context.dart';
+import 'context/context.dart';
 import 'util/view.dart';
 
-/// Base class for exceptions thrown by this library.
+/// The base class for exceptions thrown by nyxx_commands.
 ///
-/// All exceptions thrown by this library extend this class, apart from [ParsingException].
+/// All exceptions thrown by the library extend or implement this class, so you may use this as a
+/// catch-all type. Exceptions thrown by nyxx_commands are often caught internally by the library
+/// and added to [CommandsPlugin.onCommandError], so you need not catch exceptions yourself.
+///
+/// You might also be interested in:
+/// - [CommandsError], the base class for all errors thrown by nyxx_commands;
+/// - [CommandsPlugin.onCommandError], for handling exceptions thrown in commands.
 class CommandsException implements Exception {
-  /// A message attached to this exception.
+  /// The message for this exception.
+  ///
+  /// This might contain sensitive information, so it is not recommended to send this string to your
+  /// users. Checking the type of the error and reacting accordingly is recommended.
   String message;
 
-  /// Create a new [CommandsException] with a specific message.
+  /// Create a new [CommandsException].
   CommandsException(this.message);
 
   @override
   String toString() => 'Command Exception: $message';
 }
 
-/// Base class for exceptions thrown during command invocation.
+/// An exception that occurred during the execution of a command.
 class CommandInvocationException extends CommandsException {
   /// The context in which the exception occurred.
   final IContext context;
 
-  /// Create a new [CommandInvocationException] with a specific message and context.
+  /// Create a new [CommandInvocationException].
   CommandInvocationException(String message, this.context) : super(message);
 }
 
-/// Exception thrown when an uncaught [Exception] is thrown by a command callback.
+/// A wrapper class for an exception that was thrown inside the [ICommand.execute] callback.
 ///
-/// [Error]s and thrown [Object]s other than [Exception]s are not caught.
+/// This generally indicates incorrect or incomplete code inside a command callback, and the
+/// developer should try to identify and fix the issue.
+///
+/// If you are throwing exceptions to indicate command failure, consider using [Check]s instead.
 class UncaughtException extends CommandInvocationException {
-  /// The thrown exception.
+  /// The exception that occurred.
   final Exception exception;
 
-  /// Create a new [UncaughtException] with a specific exception and context.
+  /// Create a new [UncaughtException].
   UncaughtException(this.exception, IContext context) : super(exception.toString(), context);
 }
 
-/// Base class for exceptions thrown during argument parsing.
+/// An exception that occurred due to an invalid input from the user.
 ///
-/// A raw [BadInputException] is thrown when a [Converter] fails to parse an argument.
+/// This generally indicates that nyxx_commands was unable to parse the user's input.
 class BadInputException extends CommandInvocationException {
-  /// Create a new [BadInputException] with a specific message and context.
+  /// Create a new [BadInputException].
   BadInputException(String message, IChatContext context) : super(message, context);
 }
 
-/// Exception thrown when a command is invoked without the minimum amount of arguments required.
+/// An exception thrown when the end of userr input is encountered before all the required arguments
+/// of a [ChatCommand] have been parsed.
 class NotEnoughArgumentsException extends BadInputException {
-  /// Create a new [NotEnoughArgumentsException] with a specific context.
+  /// Create a new [NotEnoughArgumentsException].
   NotEnoughArgumentsException(MessageChatContext context)
       : super(
           'Not enough arguments for command "${context.command.fullName}": '
@@ -71,63 +83,72 @@ class NotEnoughArgumentsException extends BadInputException {
         );
 }
 
-/// Exception thrown when an [AbstractCheck] fails.
+/// An exception thrown when an [AbstractCheck] fails.
 class CheckFailedException extends CommandInvocationException {
-  /// The [AbstractCheck] that failed.
+  /// The check that failed.
   final AbstractCheck failed;
 
-  /// Create a new [CheckFailedException] with a specific check and context.
+  /// Create a new [CheckFailedException].
   CheckFailedException(this.failed, IContext context)
       : super('Check "${failed.name}" failed', context);
 }
 
-/// Exception thrown when no converter is found for a command argument.
+/// An exception thrown when no [Converter] was found or created for a type.
+///
+/// You might also be interested in:
+/// - [CommandsPlugin.addConverter], for adding your own [Converter]s to your bot.
 class NoConverterException extends CommandInvocationException {
-  /// The type of the argument.
+  /// The type that the converter was requested for.
   final Type expectedType;
 
-  /// Create a new [NoConverterException] with a specific expected type and context.
+  /// Create a new [NoConverterException].
   NoConverterException(this.expectedType, IChatContext context)
       : super('No converter found for type "$expectedType"', context);
 }
 
-/// Exception thrown when an unrecognised command is received.
+/// An exception thrown when a message command matching [CommandsPlugin.prefix] is found, but no
+/// command could be resolved from the rest of the message.
+///
+/// This exception can safely be ignored.
 class CommandNotFoundException extends CommandsException {
-  /// The received input.
+  /// The text input that was received.
   final StringView input;
 
-  /// Create a new [CommandNotFoundException] with a specific input.
+  /// Create a new [CommandNotFoundException].
   CommandNotFoundException(this.input) : super('Command "${input.buffer}" not found');
 }
 
-/// Exception thrown by [StringView] when an invalid input is found.
+/// An exception that occurred while a [StringView] was parsing input.
 ///
-/// If this is thrown inside a [Converter], it will be wrapped as a [BadInputException].
+/// When parsing user input, this will automatically be caught and wrapped in a [BadInputException].
 class ParsingException implements Exception {
-  /// A message attached to this exception.
+  /// The error message.
   final String message;
 
-  /// Create a new [ParsingException] with a specific message.
+  /// Create a new [ParsingException].
   ParsingException(this.message);
 
   @override
   String toString() => message;
 }
 
-/// Base class for all errors thrown by this library.
+/// The base class for all errors thrown by nyxx_commands.
+///
+/// You might also be interested in:
+/// - [CommandsException], the base class for all exceptions thrown by nyxx_commands.
 class CommandsError extends Error {
-  /// A message attached to this error.
+  /// The message for this error.
   final String message;
 
-  /// Create a new [CommandsError] with a specific message.
+  /// Create a new [CommandsError].
   CommandsError(this.message);
 
   @override
   String toString() => message;
 }
 
-/// Error thrown when an invalid command or command structure is registered.
+/// An error that occurred during registration of a command.
 class CommandRegistrationError extends CommandsError {
-  /// Create a new [CommandRegistrationError] with a specific message.
+  /// Create a new [CommandRegistrationError].
   CommandRegistrationError(String message) : super(message);
 }

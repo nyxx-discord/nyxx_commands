@@ -15,77 +15,191 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/nyxx_commands.dart';
-import 'package:nyxx_commands/src/commands.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
-/// Represents a check executed on a [IChecked].
+import '../commands.dart';
+import '../context/context.dart';
+
+/// Represents a check on a command.
 ///
-/// All checks must succeed in order for a [ICommand] to be executed. Each check is executed and if
-/// any return `false`, command execution is cancelled and a [CheckFailedException] is added to
-/// [CommandsPlugin.onCommandError].
+/// A *check* is a function that is executed when a command is about to be invoked. A check can
+/// either fail or succeed; if any of a command's checks fail then the execution of that command is
+/// cancelled.
+///
+/// You might also be interested in:
+/// - [Check], which allows you to construct checks with a simple callback;
+/// - [IChecked.check], which allows you to add checks to a command or command group;
+/// - [CheckFailedException], the exception that is thrown and added to
+///   [CommandsPlugin.onCommandError] when a check fails.
 abstract class AbstractCheck {
-  /// The name of the check.
+  /// The name of this check.
+  ///
+  /// The name of a check has no effect. Instead, it can be used by the developer to identify the
+  /// check that failed when a [CheckFailedException] is thrown.
   final String name;
 
-  /// Create a new [AbstractCheck] with a given name.
+  /// Create a new [AbstractCheck].
+  ///
+  /// Most developers will not need to extend [AbstractCheck] themselves. Instead, [Check] is more
+  /// appropriate for checks that do not need to maintain state.
   AbstractCheck(this.name);
 
-  /// The method called to validate this check.
+  /// Validate [context] against this check.
   ///
-  /// Should not change the check's internal state.
+  /// If `true` is returned from this method, this check is considered to be *successful*, in which
+  /// case the next check on the command is checked. Else, if `false` is returned, this check is
+  /// considered to have *failed*, and the command will not be executed.
+  ///
+  /// This check's state should not be changed in [check]; instead, developers should use
+  /// [preCallHooks] and [postCallHooks] to update the check's state.
   FutureOr<bool> check(IContext context);
 
-  /// An Iterable of permission overrides that will be used on slash commands using this check.
+  /// The set of [Discord Slash Command Permissions](https://discord.com/developers/docs/interactions/application-commands#permissions)
+  /// this check represents.
+  ///
+  /// Any [ICommand] (excluding text-only [ChatCommand]s) will have the permissions from all the
+  /// checks on that command applied through the Discord Slash Command API. This can allow users to
+  /// see whether a command is executable from within their Discord client, instead of nyxx_commands
+  /// rejecting the command once received.
+  ///
+  /// A [CommandPermissionBuilderAbstract] with a target ID of `0` will be considered to be the
+  /// default permission for this check.
+  ///
+  /// You might also be interested in:
+  /// - [CommandPermissionBuilderAbstract.role], for creating slash command permissions that apply
+  ///   to a given role;
+  /// - [CommandPermissionBuilderAbstract.user], for creating slash command permissions that apply
+  ///   to a given user.
   Future<Iterable<CommandPermissionBuilderAbstract>> get permissions;
 
-  /// An Iterable of pre-call hooks that will be called when a command this check is on emits to
-  /// [ChatCommand.onPreCall].
+  /// An iterable of callbacks executed before a command is executed but after all the checks for
+  /// that command have succeeded.
   ///
-  /// Should be used by checks that have internal state to update that state, instead of updating it
-  /// in [check].
+  /// These callbacks should be used to update this check's state.
+  ///
+  /// You might also be interested in:
+  /// - [ICallHooked.onPreCall], for registering arbitrary callbacks to be executed before a command
+  ///   is executed but after all checks have succeeded;
+  /// - [CommandsPlugin.onCommandError], where a [CheckFailedException] is added when a check for a
+  ///   command fails.
   Iterable<void Function(IContext)> get preCallHooks;
 
-  /// An Iterable of post-call hooks that will be called when a command this check is on emits to
-  /// [ChatCommand.onPostCall].
+  /// An iterable of callbacks executed after a command is executed.
   ///
-  /// Should be used by checks that have internal state to update that state, instead of updating it
-  /// in [check].
+  /// These callbacks should be used to update this check's state.
+  ///
+  /// You might also be interested in:
+  /// - [ICallHooked.onPostCall], for registering arbitrary callbacks to be executed after a command
+  ///   is executed but after all checks have succeeded.
   Iterable<void Function(IContext)> get postCallHooks;
 
   @override
   String toString() => 'Check[name=$name]';
 }
 
-/// Represents a simple stateless check.
+/// A simple, stateless check for commands.
+///
+/// See [AbstractCheck] for a description of what a *check* is.
+///
+/// A [Check] is a simple check with no state, which validates [IContext]s with a single callback.
+/// The check succeeds if the callback returns `true` and fails if the callback returns `false`.
+///
+/// For example, to only allow users with "evrything" in their name to execute a command:
+/// ```dart
+/// Check check = Check(
+///   (context) => context.user.username.contains('evrything'),
+/// );
+///
+/// commands.addCommand(ChatCommand(
+///   'test',
+///   'A test command',
+///   (IChatContext context) => context.respond(MessageBuilder.content('Hi there!')),
+///   checks: [check],
+/// ));
+///
+/// commands.onCommandError.listen((error) {
+///   if (error is CheckFailedException) {
+///     error.context.respond(MessageBuilder.content("Sorry, you can't use that command!"));
+///   }
+/// });
+/// ```
+///
+/// ![](https://user-images.githubusercontent.com/54505189/153870085-6d27e4d2-1392-420e-9634-aa75648b93f1.png)
+///
+/// Since some checks are so common, nyxx_commands provides a set of in-built checks that also
+/// integrate with the [Discord Slash Command Permissions](https://discord.com/developers/docs/interactions/application-commands#permissions)
+/// API:
+/// - [GuildCheck], for checking if a command was invoked in a specific guild;
+/// - [RoleCheck], for checking if a command was invoked by a member with a specific role;
+/// - [UserCheck], for checking if a command was invoked by a specific user.
+///
+/// You might also be interested in:
+/// - [Check.any], [Check.deny] and [Check.all], for modifying the behaviour of checks;
+/// - [AbstractCheck], which allows developers to create checks with state.
 class Check extends AbstractCheck {
   final FutureOr<bool> Function(IContext) _check;
 
-  /// Creates a new [Check].
+  /// Create a new [Check].
   ///
-  /// [check] should return a bool indicating whether this check succeeded.
-  /// It should not throw.
+  /// [_check] should be a callback that returns `true` or `false` to indicate check success or
+  /// failure respectively. [_check] should not throw to indicate failure.
+  ///
+  /// [name] can optionally be provided and will be used in error messages to identify this check.
   Check(this._check, [String name = 'Check']) : super(name);
 
-  /// Creates a new [AbstractCheck] that succeeds if at least one of the supplied checks succeed.
+  /// Creates a check that succeeds if any of [checks] succeeds.
+  ///
+  /// When this check is queried, each of [checks] is queried and if any are successful then this
+  /// check is successful. If all of [checks] fail, then this check is failed.
+  ///
+  /// Sometimes, developers might want to apply a check to all commands of a certain type. Instead
+  /// of adding a check on each command of that type, nyxx_commands provides checks that will
+  /// succeed when the context being checked is of a certain type:
+  /// - [InteractionCommandCheck], to check if the context originated from an interaction;
+  /// - [ChatCommandCheck], to check if the command being invoked is a chat command;
+  /// - [MessageChatCommandCheck], to check if the context originated from a text message (only
+  ///   applies to chat commands);
+  /// - [InteractionChatCommandCheck], to check if the command being executed is a chat command and
+  ///   that the context originated from an interaction;
+  /// - [MessageCommandCheck], to check if the command being executed is a Message Command;
+  /// - [UserCommandCheck], to check if the command being executed is a User Command.
+  ///
+  /// For example, to only apply a check only to commands invoked from a message command:
+  ///
+  /// ```dart
+  /// commands.check(Check.any([
+  ///   InteractionCommandCheck(),
+  ///   Check((context) => context.user.username.contains('evrything')),
+  /// ]));
+  ///
+  /// commands.addCommand(ChatCommand(
+  ///   'test',
+  ///   'A test command',
+  ///   (IChatContext context) => context.respond(MessageBuilder.content('Hi there!')),
+  /// ));
+  ///
+  /// commands.onCommandError.listen((error) {
+  ///   if (error is CheckFailedException) {
+  ///     error.context.respond(MessageBuilder.content("Sorry, you can't use that command!"));
+  ///   }
+  /// });
+  /// ```
+  ///
+  /// ![](https://user-images.githubusercontent.com/54505189/153872224-b8a5f752-3ced-44ab-95f7-e6bb8058ba79.png)
   static AbstractCheck any(Iterable<AbstractCheck> checks, [String? name]) =>
       _AnyCheck(checks, name);
 
-  /// Creates a new [AbstractCheck] that inverts the result of the supplied check. Use this to allow use of
-  /// commands by default but deny it for certain users.
+  /// Creates a check that succeeds if [check] fails.
   ///
-  /// Passing custom checks directly implementing [AbstractCheck] should be done with care, as pre-
-  /// and post- call hooks will be called if the internal check *fails*, and uncalled if the
-  /// internal check *succeeds*.
+  /// Note that [AbstractCheck.preCallHooks] and [AbstractCheck.postCallHooks] will therefore be executed if [check]
+  /// *fails*, and not when [check] succeeds. Therefore, developers should take care that [check]
+  /// does not assume it succeeded in its call hooks.
   static AbstractCheck deny(AbstractCheck check, [String? name]) => _DenyCheck(check, name);
 
-  /// Creates a new [AbstractCheck] that succeeds if all of the supplied checks succeeds, and fails
-  /// otherwise.
+  /// Creates a check that succeeds if all of [checks] succeed.
   ///
-  /// This effectively functions the same as [GroupMixin.checks] and [ChatCommand.singleChecks], but can
-  /// be used to group common patterns of checks together.
-  ///
-  /// Stateful checks in [checks] will share their state for all uses of this check group.
+  /// This can be used to group checks that are commonly used together into a single, reusable
+  /// check.
   static AbstractCheck all(Iterable<AbstractCheck> checks, [String? name]) =>
       _GroupCheck(checks, name);
 
@@ -245,19 +359,25 @@ class _GroupCheck extends Check {
       checks.map((e) => e.postCallHooks).expand((_) => _);
 }
 
-/// A [Check] thats checks for a specific role or roles.
+/// A check that checks that the user that executes a command has a specific role.
 ///
-/// Integrates with Discord slash command permissions:
-/// - Denies use by default
-/// - Allows use for the specified role(s)
+/// This check integrates with the [Discord Slash Command Permissions](https://discord.com/developers/docs/interactions/application-commands#permissions)
+/// API, so users that cannot use a command because of this check will have that command appear
+/// grayed out in their Discord client.
 class RoleCheck extends Check {
-  /// The roles this check allows.
+  /// The IDs of the roles this check allows.
   Iterable<Snowflake> roleIds;
 
-  /// Create a new Role Check based on a role.
+  /// Create a new [RoleCheck] that succeeds if the user that created the context has [role].
+  ///
+  /// You might also be interested in:
+  /// - [RoleCheck.id], for creating this same check without an instance of [IRole];
+  /// - [RoleCheck.any], for checking that the user that created a context has one of a set or
+  ///   roles.
   RoleCheck(IRole role, [String? name]) : this.id(role.id, name);
 
-  /// Create a new Role Check based on a role id.
+  /// Create a new [RoleCheck] that succeeds if the user that created the context has a role with
+  /// the id [id].
   RoleCheck.id(Snowflake id, [String? name])
       : roleIds = [id],
         super(
@@ -265,11 +385,15 @@ class RoleCheck extends Check {
           name ?? 'Role Check on $id',
         );
 
-  /// Create a new Role Check based on multiple roles.
+  /// Create a new [RoleCheck] that succeeds if the user that created the context has any of [roles].
+  ///
+  /// You might also be interested in:
+  /// - [RoleCheck.anyId], for creating this same check without instances of [IRole].
   RoleCheck.any(Iterable<IRole> roles, [String? name])
       : this.anyId(roles.map((role) => role.id), name);
 
-  /// Create a new Role Check based on multiple role ids.
+  /// Create a new [RoleCheck] that succeeds if the user that created the context has any role for
+  /// which the role's id is in [roles].
   RoleCheck.anyId(Iterable<Snowflake> roles, [String? name])
       : roleIds = roles,
         super(
@@ -284,28 +408,36 @@ class RoleCheck extends Check {
       ]);
 }
 
-/// A [Check] that checks for a specific user or users.
+/// A check that checks that a command was executed by a specific user.
 ///
-/// Integrates with Discord slash command permissions:
-/// - Denies use by default
-/// - Allows use for the specified user(s)
+/// This check integrates with the [Discord Slash Command Permissions](https://discord.com/developers/docs/interactions/application-commands#permissions)
+/// API, so users that cannot use a command because of this check will have that command appear
+/// grayed out in their Discord client.
 class UserCheck extends Check {
-  /// The users this check allows.
+  /// The IDs of the users this check allows.
   Iterable<Snowflake> userIds;
 
-  /// Create a User Check based on a user.
+  /// Create a new [UserCheck] that succeeds if the context was created by [user].
+  ///
+  /// You might also be interested in:
+  /// - [UserCheck.id], for creating this same check without an instance of [IUser],
+  /// - [UserCheck.any], for checking that a context was created by a user in a set or users.
   UserCheck(IUser user, [String? name]) : this.id(user.id, name);
 
-  /// Create a User Check based on a user id.
+  /// Create a new [UserCheck] that succeeds if the ID of the user that created the context is [id].
   UserCheck.id(Snowflake id, [String? name])
       : userIds = [id],
         super((context) => context.user.id == id, name ?? 'User Check on $id');
 
-  /// Create a User Check based on multiple users.
+  /// Create a new [UserCheck] that succeeds if the context was created by any one of [users].
+  ///
+  /// You might also be interested in:
+  /// - [UserCheck.anyId], for creating this same check without instance of [IUser].
   UserCheck.any(Iterable<IUser> users, [String? name])
       : this.anyId(users.map((user) => user.id), name);
 
-  /// Create a User Check based on multiple user ids.
+  /// Create a new [UserCheck] that succeeds if the ID of the user that created the context is in
+  /// [ids].
   UserCheck.anyId(Iterable<Snowflake> ids, [String? name])
       : userIds = ids,
         super(
@@ -320,37 +452,49 @@ class UserCheck extends Check {
       ]);
 }
 
-/// A [Check] that checks for a specific guild.
+/// A check that checks that a command was executed in a particular guild, or in a channel that is
+/// not in a guild.
 ///
-/// This check is treated specially by [CommandsPlugin]:
-/// - There can only be one [GuildCheck] per command
-/// - Commands will be registered as guild commands in the specified guilds. This overrides
-/// [CommandsPlugin.guild]
+/// This check is special as commands with this check will only be registered as slash commands in
+/// the guilds specified by this guild check. For this functionality to work, however, this check
+/// must be a "top-level" check - that is, a check that is not nested within a modifier such as
+/// [Check.any], [Check.deny] or [Check.all].
+///
+/// The value of this check overrides [CommandsPlugin.guild].
+///
+/// You might also be interested in:
+/// - [CommandsPlugin.guild], for globally setting a guild to register slash commands to.
 class GuildCheck extends Check {
-  /// The guilds this check allows.
+  /// The IDs of the guilds that this check allows.
   ///
-  /// `null` indicates that all guilds are allowed.
+  /// If [guildIds] is `[null]`, then any guild is allowed, but not channels outside of guilds/
   Iterable<Snowflake?> guildIds;
 
-  /// Create a Guild Check based on a guild.
+  /// Create a [GuildCheck] that succeeds if the context originated in [guild].
+  ///
+  /// You might also be interested in:
+  /// - [GuildCheck.id], for creating this same check without an instance of [IGuild];
+  /// - [GuildCheck.any], for checking if the context originated in any of a set of guilds.
   GuildCheck(IGuild guild, [String? name]) : this.id(guild.id, name);
 
-  /// Create a Guild Check based on a guild id.
+  /// Create a [GuildCheck] that succeeds if the ID of the guild the context originated in is [id].
   GuildCheck.id(Snowflake id, [String? name])
       : guildIds = [id],
         super((context) => context.guild?.id == id, name ?? 'Guild Check on $id');
 
-  /// Create a Guild Check that allows no guilds.
+  /// Create a [GuildCheck] that succeeds if the context originated outside of a guild (generally,
+  /// in private messages).
   ///
-  /// This means that this command can only be executed as a text command in DMs with the bot.
+  /// You might also be interested in:
+  /// - [GuildCheck.all], for checking that a context originated in a guild.
   GuildCheck.none([String? name])
       : guildIds = [],
         super((context) => context.guild == null, name ?? 'Guild Check on <none>');
 
-  /// Create a Guild Check that allows all guilds, but denies DMs.
+  /// Create a [GuildCheck] that succeeds if the context originated in a guild.
   ///
-  /// This means that this command will be registered globally or, if it is set, the guild specified
-  /// by [CommandsPlugin.guild], and cannot be used in DMs with the bot.
+  /// You might also be interested in:
+  /// - [GuildCheck.none], for checking that a context originated outside a guild.
   GuildCheck.all([String? name])
       : guildIds = [null],
         super(
@@ -358,11 +502,15 @@ class GuildCheck extends Check {
           name ?? 'Guild Check on <any>',
         );
 
-  /// Create a Guild Check based on multiple guilds.
+  /// Create a [GuildCheck] that succeeds if the context originated in any of [guilds].
+  ///
+  /// You might also be interested in:
+  /// - [GuildCheck.anyId], for creating the same check without instances of [IGuild].
   GuildCheck.any(Iterable<IGuild> guilds, [String? name])
       : this.anyId(guilds.map((guild) => guild.id), name);
 
-  /// Create a Guild Check based on multiple guild ids.
+  /// Create a [GuildCheck] that succeeds if the id of the guild the context originated in is in
+  /// [ids].
   GuildCheck.anyId(Iterable<Snowflake> ids, [String? name])
       : guildIds = ids,
         super(

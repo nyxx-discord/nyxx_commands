@@ -13,92 +13,82 @@
 //  limitations under the License.
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/commands.dart';
-import 'package:nyxx_commands/src/commands/interfaces.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
-/// The base context class.
+import '../commands.dart';
+import '../commands/interfaces.dart';
+
+/// A context in which a command was executed.
 ///
-/// A context is an environment in which a command is executed, and provides access to data about
-/// how and where the command was executed.
+/// Contains data about how and where the command was executed, and provides a simple interfaces for
+/// responding to commands.
 abstract class IContext {
-  /// The [CommandsPlugin] that triggered this context's execution.
+  /// The instance of [CommandsPlugin] which created this context.
   CommandsPlugin get commands;
 
-  /// The [IGuild] in which this context was executed, if any.
+  /// The guild in which the command was executed, or `null` if invoked outside of a guild.
   IGuild? get guild;
 
-  /// The channel in which this context was executed.
+  /// The channel in which the command was executed.
   ITextChannel get channel;
 
-  /// The member that triggered this context's execution, if any.
-  ///
-  /// This will notably be null when a command is run in a DM channel.
-  /// If [guild] is not null, this is guaranteed to also be not null.
+  /// The member that executed the command, or `null` if invoked outside of a guild.
   IMember? get member;
 
-  /// The user that triggered this context's execution.
+  /// The user that executed the command.
   IUser get user;
 
-  /// The command triggered in this context.
+  /// The command that was executed.
   ICommand get command;
 
-  /// The [INyxx] client from which this command was dispatched
+  /// The client that emitted the event triggering this command.
   INyxx get client;
 
   /// Send a response to the command.
   ///
-  /// Setting `private` to true will ensure only the user that invoked the command sees the
-  /// response:
-  /// - For message contexts, a DM is sent to the invoking user;
-  /// - For interaction contexts, an ephemeral response is used.
+  /// If [private] is set to `true`, then the response will only be made visible to the user that
+  /// invoked the command. In interactions, this is done by sending an ephemeral response, in text
+  /// commands this is handled by sending a Private Message to the user.
+  ///
+  /// You might also be interested in:
+  /// - [IInteractionContext.acknowledge], for acknowledging interactions without resopnding.
   Future<IMessage> respond(MessageBuilder builder, {bool private = false});
 
-  /// Wait for a user to make a selection on a dropdown menu, and return the event.
+  /// Wait for a user to make a selection from a multiselect menu, then return the result of that
+  /// interaction.
   ///
-  /// If [authorOnly] is set to `true`, only selections made by the author of this context will
-  /// be returned.
+  /// If [authorOnly] is `true`, only events triggered by the author of this context will be
+  /// returned, but other interactions will still be acknowledged.
   ///
-  /// [selectionMenu] must have [MultiselectBuilder.customId] set to differentiate it from other
-  /// dropdown menus.
-  ///
-  /// This method does not send any messages; you must send the message yourself.
-  ///
-  /// If [timeout] is provided, this method will return an error after the specified time, allowing
-  /// you to respond before this context's token expires.
-  ///
-  /// All events triggered by [selectionMenu] are acknowledged until this method returns.
+  /// If [timeout] is set, this method will complete with an error after [timeout].
   Future<IMultiselectInteractionEvent> getSelection(MultiselectBuilder selectionMenu,
       {bool authorOnly = true, Duration? timeout = const Duration(minutes: 12)});
 
-  /// Wait for a user to press a button, and return the event.
+  /// Wait for a user to press on a button, then return the result of that interaction.
   ///
-  /// If [authorOnly] is set to `true`, only button presses made by the author of this context will
-  /// be returned.
+  /// This method specifically listens for interactions on items of [buttons], ignoring other button
+  /// presses.
   ///
-  /// Each element of [buttons] must have [ButtonBuilder.customId] set to differentiate it from
-  /// other buttons.
+  /// If [authorOnly] is `true`, only events triggered by the author of this context will be
+  /// returned, but other interactions will still be acknowledged.
   ///
-  /// This method does not send any messages; you must send the message yourself.
+  /// If [timeout] is set, this method will complete with an error after [timeout].
   ///
-  /// If [timeout] is provided, this method will return an error after the specified time, allowing
-  /// you to respond before this context's token expires.
-  ///
-  /// All events triggered by any of [buttons] are acknowledged until this method returns.
+  /// You might also be interested in:
+  /// - [getConfirmation], a shortcut for getting user confirmation from buttons.
   Future<IButtonInteractionEvent> getButtonPress(Iterable<ButtonBuilder> buttons,
       {bool authorOnly = true, Duration? timeout = const Duration(minutes: 12)});
 
-  /// Send [message] with a confirmation and rejection button, wait for a response, and return the
-  /// response as a boolean.
+  /// Send a message prompting a user for confirmation, then return whether the user accepted the
+  /// choice.
   ///
-  /// If [authorOnly] is set to `true`, only button presses made by the author of this context will
-  /// be returned.
+  /// If [authorOnly] is `true`, only events triggered by the author of this context will be
+  /// returned, but other interactions will still be acknowledged.
   ///
-  /// If [timeout] is provided, this method will return an error after the specified time, allowing
-  /// you to respond before this context's token expires.
+  /// If [timeout] is set, this method will complete with an error after [timeout].
   ///
-  /// All events triggered by any of the buttons sent with the message are acknowledged until this
-  /// method returns.
+  /// [confirmMessage] and [denyMessage] can be set to change the text displayed on the "confirm"
+  /// and "deny" buttons.
   Future<bool> getConfirmation(MessageBuilder message,
       {bool authorOnly = true,
       Duration? timeout = const Duration(minutes: 12),

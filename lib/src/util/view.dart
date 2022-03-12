@@ -35,43 +35,64 @@ const Map<String, String> _quotes = {
   '〈': '〉',
 };
 
-/// A wrapper class to facilitate operations on a [String].
+/// A wrapper class for [String]s which adds a cursor tracking an offset in the string.
 ///
-/// A pointer is used to indicate the index at which this view is currently operating at.
-/// All operations on this view leave an entry in its history, and can be undone using [undo].
+/// A [StringView] allows a [String] to be consumed from start to end, as well as providing
+/// operations that are especially useful for argument parsing.
 class StringView {
-  /// The [String] this view represents.
+  /// The string wrapped by this [StringView].
+  ///
+  /// Generally, developers will not need to access this directly. Using [getQuotedWord], [getWord]
+  /// or [remaining] is preferable.
   final String buffer;
 
-  /// The current index of this views pointer.
+  /// The current index of the cursor in [buffer].
   int index = 0;
 
-  /// A list of indices this view was at before operations, ordered from least recent first to most
-  /// recent last.
+  /// A record of all the previous indices the cursor was at preceding an operation.
   List<int> history = [];
 
-  /// Construct a new [StringView] on [buffer].
+  /// Create a new [StringView] wrapping [buffer].
+  ///
+  /// The cursor will initially be positioned at the start of [buffer].
   StringView(this.buffer);
 
-  /// The size of this views [buffer] length.
+  /// The largest possible index for the cursor.
   int get end => buffer.length;
 
-  /// Whether this view is at EOF, i.e if the current pointer has reached the end of the [buffer].
+  /// Whether the entire [buffer] has been consumed.
   bool get eof => index >= end;
 
-  /// The character at the current [index] in [buffer].
+  /// The character at the current cursor position.
   String get current => buffer[index];
 
   /// Whether the current character is whitespace.
   ///
-  /// Accounts for escaping of spaces.
+  /// In this case, *whitespace* refers to a non-escaped space character (ASCII 32).
+  ///
+  /// You might also be interested in:
+  /// - [isEscaped], for checking if an arbitrary character is escaped;
+  /// - [current], for getting the current character.
   bool get isWhitespace => current == ' ' && !isEscaped(index);
 
-  /// The remaining data in [buffer] after the current [index].
+  /// The part of [buffer] that has yet to be consumed, spanning from [index] to the end of
+  /// [buffer].
+  ///
+  /// Accessing this property does *not* consume the remaining part. If developers intend to consume
+  /// the remaining part of the [buffer], they should access this property and then set [index] to
+  /// [end] to indicate that the entire buffer has been consumed.
+  ///
+  /// You might also be interested in:
+  /// - [current], for getting the current character;
+  /// - [getQuotedWord], for getting the next quoted word in [buffer];
+  /// - [getWord], for getting the next word in [buffer] ignoring quotes.
   String get remaining => buffer.substring(index);
 
-  /// Check if the data after the pointer matches [s], and move the pointer beyond it if it does.
-  /// Retuns true if the string matches [s] and false otherwise.
+  /// Skip over [s] and return `true` if [s] matches the text after the cursor, and return `false`
+  /// otherwise.
+  ///
+  /// You might also be interested in:
+  /// - [skipWhitespace], for skipping arbitrary spans of whitespace.
   bool skipString(String s) {
     if (index + s.length < end && buffer.substring(index, index + s.length) == s) {
       history.add(index);
@@ -81,7 +102,12 @@ class StringView {
     return false;
   }
 
-  /// Moves the pointer past any whitespace until the next non-whitespace character or EOF is found.
+  /// Skip to the next non-whitespace character in [buffer].
+  ///
+  /// In this case, *whitespace* refers to a non-escaped space character (ASCII 32).
+  ///
+  /// You might also be interested in:
+  /// - [skipString], for skipping a specific string.
   void skipWhitespace() {
     history.add(index);
     while (!eof && isWhitespace) {
@@ -89,7 +115,14 @@ class StringView {
     }
   }
 
-  /// Returns true if the character at [index] is escaped and false otherwise.
+  /// Return whether the character at [index] is escaped.
+  ///
+  /// An index is considered *escaped* if it is preceded by a non-escaped backslash character
+  /// (`\`, ASCII 92).
+  ///
+  /// Characters outside of [buffer] are considered non-escaped.
+  ///
+  /// Escaped
   bool isEscaped(int index) {
     if (index == 0 || index >= end) {
       return false;
@@ -98,12 +131,20 @@ class StringView {
     }
   }
 
-  /// Get the next word after the pointer.
+  /// Consume and return the next word in [buffer], disregarding quotes.
   ///
-  /// A word is a substring of [buffer] containing only non-whitespace or escaped whitespace
-  /// characters, and surrounded by whitespace.
+  /// Developers should use [getQuotedWord] instead unless they specifically want the behaviour
+  /// described below, as [getWord] can leave [remaining] with unbalanced quotes.
   ///
-  /// This method escapes characters in its result.
+  /// A *word* is a sequence of non-whitespace characters, themselves surrounded by whitespace. The
+  /// whitespace preceding the word is consumed but not returned, and the whitespace after the word
+  /// is left untouched.
+  ///
+  /// The word is escaped before it is returned.
+  ///
+  /// You might also be interested in:
+  /// - [escape], for escaping arbitrary postions of [buffer];
+  /// - [isWhitespace], for checking if the current character is considered whitespace.
   String getWord() {
     skipWhitespace();
 
@@ -116,14 +157,19 @@ class StringView {
     return escape(start, index);
   }
 
-  /// Get the next quoted word after the pointer.
+  /// Consume and return the next word or quoted portion in [buffer].
   ///
-  /// A quoted word is the same as a word, unless the word starts with an opening quote. In that
-  /// case, a quoted word is a substring of [buffer] preceded by an opening quote and ending with
-  /// the character followed by next non-escaped matching closing quote.
+  /// See [getWord] for a description of wwhat is considered a *word*.
   ///
-  /// This method escapes characters in its result, and moves the pointer past the closing quote
-  /// before returning.
+  /// In addition to the behaviour of [getWord], [getQuotedWord] will return the portion of [buffer]
+  /// between an opening quote and a corresponding, non-escaped closing quote if the next word
+  /// begins with a quote. The quotes are consumed but not returned.
+  ///
+  /// The word or quoted sequence is escaped before it is returned.
+  ///
+  /// You might also be interested in:
+  /// - [escape], for escaping arbitrary portions of [buffer];
+  /// - [isWhitespace], for checking if the current character is considered whitespace.
   String getQuotedWord() {
     skipWhitespace();
 
@@ -151,7 +197,13 @@ class StringView {
     }
   }
 
-  /// Escape characters in [buffer] from [start] to [end].
+  /// Escape and return a portion of [buffer].
+  ///
+  /// See [isEscaped] for a description of what is considered an *escaped* character.
+  ///
+  /// [escape] takes the portion of [buffer] between [start] (inclusive) and [end] (exclusive) and
+  /// replaces each pair of escaping character and escaped character with just the escaped
+  /// character.
   String escape(int start, int end) {
     String raw = buffer.substring(start, end);
 
@@ -166,16 +218,14 @@ class StringView {
     });
   }
 
-  /// Undo the last operation on this view.
-  ///
-  /// Can be called repeatedly to undo multiple operations.
+  /// Revert the previous operation if there is one.
   void undo() {
     if (history.isNotEmpty) {
       index = history.removeLast();
     }
   }
 
-  /// Create a copy of this [StringView] with a matching [buffer], [index] and [history].
+  /// Create a copy of this [StringView], with an identical [buffer] and [index].
   StringView copy() {
     StringView res = StringView(buffer)
       ..history = history

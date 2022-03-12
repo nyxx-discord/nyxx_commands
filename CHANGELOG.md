@@ -1,17 +1,32 @@
+## 4.0.0-dev.2.0
+__Breaking changes__:
+- Upgrade to `nyxx_interactions` 4.0.0
+
+__Bug fixes__
+- Fix `UserCommandCheck` always failing.
+- Fix parsing muultiple arguments at once leading to race conditions.
+- Fix a casting error that occurred when a text command was not found.
+
+__Documentation__:
+- The documentation for the entire package has been rewritten, with examples, references and more. See the documentation for more details.
+
+__New features__:
+- Added support for the `attachment` command option type. Use `IAttachment` (from `nyxx_interactions`) as the argument type in your commands callback for `nyxx_commands` to register it as an attachment command option.
+- Added `IInteractionContext`, an interface implemented by all contexts originating from intetractions.
+
 ## 4.0.0-dev.1.2
 __Bug fixes__:
-- Fixed a bug affecting command syncing with external sharding
+- Fixed a bug affecting command syncing with external sharding.
 
 ## 4.0.0-dev.1.1
 __Bug fixes__:
-- Fixed a bug affecting registration of slash commands nested two layers deep
+- Fixed a bug affecting registration of slash commands nested two layers deep.
 
 ## 4.0.0-dev.1
 __New features__:
 - Export the command types for better typing. See the documentation for `ICallHooked`, `IChatCommandComponent`, `IChecked`, `ICommand`, `ICommandGroup`, `ICommandRegisterable` and `IOptions` for more information.
 - Add new checks for allowing certain checks to be bypassed by certain command types. See the documentation for `ChatCommandCheck`, `InteractionCommandCheck`, `InterationChatCommandCheck`, `MessageChatCommandCheck`, `MessageCommandCheck` and `UserCommandCheck` for more info.
 - Export `registerDefaultConverters` and `parse` for users wanting to implement their own commands plugin.
-
 
 ## 4.0.0-dev.0
 __Breaking changes__:

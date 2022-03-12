@@ -13,47 +13,41 @@
 //  limitations under the License.
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/context/context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
+import '../context/context.dart';
+
+/// Represents a context that originated from an interaction.
 abstract class IInteractionContext implements IContext {
-  /// The [ISlashCommandInteraction] that triggered this context's execution.
+  /// The interaction that triggered the commands execution.
   ISlashCommandInteraction get interaction;
 
-  /// The [ISlashCommandInteractionEvent] that triggered this context's exeecution.
+  /// The interaction event that triggered this commands execution.
   ISlashCommandInteractionEvent get interactionEvent;
 
   /// Send a response to the command.
   ///
-  /// Setting `private` to true will ensure only the user that invoked the command sees the
-  /// response:
-  /// - For message contexts, a DM is sent to the invoking user;
-  /// - For interaction contexts, an ephemeral response is used.
+  /// If [private] is set to `true`, then the response will only be made visible to the user that
+  /// invoked the command. In interactions, this is done by sending an ephemeral response, in text
+  /// commands this is handled by sending a Private Message to the user.
   ///
-  /// You can set [hidden] to `true` to send an ephemeral response. Setting [hidden] to a value
-  /// different that [CommandsOptions.hideOriginalResponse] will result in unusual behaviour if this
-  /// method is invoked more than two seconds after command execution starts.
-  /// Calling [acknowledge] less than two seconds after command execution starts with the same value
-  /// for [hidden] as this invocation will prevent this unusual behaviour from happening.
+  /// If [hidden] is set to `true`, the response will be ephemeral (hidden). However, unlike
+  /// [hidden], not setting [hidden] will result in the value from
+  /// [CommandOptions.hideOriginalResponse] being used instead. [hidden] will override [private].
   ///
-  /// [hidden] will override the value of [private] if both are provided.
+  /// You might also be interested in:
+  /// - [acknowledge], for acknowledging interactions without resopnding.
   @override
   Future<IMessage> respond(MessageBuilder builder, {bool private = false, bool? hidden});
 
-  /// Acknowledge the underlying [interactionEvent].
+  /// Acknowledge the underlying interaction without yet sending a response.
   ///
-  /// This allows you to acknowledge the interaction with a different hidden state that
-  /// [CommandsOptions.hideOriginalResponse].
+  /// While the `hidden` and `private` arguments are guaranteed to hide/show the resulting response,
+  /// slow commands might sometimes show strange behaviour in their responses. Acknowledging the
+  /// interaction early with the correct value for [hidden] can prevent this behaviour.
   ///
-  /// If unspecified, [hidden] will be set to [CommandsOptions.hideOriginalResponse].
-  ///
-  /// Prefer using this method over calling [ISlashCommandInteractionEvent.acknowledge] on
-  /// [interactionEvent] as this method will fix any unusual behaviour with [respond].
-  ///
-  /// If called within 2 seconds of command execution, this will override the auto-acknowledge
-  /// induced by [CommandsOptions.autoAcknowledgeInteractions].
-  /// If called  after 2 seconds, an [AlreadyRespondedError] will be thrown as nyxx_commands will
-  /// automatically responded to avoid a token timeout.
+  /// You might also be interested in:
+  /// - [respond], for sending a full response.
   Future<void> acknowledge({bool? hidden});
 }
 

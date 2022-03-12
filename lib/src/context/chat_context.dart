@@ -13,34 +13,61 @@
 //  limitations under the License.
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/context/component_wrappers.dart';
-import 'package:nyxx_commands/src/context/context.dart';
-import 'package:nyxx_commands/src/context/interaction_context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands.dart';
 import '../commands/chat_command.dart';
+import '../context/component_wrappers.dart';
+import '../context/context.dart';
+import '../context/interaction_context.dart';
 
-/// Represents a [IContext] in which a [ChatCommand] was executed.
+/// Represents a context in which a [ChatCommand] was invoked.
+///
+/// You might also be interested in:
+/// - [MessageChatContext], for chat commands invoked from text messages;
+/// - [InteractionChatContext], for chat commands invoked from slash commands.
 abstract class IChatContext implements IContext {
-  /// The list of arguments parsed from this context.
+  /// The arguments parsed from the user input.
+  ///
+  /// The arguments are ordered by the order in which they appear in the function delcaration. Since
+  /// slash commands can specify optional arguments in any order, optional arguments declared before
+  /// the last provided argument will be set to their default value (or `null` if unspecified).
+  ///
+  /// You might also be interested in:
+  /// - [ChatCommand.execute], the function that dictates the order in which arguments are provided;
+  /// - [Converter], the means by which these arguments are parsed.
   Iterable<dynamic> get arguments;
+
+  /// Set the arguments used by this context.
+  ///
+  /// Should not be used unless you are implementing your own commannd handler.
   set arguments(Iterable<dynamic> value);
 
   @override
   ChatCommand get command;
 }
 
-/// Represents a [IChatContext] triggered by a message sent in a text channel.
+/// Represents a context in which a [ChatCommand] was invoked from a text message.
+///
+/// You might also be interested in:
+/// - [InteractionChatContext], for chat commands invoked from slash commands.
 class MessageChatContext with ComponentWrappersMixin implements IChatContext {
-  /// The prefix that triggered this context's execution.
+  /// The prefix that was used to invoke this command.
+  ///
+  /// You might also be interested in:
+  /// - [CommandsPlugin.prefix], the function called to determine the prefix to use for a given
+  ///   message.
   final String prefix;
 
-  /// The [IMessage] that triggered this context's execution.
+  /// The message that triggered this command.
   final IMessage message;
 
-  /// The raw [String] that was used to parse this context's arguments, i.e the [message]s content
-  /// with prefix and command [ChatCommand.fullName] stripped.
+  /// The unparsed arguments from the message.
+  ///
+  /// This is the content of the message stripped of the [prefix] and the full command name.
+  ///
+  /// You might also be interested in:
+  /// - [arguments], for getting the parsed arguments from this context.
   final String rawArguments;
 
   @override
@@ -67,6 +94,7 @@ class MessageChatContext with ComponentWrappersMixin implements IChatContext {
   @override
   final IUser user;
 
+  /// Create a new [MessageChatContext].
   MessageChatContext({
     required this.prefix,
     required this.message,
@@ -80,17 +108,6 @@ class MessageChatContext with ComponentWrappersMixin implements IChatContext {
     required this.user,
   });
 
-  /// Send a response to the command.
-  ///
-  /// Setting `private` to true will ensure only the user that invoked the command sees the
-  /// response:
-  /// - For message contexts, a DM is sent to the invoking user;
-  /// - For interaction contexts, an ephemeral response is used.
-  ///
-  /// You can set [mention] to `false` to prevent the reply from mentionning the user.
-  /// If [MessageBuilder.allowedMentions] is not `null` on [builder], [mention] will be ignored. If
-  /// not, the allowed mentions for [builder] will be set to allow all, with the exception of reply
-  /// mentions being set to [mention].
   @override
   Future<IMessage> respond(MessageBuilder builder,
       {bool mention = true, bool private = false}) async {
@@ -117,11 +134,17 @@ class MessageChatContext with ComponentWrappersMixin implements IChatContext {
   String toString() => 'MessageContext[message=$message, message.content=${message.content}]';
 }
 
-/// Represents a [IChatContext] triggered by a slash command ([ISlashCommandInteraction]).
+/// Represents a context in which a [ChatCommand] was invoked from an interaction.
+///
+/// You might also be interested in:
+/// - [MessageChatContext], for chat commands invoked from text messages.
 class InteractionChatContext
     with InteractionContextMixin, ComponentWrappersMixin
     implements IChatContext, IInteractionContext {
-  /// The raw arguments received from the API, mapped by name to value.
+  /// The unparsed arguments from the interaction.
+  ///
+  /// You might also be interested in:
+  /// - [arguments], for getting the parsed arguments from this context.
   final Map<String, dynamic> rawArguments;
 
   @override
@@ -154,6 +177,7 @@ class InteractionChatContext
   @override
   final IUser user;
 
+  /// Create a new [InteractionChatContext].
   InteractionChatContext({
     required this.rawArguments,
     required this.channel,

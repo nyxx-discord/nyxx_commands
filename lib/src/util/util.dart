@@ -13,11 +13,18 @@
 //  limitations under the License.
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/converters/converter.dart';
-import 'package:nyxx_commands/src/util/view.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
-/// The function used to convert camelCase identifiers to Discord compatible kebab-case names
+import '../converters/converter.dart';
+import 'view.dart';
+
+/// Convert a camelCase string to kebab-case.
+///
+/// This is used to convert camelCase Dart identifiers to kebab-case Discord Slash Command argument
+/// names.
+///
+/// You might also be interested in:
+/// - [Name], for setting a custom name to use for slash command argument names.
 String convertToKebabCase(String camelCase) {
   Iterable<String> split = camelCase.split('');
   String res = '';
@@ -32,55 +39,93 @@ String convertToKebabCase(String camelCase) {
   return res;
 }
 
-/// A decorator used to specify descriptions of [Command] arguments.
+/// An annotation used to add a description to Slash Command arguments.
+///
+/// For example, these two snippets of code produce different results:
+/// ```dart
+/// ChatCommand test = ChatCommand(
+///   'test',
+///   'A test command',
+///   (IChatContext context, String message) async {
+///     context.respond(MessageBuilder.content(message));
+///   },
+/// );
+///
+/// commands.addCommand(test);
+/// ```
+/// and
+/// ```dart
+/// ChatCommand test = ChatCommand(
+///   'test',
+///   'A test command',
+///   (
+///     IChatContext context,
+///     @Description('The message to send') String message,
+///   ) async {
+///     context.respond(MessageBuilder.content(message));
+///   },
+/// );
+///
+/// commands.addCommand(test);
+/// ```
+///
+/// ![](https://user-images.githubusercontent.com/54505189/156934401-67535127-d768-4687-b4b4-d279e4362e16.png)
+/// ![](https://user-images.githubusercontent.com/54505189/156934465-18693d88-66f4-41a0-8615-f7d18293fb86.png)
 class Description {
-  /// The value of this description
+  /// The value of the description.
   final String value;
 
-  /// Create a new instance to describe an element, like so:
-  /// ```dart
-  /// Command(
-  ///   'test',
-  ///   'A test command',
-  ///   (Context context, @Description('Your name') name) async {
-  ///     await context.respond('Hello, $name!');
-  ///   }
-  /// );
-  /// ```
+  /// Create a new [Description].
   ///
-  /// Descriptions must be between 1-100 characters in length.
+  /// This is intended to be used as an `@Description(...)` annotation, and has no functionality as
+  /// a standalone class.
   const Description(this.value);
 
   @override
   String toString() => 'Description[value="$value"]';
 }
 
-/// A decorator used to specify choices for [Command] arguments.
+/// An annotation used to restrict input to a set of choices for a given parameter.
 ///
-/// This overrides the [Converter.choices] for the argument type.
+/// Note that this is only a client-side verification for Slash Commands only, input from text
+/// commands might not be one of the options.
+///
+/// For example, adding three choices to a command:
+/// ```dart
+/// ChatCommand test = ChatCommand(
+///   'test',
+///   'A test command',
+///   (
+///     IChatContext context,
+///     @Choices({'Foo': 'foo', 'Bar': 'bar', 'Baz': 'baz'}) String message,
+///   ) async {
+///     context.respond(MessageBuilder.content(message));
+///   },
+/// );
+///
+/// commands.addCommand(test);
+/// ```
+///
+/// ![](https://user-images.githubusercontent.com/54505189/156936191-d35e18d0-5e03-414d-938e-b14c80071175.png)
 class Choices {
-  /// The choices for this argument.
+  /// The choices for this command.
   ///
-  /// These are converted to [ArgChoiceBuilder]s at runtime.
-  /// Keys must be [int]s or [String]s.
+  /// The keys are what is displayed in the Discord UI when the user selects your command and the
+  /// values are what actually get sent to your command.
+  ///
+  /// The values can be either [String]s or [int]s.
+  ///
+  /// You might also be interested in:
+  /// - [ArgChoiceBuilder], the nyxx_interactions builder these entries are converted to.
   final Map<String, dynamic> choices;
 
-  /// Create a new instance to specify choices for an argument, like so:
-  /// ```dart
-  /// Command(
-  ///   'test',
-  ///   'A test command',
-  ///   (
-  ///     Context context,
-  ///     @Choices({'One': 1, 'Two': 2, 'Three': 3}) int input
-  ///   ) async {
-  ///     await context.respond('You chose the number $input!');
-  ///   }
-  /// )
-  /// ```
+  /// Create a new [Choices].
+  ///
+  /// This is intended to be used as an `@Choices(...)` annotation, and has no functionality as
+  /// a standalone class.
   const Choices(this.choices);
 
-  /// Converts the entries in [choices] to [ArgChoiceBuilder]s.
+  /// Get the builders that this [Choices] represents.
   Iterable<ArgChoiceBuilder> get builders =>
       choices.entries.map((entry) => ArgChoiceBuilder(entry.key, entry.value));
 
@@ -88,62 +133,51 @@ class Choices {
   String toString() => 'Choices[choices=$choices]';
 }
 
-/// A decorator used to specify the Discord name of [Command] arguments.
+/// An annotation used to change the name displayed in the Discord UI for a given command argument.
 ///
-/// This overrides the default, which is to convert camelCase names to kebab-case.
+/// For example, changing the name of an argument from 'foo' to 'message':
+/// ```dart
+/// ChatCommand test = ChatCommand(
+///   'test',
+///   'A test command',
+///   (
+///     IChatContext context,
+///     @Name('message') String foo,
+///   ) async {
+///     context.respond(MessageBuilder.content(foo));
+///   },
+/// );
+///
+/// commands.addCommand(test);
+/// ```
+///
+/// ![](https://user-images.githubusercontent.com/54505189/156937204-bbcd5c95-ff0f-40c2-944d-9988fd7b6a60.png)
 class Name {
-  /// The name for this argument.
-  ///
-  /// This must match [commandNameRegexp].
+  /// The custom name to use.
   final String name;
 
-  /// Create a new instance to specify the name of an argument, like so:
-  /// ```dart
-  /// Command(
-  ///   'test',
-  ///   'A test command',
-  ///   (
-  ///     Context context,
-  ///     @Name('name') int input
-  ///   ) async {
-  ///     await context.respond('Hello, $input!');
-  ///   }
-  /// )
-  /// ```
+  /// Create a new [Name].
+  ///
+  /// This is intended to be used as an `@Name(...)` annotation, and has no functionality as
+  /// a standalone class.
   const Name(this.name);
 
   @override
   String toString() => 'Name[name=$name]';
 }
 
-/// A decorator used to specify converter overrides for [Command] arguments.
+/// An annotation used to specify the converter to use for an argument, overriding the default
+/// converter for that type.
 ///
-/// This overrides the default converter for that type.
+/// See example/example.dart for an example on how to use this annotation.
 class UseConverter {
-  /// The converter used instead of the default converter.
-  ///
-  /// This must return a type compatible with the argument, or a [CommandRegistrationError] will be
-  /// thrown.
+  /// The converter to use.
   final Converter<dynamic> converter;
 
-  /// Create a new instance to specify a converter override, like so:
-  /// ```dart
-  /// const Converter<String> nonEmptyStringConverter = CombineConverter(
-  ///   stringConverter,
-  ///   filterInput,
-  /// );
+  /// Create a new [UseConverter].
   ///
-  /// Command betterSay = Command(
-  ///   'better-say',
-  ///   'A better version of the say command',
-  ///   (
-  ///     Context context,
-  ///     @UseConverter(nonEmptyStringConverter) String input,
-  ///   ) {
-  ///     context.respond(MessageBuilder.content(input));
-  ///   },
-  /// );
-  /// ```
+  /// This is intended to be used as an `@UseConverter(...)` annotation, and has no functionality as
+  /// a standalone class.
   const UseConverter(this.converter);
 
   @override
@@ -152,10 +186,18 @@ class UseConverter {
 
 final RegExp _mentionPattern = RegExp(r'^<@!?([0-9]{15,20})>');
 
-/// A Function that can be used as an input to [CommandsPlugin.prefix] to allow invoking commands by
-/// mentioning the bot.
+/// A wrapper function for prefixes that allows commands to be invoked with a mention prefix.
 ///
-/// The [defaultPrefix] parameter will be used if the message does not start with a mention.
+/// For example:
+/// ```dart
+/// CommandsPlugin commands = CommandsPlugin(
+///   prefix: mentionOr((_) => '!'),
+/// );
+///
+/// // Add a basic `test` command...
+/// ```
+///
+/// ![](https://user-images.githubusercontent.com/54505189/156937410-73d19cc5-c018-40e4-97dd-b7fcc0be0b7d.png)
 String Function(IMessage) mentionOr(String Function(IMessage) defaultPrefix) {
   return (message) {
     RegExpMatch? match = _mentionPattern.firstMatch(message.content);
@@ -170,11 +212,19 @@ String Function(IMessage) mentionOr(String Function(IMessage) defaultPrefix) {
   };
 }
 
-/// A Function that can be used  as an input to [CommandsPlugin.prefix] to allow users to optionally
-/// omit the prefix if the command is ran in a DM with the bot.
+/// A wrapper function for prefixes that allows commands to be invoked from messages without a
+/// prefix in Direct Messages.
 ///
-/// The [defaultPrefix] parameter will be used if the message was sent in a guild or if the message
-/// starts with the prefix returned anyways.
+/// For example:
+/// ```dart
+/// CommandsPlugin commands = CommandsPlugin(
+///   prefix: dmOr((_) => '!'),
+/// );
+///
+/// // Add a basic `test` command...
+/// ```
+/// ![](https://user-images.githubusercontent.com/54505189/156937528-df54a2ba-627d-4f54-b0bc-ad7cb6321965.png)
+/// ![](https://user-images.githubusercontent.com/54505189/156937561-9df9e6cf-6595-465d-895a-aaca5d6ff066.png)
 String Function(IMessage) dmOr(String Function(IMessage) defaultPrefix) {
   return (message) {
     String found = defaultPrefix(message);
@@ -187,5 +237,8 @@ String Function(IMessage) dmOr(String Function(IMessage) defaultPrefix) {
   };
 }
 
-/// A [RegExp] that all command names must match
+/// A pattern all command and argument names should match.
+///
+/// For more inforrmation on naming restrictions, check the
+/// [Discord documentation](https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-naming).
 final RegExp commandNameRegexp = RegExp(r'^[\w-]{1,32}$', unicode: true);

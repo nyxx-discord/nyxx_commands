@@ -13,22 +13,22 @@
 //  limitations under the License.
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/commands.dart';
-import 'package:nyxx_commands/src/commands/user_command.dart';
-import 'package:nyxx_commands/src/context/component_wrappers.dart';
-import 'package:nyxx_commands/src/context/context.dart';
-import 'package:nyxx_commands/src/context/interaction_context.dart';
-import 'package:nyxx_interactions/src/models/interaction.dart';
-import 'package:nyxx_interactions/src/events/interaction_event.dart';
+import 'package:nyxx_interactions/nyxx_interactions.dart';
 
-/// Represents a [IContext] in which a [UserCommand] was executed.
+import '../commands.dart';
+import '../commands/user_command.dart';
+import '../context/component_wrappers.dart';
+import '../context/interaction_context.dart';
+
+/// Represents a context in which a [UserCommand] was executed.
 class UserContext
     with InteractionContextMixin, ComponentWrappersMixin
     implements IInteractionContext {
-  /// The target member for this context.
+  /// The member that was selected by the user when running the command if the command was invoked
+  /// in a guild, `null` otherwise.
   final IMember? targetMember;
 
-  /// The target user for this context, or the user representing [targetMember].
+  /// The user that was selected by the user when running the command.
   final IUser targetUser;
 
   @override
