@@ -1,3 +1,7 @@
+## 4.0.0-dev.2.1
+__Bug fixes__:
+- Fix a bug concerning types that didn't need to be converted being wrapped in Futures
+
 ## 4.0.0-dev.2.0
 __Breaking changes__:
 - Upgrade to `nyxx_interactions` 4.0.0
