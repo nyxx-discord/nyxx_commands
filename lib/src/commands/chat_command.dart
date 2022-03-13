@@ -598,7 +598,7 @@ class ChatCommand
         Type expectedType = _mappedArgumentTypes[argumentName]!;
 
         if (reflect(rawArgument).type.isAssignableTo(reflectType(expectedType))) {
-          arguments.add(Future.value(rawArgument));
+          arguments.add(rawArgument);
           continue;
         }
 
