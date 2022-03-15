@@ -589,8 +589,7 @@ class ChatCommand
     } else if (context is InteractionChatContext) {
       for (final argumentName in _orderedArgumentNames) {
         if (!context.rawArguments.containsKey(argumentName)) {
-          arguments
-              .add(Future.value(_mappedArgumentMirrors[argumentName]!.defaultValue?.reflectee));
+          arguments.add(_mappedArgumentMirrors[argumentName]!.defaultValue?.reflectee);
           continue;
         }
 
