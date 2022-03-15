@@ -1,3 +1,7 @@
+## 4.0.0
+__Bug fixes__:
+- Fix a bug concerning optional arguments having their default values wrapped in futures
+
 ## 4.0.0-dev.2.1
 __Bug fixes__:
 - Fix a bug concerning types that didn't need to be converted being wrapped in Futures
