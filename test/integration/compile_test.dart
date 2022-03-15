@@ -6,17 +6,25 @@ import '../../bin/compile/generator.dart';
 
 void main() {
   test('Compilation script', () async {
-    expect(generate('example/example.dart', 'out.g.dart', true), completes);
+    Future<void> generationFuture = generate('example/example.dart', 'out.g.dart', true);
+
+    expect(generationFuture, completes);
+
+    await generationFuture;
 
     expect(File('out.g.dart').exists(), completion(equals(true)));
 
+    Future<ProcessResult> compilationFuture = Process.run(
+      Platform.executable,
+      ['compile', 'exe', 'out.g.dart'],
+    );
+
     expect(
-      Process.run(
-        Platform.executable,
-        ['compile', 'exe', 'out.g.dart'],
-      ).then((value) => value.exitCode),
+      compilationFuture.then((value) => value.exitCode),
       completion(equals(0)), // Expect compilation to succeed
     );
+
+    await compilationFuture;
 
     expect(File('out.g.exe').exists(), completion(equals(true)));
   }, timeout: Timeout(Duration(minutes: 10)));
