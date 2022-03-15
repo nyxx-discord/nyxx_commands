@@ -1,14 +1,30 @@
 ## 4.0.0
+__Breaking changes__:
+- `nyxx_interactions` has been upgraded to 4.0.0.
+- The names of command classes have changed. The old class `Command` is now named `ChatCommand` and `Group` is now `ChatGroup`.
+- The names of context classes have changed. The old class `Context` is now named `IChatContext`, `MessageContext` is `MessageChatContext` and `InteractionContext` is now `InteractionChatContext`.
+- All deprecated members have been removed.
+- The `hideOriginalResponse` parameter has been removed from the `ChatCommand` constructor. Use the new `options` parameter and specify `hideOriginalResponse` there instead.
+
+__New features__:
+- Added support for User and Message Application Commands. See the docs for `UserCommand` and `MessageCommand` for more information.
+- Added new in-built checks for validating content types.
+- Added helper methods for using `nyxx_interactions` with `nyxx_commands`.
+- Added support for the attachment command option type. Use the `IAttachment` type as your command callback parameter type to use the appropriate converter.
+
+__Documentation__:
+- The documentation for the entire package has been rewritten, with examples, references and more. See the documentation for more details.
+
 __Bug fixes__:
-- Fix a bug concerning optional arguments having their default values wrapped in futures
+- Fix a bug concerning optional arguments having their default values wrapped in futures.
 
 ## 4.0.0-dev.2.1
 __Bug fixes__:
-- Fix a bug concerning types that didn't need to be converted being wrapped in Futures
+- Fix a bug concerning types that didn't need to be converted being wrapped in Futures.
 
 ## 4.0.0-dev.2.0
 __Breaking changes__:
-- Upgrade to `nyxx_interactions` 4.0.0
+- Upgrade to `nyxx_interactions` 4.0.0.
 
 __Bug fixes__
 - Fix `UserCommandCheck` always failing.
