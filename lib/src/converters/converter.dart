@@ -83,6 +83,11 @@ class Converter<T> {
   /// Used by [CommandsPlugin.getConverter] to construct assembled converters.
   final Type output;
 
+  /// A callback called with the [CommandOptionBuilder] created for an option using this converter.
+  ///
+  /// Can be used to make custom changes to the builder that are not implemented by default.
+  final void Function(CommandOptionBuilder)? processOptionCallback;
+
   /// Create a new converter.
   ///
   /// Strongly typing converter variables is recommended (i.e use `Converter<String>(...)` instead
@@ -90,6 +95,7 @@ class Converter<T> {
   const Converter(
     this.convert, {
     this.choices,
+    this.processOptionCallback,
     this.type = CommandOptionType.string,
   }) : output = T;
 
@@ -118,6 +124,9 @@ class CombineConverter<R, T> implements Converter<T> {
   @override
   final Type output;
 
+  @override
+  final void Function(CommandOptionBuilder)? processOptionCallback;
+
   final Iterable<ArgChoiceBuilder>? _choices;
   final CommandOptionType? _type;
 
@@ -127,6 +136,7 @@ class CombineConverter<R, T> implements Converter<T> {
     this.process, {
     Iterable<ArgChoiceBuilder>? choices,
     CommandOptionType? type,
+    this.processOptionCallback,
   })  : _choices = choices,
         _type = type,
         output = T;
@@ -165,6 +175,9 @@ class FallbackConverter<T> implements Converter<T> {
   /// The converters this [FallbackConverter] will attempt to use.
   final Iterable<Converter<T>> converters;
 
+  @override
+  final void Function(CommandOptionBuilder)? processOptionCallback;
+
   final Iterable<ArgChoiceBuilder>? _choices;
   final CommandOptionType? _type;
 
@@ -176,6 +189,7 @@ class FallbackConverter<T> implements Converter<T> {
     this.converters, {
     Iterable<ArgChoiceBuilder>? choices,
     CommandOptionType? type,
+    this.processOptionCallback,
   })  : _choices = choices,
         _type = type,
         output = T;

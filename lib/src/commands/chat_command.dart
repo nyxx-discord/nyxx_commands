@@ -657,13 +657,17 @@ class ChatCommand
 
         choices ??= argumentConverter?.choices;
 
-        options.add(CommandOptionBuilder(
+        CommandOptionBuilder builder = CommandOptionBuilder(
           argumentConverter?.type ?? CommandOptionType.string,
           name,
           _mappedDescriptions[name]!.value,
           required: !mirror.isOptional,
           choices: choices?.toList(),
-        ));
+        );
+
+        argumentConverter?.processOptionCallback?.call(builder);
+
+        options.add(builder);
       }
 
       return options;
