@@ -92,7 +92,11 @@ mixin ComponentWrappersMixin implements IContext {
 
     await respond(componentMessageBuilder);
 
-    IButtonInteractionEvent event = await getButtonPress([confirmButton, denyButton]);
+    IButtonInteractionEvent event = await getButtonPress(
+      [confirmButton, denyButton],
+      authorOnly: authorOnly,
+      timeout: timeout,
+    );
     return event.interaction.customId == confirmButton.customId;
   }
 }
