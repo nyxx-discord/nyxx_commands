@@ -124,8 +124,11 @@ class CombineConverter<R, T> implements Converter<T> {
   @override
   final Type output;
 
+  final void Function(CommandOptionBuilder)? _customProcessOptionCallback;
+
   @override
-  final void Function(CommandOptionBuilder)? processOptionCallback;
+  void Function(CommandOptionBuilder)? get processOptionCallback =>
+      _customProcessOptionCallback ?? converter.processOptionCallback;
 
   final Iterable<ArgChoiceBuilder>? _choices;
   final CommandOptionType? _type;
@@ -136,10 +139,11 @@ class CombineConverter<R, T> implements Converter<T> {
     this.process, {
     Iterable<ArgChoiceBuilder>? choices,
     CommandOptionType? type,
-    this.processOptionCallback,
+    void Function(CommandOptionBuilder)? processOptionCallback,
   })  : _choices = choices,
         _type = type,
-        output = T;
+        output = T,
+        _customProcessOptionCallback = processOptionCallback;
 
   @override
   Iterable<ArgChoiceBuilder>? get choices => _choices ?? converter.choices;
