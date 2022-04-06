@@ -484,6 +484,10 @@ class ChatCommand
         throw CommandRegistrationError(
             'Command callback parameters must not have more than one UseConverter annotation');
       }
+      if (parametrer.metadata.where((element) => element.reflectee is Autocomplete).length > 1) {
+        throw CommandRegistrationError(
+            'Command callback parameters must not have more than one UseConverter annotation');
+      }
     }
 
     for (final argument in _arguments) {

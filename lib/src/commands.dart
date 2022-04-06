@@ -32,6 +32,7 @@ import 'context/user_context.dart';
 import 'converters/converter.dart';
 import 'errors.dart';
 import 'options.dart';
+import 'util/util.dart';
 import 'util/view.dart';
 
 final Logger logger = Logger('Commands');
@@ -671,15 +672,35 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     Iterator<CommandOptionBuilder> builderIterator = options.iterator;
     Iterator<Type> argumentTypeIterator = command.argumentTypes.iterator;
 
-    while (builderIterator.moveNext() && argumentTypeIterator.moveNext()) {
-      Converter<dynamic>? converter = getConverter(argumentTypeIterator.current);
+    MethodMirror mirror = (reflect(command.execute) as ClosureMirror).function;
 
-      FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autoCompleteCallback =
-          converter?.autoCompleteCallback;
+    // Skip context argument
+    Iterable<Autocomplete?> autocompleters = mirror.parameters.skip(1).map((parameter) {
+      Iterable<Autocomplete> annotations = parameter.metadata
+          .where((metadataMirror) => metadataMirror.hasReflectee)
+          .map((metadataMirror) => metadataMirror.reflectee)
+          .whereType<Autocomplete>();
 
-      if (autoCompleteCallback != null) {
+      if (annotations.isNotEmpty) {
+        return annotations.first;
+      }
+
+      return null;
+    });
+
+    Iterator<Autocomplete?> autocompletersIterator = autocompleters.iterator;
+
+    while (builderIterator.moveNext() &&
+        argumentTypeIterator.moveNext() &&
+        autocompletersIterator.moveNext()) {
+      FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autocompleteCallback =
+          autocompletersIterator.current?.callback;
+
+      autocompleteCallback ??= getConverter(argumentTypeIterator.current)?.autoCompleteCallback;
+
+      if (autocompleteCallback != null) {
         builderIterator.current.registerAutocompleteHandler(
-            (event) => _processAutocompleteInteraction(event, autoCompleteCallback, command));
+            (event) => _processAutocompleteInteraction(event, autocompleteCallback!, command));
       }
     }
   }

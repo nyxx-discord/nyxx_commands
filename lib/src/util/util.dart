@@ -12,9 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+import 'dart:async';
+
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
+import '../context/autocomplete_context.dart';
 import '../converters/converter.dart';
 import 'view.dart';
 
@@ -182,6 +185,39 @@ class UseConverter {
 
   @override
   String toString() => 'UseConverter[converter=$converter]';
+}
+
+/// An annotation used to override the callback used to handle autocomplete events for a specific
+/// argument.
+///
+/// For example, using the top-level function `foo` as an autocomplete handler:
+/// ```dart
+/// ChatCommand test = ChatCommand(
+///   'test',
+///   'A test command',
+///   (
+///     IChatContext context,
+///     @Autocomplete(foo) String bar,
+///   ) async {
+///     context.respond(MessageBuilder.content(bar));
+///   },
+/// );
+///
+/// commands.addCommand(test);
+/// ```
+///
+/// You might also be interested in:
+/// - [Converter.processOptionCallback], the way to register autocomplete handlers for all arguments
+///   of a given type.
+class Autocomplete {
+  /// The autocomplete handler to use.
+  final FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext) callback;
+
+  /// Create a new [Autocomplete].
+  ///
+  /// This is intended to be used as an `@Autocomplete(...)` annotation, and has no functionality as
+  /// a standalone class.
+  const Autocomplete(this.callback);
 }
 
 final RegExp _mentionPattern = RegExp(r'^<@!?([0-9]{15,20})>');
