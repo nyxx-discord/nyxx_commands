@@ -241,4 +241,7 @@ String Function(IMessage) dmOr(String Function(IMessage) defaultPrefix) {
 ///
 /// For more inforrmation on naming restrictions, check the
 /// [Discord documentation](https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-naming).
-final RegExp commandNameRegexp = RegExp(r'^[\w-]{1,32}$', unicode: true);
+final RegExp commandNameRegexp = RegExp(
+  r'^[-_\p{L}\p{N}\p{sc=Deva}\p{sc=Thai}]{1,32}$',
+  unicode: true,
+);
