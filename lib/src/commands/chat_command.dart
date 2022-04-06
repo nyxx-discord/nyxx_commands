@@ -314,6 +314,9 @@ class ChatCommand
   /// - [checks] and [check], the equivalent for inherited checks.
   final List<AbstractCheck> singleChecks = [];
 
+  /// The types of the required and positional arguments of [execute], in the order they appear.
+  final List<Type> argumentTypes = [];
+
   @override
   final CommandOptions options;
 
@@ -484,6 +487,8 @@ class ChatCommand
     }
 
     for (final argument in _arguments) {
+      argumentTypes.add(argument.type.reflectedType);
+
       Iterable<Name> names = argument.metadata
           .where((element) => element.reflectee is Name)
           .map((nameMirror) => nameMirror.reflectee)

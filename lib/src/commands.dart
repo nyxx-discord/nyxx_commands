@@ -25,6 +25,7 @@ import 'commands/interfaces.dart';
 import 'commands/message_command.dart';
 import 'commands/user_command.dart';
 import 'context/chat_context.dart';
+import 'context/autocomplete_context.dart';
 import 'context/context.dart';
 import 'context/message_context.dart';
 import 'context/user_context.dart';
@@ -327,6 +328,28 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     }
   }
 
+  Future<void> _processAutocompleteInteraction(
+    IAutocompleteInteractionEvent interactionEvent,
+    FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext) callback,
+    ChatCommand command,
+  ) async {
+    try {
+      AutocompleteContext context = await _autocompleteContext(interactionEvent, command);
+
+      try {
+        Iterable<ArgChoiceBuilder>? choices = await callback(context);
+
+        if (choices != null) {
+          interactionEvent.respond(choices.toList());
+        }
+      } on Exception catch (e) {
+        throw AutocompleteFailedException(e, context);
+      }
+    } on CommandsException catch (e) {
+      _onCommandErrorController.add(e);
+    }
+  }
+
   Future<IChatContext> _messageChatContext(
       IMessage message, StringView contentView, String prefix) async {
     ChatCommand command = getCommand(contentView) ?? (throw CommandNotFoundException(contentView));
@@ -452,6 +475,35 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     );
   }
 
+  Future<AutocompleteContext> _autocompleteContext(
+    IAutocompleteInteractionEvent interactionEvent,
+    ChatCommand command,
+  ) async {
+    ISlashCommandInteraction interaction = interactionEvent.interaction;
+
+    IMember? member = interaction.memberAuthor;
+    IUser user;
+    if (member != null) {
+      user = await member.user.getOrDownload();
+    } else {
+      user = interaction.userAuthor!;
+    }
+
+    return AutocompleteContext(
+      commands: this,
+      guild: await interaction.guild?.getOrDownload(),
+      channel: await interaction.channel.getOrDownload(),
+      member: member,
+      user: user,
+      command: command,
+      client: client!,
+      interaction: interaction,
+      interactionEvent: interactionEvent,
+      option: interactionEvent.focusedOption,
+      currentValue: interactionEvent.focusedOption.value.toString(),
+    );
+  }
+
   Future<Iterable<SlashCommandBuilder>> _getSlashBuilders() async {
     List<SlashCommandBuilder> builders = [];
 
@@ -510,6 +562,8 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
 
           if (command is ChatCommand) {
             builder.registerHandler((interaction) => _processChatInteraction(interaction, command));
+
+            _processAutocompleteHandlerRegistration(builder.options, command);
           }
 
           builders.add(builder);
@@ -593,12 +647,12 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
   ) {
     for (final builder in options) {
       if (builder.type == CommandOptionType.subCommand) {
-        builder.registerHandler(
-          (interaction) => _processChatInteraction(
-            interaction,
-            current.children.where((child) => child.name == builder.name).first as ChatCommand,
-          ),
-        );
+        ChatCommand command =
+            current.children.where((child) => child.name == builder.name).first as ChatCommand;
+
+        builder.registerHandler((interaction) => _processChatInteraction(interaction, command));
+
+        _processAutocompleteHandlerRegistration(builder.options!, command);
       } else if (builder.type == CommandOptionType.subCommandGroup) {
         _processHandlerRegistration(
           builder.options!,
@@ -608,6 +662,26 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
       }
     }
     return options;
+  }
+
+  void _processAutocompleteHandlerRegistration(
+    Iterable<CommandOptionBuilder> options,
+    ChatCommand command,
+  ) {
+    Iterator<CommandOptionBuilder> builderIterator = options.iterator;
+    Iterator<Type> argumentTypeIterator = command.argumentTypes.iterator;
+
+    while (builderIterator.moveNext() && argumentTypeIterator.moveNext()) {
+      Converter<dynamic>? converter = getConverter(argumentTypeIterator.current);
+
+      FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autoCompleteCallback =
+          converter?.autoCompleteCallback;
+
+      if (autoCompleteCallback != null) {
+        builderIterator.current.registerAutocompleteHandler(
+            (event) => _processAutocompleteInteraction(event, autoCompleteCallback, command));
+      }
+    }
   }
 
   /// Adds a converter to this [CommandsPlugin].

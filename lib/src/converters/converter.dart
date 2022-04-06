@@ -18,6 +18,7 @@ import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands.dart';
+import '../context/autocomplete_context.dart';
 import '../context/chat_context.dart';
 import '../errors.dart';
 import '../util/view.dart';
@@ -88,6 +89,16 @@ class Converter<T> {
   /// Can be used to make custom changes to the builder that are not implemented by default.
   final void Function(CommandOptionBuilder)? processOptionCallback;
 
+  /// A function called to provide [autocompletion](https://discord.com/developers/docs/interactions/application-commands#autocomplete)
+  /// for arguments of this type.
+  ///
+  /// This function should return an iterable of options the user can select from, or `null` to
+  /// indicate failure. In the event of a failure, the user will see a "options failed to load"
+  /// message in their client.
+  ///
+  /// This function should return at most 25 results and should not throw.
+  final FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autoCompleteCallback;
+
   /// Create a new converter.
   ///
   /// Strongly typing converter variables is recommended (i.e use `Converter<String>(...)` instead
@@ -96,6 +107,7 @@ class Converter<T> {
     this.convert, {
     this.choices,
     this.processOptionCallback,
+    this.autoCompleteCallback,
     this.type = CommandOptionType.string,
   }) : output = T;
 
@@ -130,6 +142,12 @@ class CombineConverter<R, T> implements Converter<T> {
   void Function(CommandOptionBuilder)? get processOptionCallback =>
       _customProcessOptionCallback ?? converter.processOptionCallback;
 
+  final FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? _autoCompleteCallback;
+
+  @override
+  FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? get autoCompleteCallback =>
+      _autoCompleteCallback ?? converter.autoCompleteCallback;
+
   final Iterable<ArgChoiceBuilder>? _choices;
   final CommandOptionType? _type;
 
@@ -140,10 +158,12 @@ class CombineConverter<R, T> implements Converter<T> {
     Iterable<ArgChoiceBuilder>? choices,
     CommandOptionType? type,
     void Function(CommandOptionBuilder)? processOptionCallback,
+    FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autoCompleteCallback,
   })  : _choices = choices,
         _type = type,
         output = T,
-        _customProcessOptionCallback = processOptionCallback;
+        _customProcessOptionCallback = processOptionCallback,
+        _autoCompleteCallback = autoCompleteCallback;
 
   @override
   Iterable<ArgChoiceBuilder>? get choices => _choices ?? converter.choices;
@@ -182,6 +202,9 @@ class FallbackConverter<T> implements Converter<T> {
   @override
   final void Function(CommandOptionBuilder)? processOptionCallback;
 
+  @override
+  final FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autoCompleteCallback;
+
   final Iterable<ArgChoiceBuilder>? _choices;
   final CommandOptionType? _type;
 
@@ -194,6 +217,7 @@ class FallbackConverter<T> implements Converter<T> {
     Iterable<ArgChoiceBuilder>? choices,
     CommandOptionType? type,
     this.processOptionCallback,
+    this.autoCompleteCallback,
   })  : _choices = choices,
         _type = type,
         output = T;
@@ -609,6 +633,10 @@ class GuildChannelConverter<T extends IGuildChannel> implements Converter<T> {
   @override
   void Function(CommandOptionBuilder) get processOptionCallback =>
       (builder) => builder.channelTypes = channelTypes;
+
+  @override
+  FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? get autoCompleteCallback =>
+      null;
 
   @override
   Type get output => T;
