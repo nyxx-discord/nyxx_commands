@@ -207,7 +207,7 @@ class UseConverter {
 /// ```
 ///
 /// You might also be interested in:
-/// - [Converter.processOptionCallback], the way to register autocomplete handlers for all arguments
+/// - [Converter.autoCompleteCallback], the way to register autocomplete handlers for all arguments
 ///   of a given type.
 class Autocomplete {
   /// The autocomplete handler to use.
