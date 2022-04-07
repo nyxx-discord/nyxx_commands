@@ -97,7 +97,7 @@ class Converter<T> {
   /// message in their client.
   ///
   /// This function should return at most 25 results and should not throw.
-  final FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autoCompleteCallback;
+  final FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autocompleteCallback;
 
   /// Create a new converter.
   ///
@@ -107,7 +107,7 @@ class Converter<T> {
     this.convert, {
     this.choices,
     this.processOptionCallback,
-    this.autoCompleteCallback,
+    this.autocompleteCallback,
     this.type = CommandOptionType.string,
   }) : output = T;
 
@@ -142,11 +142,11 @@ class CombineConverter<R, T> implements Converter<T> {
   void Function(CommandOptionBuilder)? get processOptionCallback =>
       _customProcessOptionCallback ?? converter.processOptionCallback;
 
-  final FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? _autoCompleteCallback;
+  final FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? _autocompleteCallback;
 
   @override
-  FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? get autoCompleteCallback =>
-      _autoCompleteCallback ?? converter.autoCompleteCallback;
+  FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? get autocompleteCallback =>
+      _autocompleteCallback ?? converter.autocompleteCallback;
 
   final Iterable<ArgChoiceBuilder>? _choices;
   final CommandOptionType? _type;
@@ -158,12 +158,12 @@ class CombineConverter<R, T> implements Converter<T> {
     Iterable<ArgChoiceBuilder>? choices,
     CommandOptionType? type,
     void Function(CommandOptionBuilder)? processOptionCallback,
-    FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autoCompleteCallback,
+    FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autocompleteCallback,
   })  : _choices = choices,
         _type = type,
         output = T,
         _customProcessOptionCallback = processOptionCallback,
-        _autoCompleteCallback = autoCompleteCallback;
+        _autocompleteCallback = autocompleteCallback;
 
   @override
   Iterable<ArgChoiceBuilder>? get choices => _choices ?? converter.choices;
@@ -203,7 +203,7 @@ class FallbackConverter<T> implements Converter<T> {
   final void Function(CommandOptionBuilder)? processOptionCallback;
 
   @override
-  final FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autoCompleteCallback;
+  final FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autocompleteCallback;
 
   final Iterable<ArgChoiceBuilder>? _choices;
   final CommandOptionType? _type;
@@ -217,7 +217,7 @@ class FallbackConverter<T> implements Converter<T> {
     Iterable<ArgChoiceBuilder>? choices,
     CommandOptionType? type,
     this.processOptionCallback,
-    this.autoCompleteCallback,
+    this.autocompleteCallback,
   })  : _choices = choices,
         _type = type,
         output = T;
@@ -635,7 +635,7 @@ class GuildChannelConverter<T extends IGuildChannel> implements Converter<T> {
       (builder) => builder.channelTypes = channelTypes;
 
   @override
-  FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? get autoCompleteCallback =>
+  FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? get autocompleteCallback =>
       null;
 
   @override

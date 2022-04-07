@@ -696,7 +696,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
       FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autocompleteCallback =
           autocompletersIterator.current?.callback;
 
-      autocompleteCallback ??= getConverter(argumentTypeIterator.current)?.autoCompleteCallback;
+      autocompleteCallback ??= getConverter(argumentTypeIterator.current)?.autocompleteCallback;
 
       if (autocompleteCallback != null) {
         builderIterator.current.registerAutocompleteHandler(
