@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 import '../checks/checks.dart';
+import '../commands/chat_command.dart';
 import '../commands/interfaces.dart';
 import '../commands/options.dart';
 import '../context/context.dart';
@@ -64,12 +65,18 @@ mixin OptionsMixin<T extends IContext> on ICommandRegisterable<T> implements IOp
         ? (parent as ICommandRegisterable).resolvedOptions
         : parent!.options;
 
+    CommandType? defaultCommandType;
+    if (options.defaultCommandType != CommandType.def) {
+      defaultCommandType = options.defaultCommandType;
+    }
+
     return CommandOptions(
       autoAcknowledgeInteractions:
           options.autoAcknowledgeInteractions ?? parentOptions.autoAcknowledgeInteractions,
       acceptBotCommands: options.acceptBotCommands ?? parentOptions.acceptBotCommands,
       acceptSelfCommands: options.acceptSelfCommands ?? parentOptions.acceptSelfCommands,
       hideOriginalResponse: options.hideOriginalResponse ?? parentOptions.hideOriginalResponse,
+      defaultCommandType: defaultCommandType ?? parentOptions.defaultCommandType,
     );
   }
 }

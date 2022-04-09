@@ -14,6 +14,7 @@
 
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
+import 'commands/chat_command.dart';
 import 'commands/options.dart';
 
 /// Options that modify how the [CommandsPlugin] instance works.
@@ -49,6 +50,9 @@ class CommandsOptions implements CommandOptions {
   @override
   final bool hideOriginalResponse;
 
+  @override
+  final CommandType defaultCommandType;
+
   /// Create a new set of [CommandsOptions].
   const CommandsOptions({
     this.logErrors = true,
@@ -57,5 +61,6 @@ class CommandsOptions implements CommandOptions {
     this.acceptSelfCommands = false,
     this.backend,
     this.hideOriginalResponse = true,
+    this.defaultCommandType = CommandType.all,
   });
 }

@@ -512,7 +512,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
 
     for (final command in children) {
       if (command is IChatCommandComponent) {
-        if (command is ChatCommand && command.type == CommandType.textOnly) {
+        if (command is ChatCommand && command.resolvedType == CommandType.textOnly) {
           continue;
         }
 
@@ -836,7 +836,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     if (_chatCommands.containsKey(name)) {
       IChatCommandComponent child = _chatCommands[name]!;
 
-      if (child is ChatCommand && child.type != CommandType.slashOnly) {
+      if (child is ChatCommand && child.resolvedType != CommandType.slashOnly) {
         ChatCommand? found = child.getCommand(view);
 
         if (found == null) {

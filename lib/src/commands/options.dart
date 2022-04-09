@@ -12,6 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+import 'package:nyxx_commands/src/commands/chat_command.dart';
+
 /// Options that modify how a command behaves.
 ///
 /// You might also be interested in:
@@ -60,6 +62,9 @@ class CommandOptions {
   /// - [IInteractionContext.respond], which can override this setting by setting the `hidden` flag.
   final bool? hideOriginalResponse;
 
+  /// The default [CommandType] for [ChatCommand]s that are children of this entity.
+  final CommandType? defaultCommandType;
+
   /// Create a set of command options.
   ///
   /// Options set to `null` will be inherited from the parent.
@@ -68,5 +73,6 @@ class CommandOptions {
     this.acceptBotCommands,
     this.acceptSelfCommands,
     this.hideOriginalResponse,
+    this.defaultCommandType,
   });
 }
