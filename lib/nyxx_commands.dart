@@ -25,17 +25,22 @@ export 'src/commands/interfaces.dart'
 export 'src/commands/message_command.dart' show MessageCommand;
 export 'src/commands/options.dart' show CommandOptions;
 export 'src/commands/user_command.dart' show UserCommand;
+export 'src/context/autocomplete_context.dart' show AutocompleteContext;
 export 'src/context/chat_context.dart'
     show IChatContext, InteractionChatContext, MessageChatContext;
-export 'src/context/context.dart' show IContext;
-export 'src/context/interaction_context.dart' show IInteractionContext;
+export 'src/context/context.dart' show IContext, IContextBase;
+export 'src/context/interaction_context.dart' show IInteractionContext, IInteractionContextBase;
 export 'src/context/message_context.dart' show MessageContext;
 export 'src/context/user_context.dart' show UserContext;
 export 'src/converters/converter.dart'
     show
         CombineConverter,
         Converter,
+        DoubleConverter,
         FallbackConverter,
+        GuildChannelConverter,
+        IntConverter,
+        NumConverter,
         attachmentConverter,
         boolConverter,
         categoryGuildChannelConverter,
@@ -55,6 +60,7 @@ export 'src/converters/converter.dart'
         parse;
 export 'src/errors.dart'
     show
+        AutocompleteFailedException,
         BadInputException,
         CheckFailedException,
         CommandInvocationException,

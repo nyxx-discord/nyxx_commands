@@ -25,12 +25,14 @@ import 'commands/interfaces.dart';
 import 'commands/message_command.dart';
 import 'commands/user_command.dart';
 import 'context/chat_context.dart';
+import 'context/autocomplete_context.dart';
 import 'context/context.dart';
 import 'context/message_context.dart';
 import 'context/user_context.dart';
 import 'converters/converter.dart';
 import 'errors.dart';
 import 'options.dart';
+import 'util/util.dart';
 import 'util/view.dart';
 
 final Logger logger = Logger('Commands');
@@ -327,6 +329,28 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     }
   }
 
+  Future<void> _processAutocompleteInteraction(
+    IAutocompleteInteractionEvent interactionEvent,
+    FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext) callback,
+    ChatCommand command,
+  ) async {
+    try {
+      AutocompleteContext context = await _autocompleteContext(interactionEvent, command);
+
+      try {
+        Iterable<ArgChoiceBuilder>? choices = await callback(context);
+
+        if (choices != null) {
+          interactionEvent.respond(choices.toList());
+        }
+      } on Exception catch (e) {
+        throw AutocompleteFailedException(e, context);
+      }
+    } on CommandsException catch (e) {
+      _onCommandErrorController.add(e);
+    }
+  }
+
   Future<IChatContext> _messageChatContext(
       IMessage message, StringView contentView, String prefix) async {
     ChatCommand command = getCommand(contentView) ?? (throw CommandNotFoundException(contentView));
@@ -452,6 +476,35 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     );
   }
 
+  Future<AutocompleteContext> _autocompleteContext(
+    IAutocompleteInteractionEvent interactionEvent,
+    ChatCommand command,
+  ) async {
+    ISlashCommandInteraction interaction = interactionEvent.interaction;
+
+    IMember? member = interaction.memberAuthor;
+    IUser user;
+    if (member != null) {
+      user = await member.user.getOrDownload();
+    } else {
+      user = interaction.userAuthor!;
+    }
+
+    return AutocompleteContext(
+      commands: this,
+      guild: await interaction.guild?.getOrDownload(),
+      channel: await interaction.channel.getOrDownload(),
+      member: member,
+      user: user,
+      command: command,
+      client: client!,
+      interaction: interaction,
+      interactionEvent: interactionEvent,
+      option: interactionEvent.focusedOption,
+      currentValue: interactionEvent.focusedOption.value.toString(),
+    );
+  }
+
   Future<Iterable<SlashCommandBuilder>> _getSlashBuilders() async {
     List<SlashCommandBuilder> builders = [];
 
@@ -459,7 +512,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
 
     for (final command in children) {
       if (command is IChatCommandComponent) {
-        if (command is ChatCommand && command.type == CommandType.textOnly) {
+        if (command is ChatCommand && command.resolvedType == CommandType.textOnly) {
           continue;
         }
 
@@ -510,6 +563,8 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
 
           if (command is ChatCommand) {
             builder.registerHandler((interaction) => _processChatInteraction(interaction, command));
+
+            _processAutocompleteHandlerRegistration(builder.options, command);
           }
 
           builders.add(builder);
@@ -593,12 +648,12 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
   ) {
     for (final builder in options) {
       if (builder.type == CommandOptionType.subCommand) {
-        builder.registerHandler(
-          (interaction) => _processChatInteraction(
-            interaction,
-            current.children.where((child) => child.name == builder.name).first as ChatCommand,
-          ),
-        );
+        ChatCommand command =
+            current.children.where((child) => child.name == builder.name).first as ChatCommand;
+
+        builder.registerHandler((interaction) => _processChatInteraction(interaction, command));
+
+        _processAutocompleteHandlerRegistration(builder.options!, command);
       } else if (builder.type == CommandOptionType.subCommandGroup) {
         _processHandlerRegistration(
           builder.options!,
@@ -608,6 +663,46 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
       }
     }
     return options;
+  }
+
+  void _processAutocompleteHandlerRegistration(
+    Iterable<CommandOptionBuilder> options,
+    ChatCommand command,
+  ) {
+    Iterator<CommandOptionBuilder> builderIterator = options.iterator;
+    Iterator<Type> argumentTypeIterator = command.argumentTypes.iterator;
+
+    MethodMirror mirror = (reflect(command.execute) as ClosureMirror).function;
+
+    // Skip context argument
+    Iterable<Autocomplete?> autocompleters = mirror.parameters.skip(1).map((parameter) {
+      Iterable<Autocomplete> annotations = parameter.metadata
+          .where((metadataMirror) => metadataMirror.hasReflectee)
+          .map((metadataMirror) => metadataMirror.reflectee)
+          .whereType<Autocomplete>();
+
+      if (annotations.isNotEmpty) {
+        return annotations.first;
+      }
+
+      return null;
+    });
+
+    Iterator<Autocomplete?> autocompletersIterator = autocompleters.iterator;
+
+    while (builderIterator.moveNext() &&
+        argumentTypeIterator.moveNext() &&
+        autocompletersIterator.moveNext()) {
+      FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autocompleteCallback =
+          autocompletersIterator.current?.callback;
+
+      autocompleteCallback ??= getConverter(argumentTypeIterator.current)?.autocompleteCallback;
+
+      if (autocompleteCallback != null) {
+        builderIterator.current.registerAutocompleteHandler(
+            (event) => _processAutocompleteInteraction(event, autocompleteCallback!, command));
+      }
+    }
   }
 
   /// Adds a converter to this [CommandsPlugin].
@@ -741,7 +836,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     if (_chatCommands.containsKey(name)) {
       IChatCommandComponent child = _chatCommands[name]!;
 
-      if (child is ChatCommand && child.type != CommandType.slashOnly) {
+      if (child is ChatCommand && child.resolvedType != CommandType.slashOnly) {
         ChatCommand? found = child.getCommand(view);
 
         if (found == null) {

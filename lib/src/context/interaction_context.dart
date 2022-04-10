@@ -17,14 +17,22 @@ import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../context/context.dart';
 
-/// Represents a context that originated from an interaction.
-abstract class IInteractionContext implements IContext {
-  /// The interaction that triggered the commands execution.
+/// The base class for all interaction-triggered contexts in nyxx_ccommands.
+///
+/// Contains data allowing access to the underlying interaction that triggered the context's
+/// creation.
+// TODO: Rename this class to IInteractionContext
+abstract class IInteractionContextBase {
+  /// The interaction that triggered this context's creation.
   ISlashCommandInteraction get interaction;
 
-  /// The interaction event that triggered this commands execution.
-  ISlashCommandInteractionEvent get interactionEvent;
+  /// The interaction event that triggered this context's creation.
+  InteractionEventAbstract get interactionEvent;
+}
 
+/// Represents a context that originated from an interaction.
+// TODO: Rename this class to IInterationCommandContext
+abstract class IInteractionContext implements IContext, IInteractionContextBase {
   /// Send a response to the command.
   ///
   /// If [private] is set to `true`, then the response will only be made visible to the user that
@@ -49,6 +57,9 @@ abstract class IInteractionContext implements IContext {
   /// You might also be interested in:
   /// - [respond], for sending a full response.
   Future<void> acknowledge({bool? hidden});
+
+  @override
+  ISlashCommandInteractionEvent get interactionEvent;
 }
 
 mixin InteractionContextMixin implements IInteractionContext {

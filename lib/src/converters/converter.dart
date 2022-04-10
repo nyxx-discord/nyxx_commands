@@ -18,6 +18,7 @@ import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands.dart';
+import '../context/autocomplete_context.dart';
 import '../context/chat_context.dart';
 import '../errors.dart';
 import '../util/view.dart';
@@ -83,6 +84,21 @@ class Converter<T> {
   /// Used by [CommandsPlugin.getConverter] to construct assembled converters.
   final Type output;
 
+  /// A callback called with the [CommandOptionBuilder] created for an option using this converter.
+  ///
+  /// Can be used to make custom changes to the builder that are not implemented by default.
+  final void Function(CommandOptionBuilder)? processOptionCallback;
+
+  /// A function called to provide [autocompletion](https://discord.com/developers/docs/interactions/application-commands#autocomplete)
+  /// for arguments of this type.
+  ///
+  /// This function should return an iterable of options the user can select from, or `null` to
+  /// indicate failure. In the event of a failure, the user will see a "options failed to load"
+  /// message in their client.
+  ///
+  /// This function should return at most 25 results and should not throw.
+  final FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autocompleteCallback;
+
   /// Create a new converter.
   ///
   /// Strongly typing converter variables is recommended (i.e use `Converter<String>(...)` instead
@@ -90,6 +106,8 @@ class Converter<T> {
   const Converter(
     this.convert, {
     this.choices,
+    this.processOptionCallback,
+    this.autocompleteCallback,
     this.type = CommandOptionType.string,
   }) : output = T;
 
@@ -118,6 +136,18 @@ class CombineConverter<R, T> implements Converter<T> {
   @override
   final Type output;
 
+  final void Function(CommandOptionBuilder)? _customProcessOptionCallback;
+
+  @override
+  void Function(CommandOptionBuilder)? get processOptionCallback =>
+      _customProcessOptionCallback ?? converter.processOptionCallback;
+
+  final FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? _autocompleteCallback;
+
+  @override
+  FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? get autocompleteCallback =>
+      _autocompleteCallback ?? converter.autocompleteCallback;
+
   final Iterable<ArgChoiceBuilder>? _choices;
   final CommandOptionType? _type;
 
@@ -127,9 +157,13 @@ class CombineConverter<R, T> implements Converter<T> {
     this.process, {
     Iterable<ArgChoiceBuilder>? choices,
     CommandOptionType? type,
+    void Function(CommandOptionBuilder)? processOptionCallback,
+    FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autocompleteCallback,
   })  : _choices = choices,
         _type = type,
-        output = T;
+        output = T,
+        _customProcessOptionCallback = processOptionCallback,
+        _autocompleteCallback = autocompleteCallback;
 
   @override
   Iterable<ArgChoiceBuilder>? get choices => _choices ?? converter.choices;
@@ -165,6 +199,12 @@ class FallbackConverter<T> implements Converter<T> {
   /// The converters this [FallbackConverter] will attempt to use.
   final Iterable<Converter<T>> converters;
 
+  @override
+  final void Function(CommandOptionBuilder)? processOptionCallback;
+
+  @override
+  final FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autocompleteCallback;
+
   final Iterable<ArgChoiceBuilder>? _choices;
   final CommandOptionType? _type;
 
@@ -176,6 +216,8 @@ class FallbackConverter<T> implements Converter<T> {
     this.converters, {
     Iterable<ArgChoiceBuilder>? choices,
     CommandOptionType? type,
+    this.processOptionCallback,
+    this.autocompleteCallback,
   })  : _choices = choices,
         _type = type,
         output = T;
@@ -272,18 +314,89 @@ const Converter<String> stringConverter = Converter<String>(
 
 int? convertInt(StringView view, IChatContext context) => int.tryParse(view.getQuotedWord());
 
+/// A converter that converts input to various types of numbers, possibly with a minimum or maximum
+/// value.
+///
+/// Note: this converter does not ensure that all values will be in the range `min..max`. [min] and
+/// [max] offer purely client-side validation and input from text commands is not validated beyond
+/// being a valid number.
+///
+/// You might also be interested in:
+/// - [IntConverter], for converting [int]s;
+/// - [DoubleConverter], for converting [double]s.
+class NumConverter<T extends num> extends Converter<T> {
+  /// The smallest value the user will be allowed to input in the Discord Client.
+  final T? min;
+
+  /// The biggest value the user will be allows to input in the Discord Client.
+  final T? max;
+
+  /// Create a new [NumConverter].
+  const NumConverter(
+    T? Function(StringView, IChatContext) convert, {
+    required CommandOptionType type,
+    this.min,
+    this.max,
+  }) : super(convert, type: type);
+
+  @override
+  void Function(CommandOptionBuilder)? get processOptionCallback => (builder) {
+        builder.min = min;
+        builder.max = max;
+      };
+}
+
+/// A converter that converts input to [int]s, possibly with a minimum or maximum value.
+///
+/// Note: this converter does not ensure that all values will be in the range `min..max`. [min] and
+/// [max] offer purely client-side validation and input from text commands is not validated beyond
+/// being a valid integer.
+///
+/// You might also be interested in:
+/// - [intConverter], the default [IntConverter].
+class IntConverter extends NumConverter<int> {
+  /// Create a new [IntConverter].
+  const IntConverter({
+    int? min,
+    int? max,
+  }) : super(
+          convertInt,
+          type: CommandOptionType.integer,
+          min: min,
+          max: max,
+        );
+}
+
 /// A [Converter] that converts input to an [int].
 ///
 /// This converter attempts to parse the next word or quoted section of the input with [int.parse].
 ///
 /// This converter has a Discord Slash Command Argument Type of [CommandOptionType.integer].
-const Converter<int> intConverter = Converter<int>(
-  convertInt,
-  type: CommandOptionType.integer,
-);
+const Converter<int> intConverter = IntConverter();
 
 double? convertDouble(StringView view, IChatContext context) =>
     double.tryParse(view.getQuotedWord());
+
+/// A converter that converts input to [double]s, possibly with a minimum or maximum value.
+///
+/// Note: this converter does not ensure that all values will be in the range `min..max`. [min] and
+/// [max] offer purely client-side validation and input from text commands is not validated beyond
+/// being a valid double.
+///
+/// You might also be interested in:
+/// - [doubleConverter], the default [DoubleConverter].
+class DoubleConverter extends NumConverter<double> {
+  /// Create a new [DoubleConverter].
+  const DoubleConverter({
+    double? min,
+    double? max,
+  }) : super(
+          convertDouble,
+          type: CommandOptionType.integer,
+          min: min,
+          max: max,
+        );
+}
 
 /// A [Converter] that converts input to a [double].
 ///
@@ -291,10 +404,7 @@ double? convertDouble(StringView view, IChatContext context) =>
 /// [double.parse].
 ///
 /// This converter has a Discord Slash Command Argument Type of [CommandOptionType.number].
-const Converter<double> doubleConverter = Converter<double>(
-  convertDouble,
-  type: CommandOptionType.number,
-);
+const Converter<double> doubleConverter = DoubleConverter();
 
 bool? convertBool(StringView view, IChatContext context) {
   String word = view.getQuotedWord();
@@ -507,12 +617,10 @@ const Converter<IUser> userConverter = FallbackConverter<IUser>(
   type: CommandOptionType.user,
 );
 
-T? snowflakeToGuildChannel<T extends IGuildChannel>(Snowflake snowflake, IChatContext context) {
+IGuildChannel? snowflakeToGuildChannel(Snowflake snowflake, IChatContext context) {
   if (context.guild != null) {
     try {
-      return context.guild!.channels
-          .whereType<T>()
-          .firstWhere((channel) => channel.id == snowflake);
+      return context.guild!.channels.firstWhere((channel) => channel.id == snowflake);
     } on StateError {
       return null;
     }
@@ -521,15 +629,14 @@ T? snowflakeToGuildChannel<T extends IGuildChannel>(Snowflake snowflake, IChatCo
   return null;
 }
 
-T? convertGuildChannel<T extends IGuildChannel>(StringView view, IChatContext context) {
+IGuildChannel? convertGuildChannel(StringView view, IChatContext context) {
   if (context.guild != null) {
     String word = view.getQuotedWord();
-    Iterable<T> channels = context.guild!.channels.whereType<T>();
 
-    List<T> caseInsensitive = [];
-    List<T> partial = [];
+    List<IGuildChannel> caseInsensitive = [];
+    List<IGuildChannel> partial = [];
 
-    for (final channel in channels) {
+    for (final channel in context.guild!.channels) {
       if (channel.name.toLowerCase() == word.toLowerCase()) {
         caseInsensitive.add(channel);
       }
@@ -548,50 +655,99 @@ T? convertGuildChannel<T extends IGuildChannel>(StringView view, IChatContext co
   return null;
 }
 
+/// A converter that converts input to one or more types of [IGuildChannel]s.
+///
+/// This converter will only allow users to select channels of one of the types in [channelTypes],
+/// and then will further only accept channels of type `T`.
+///
+///
+/// Note: this converter does not ensure that all values will conform to [channelTypes].
+/// [channelTypes] offers purely client-side validation and input from text commands will not be
+/// validated beyond being assignable to `T`.
+///
+/// You might also be interested in:
+/// - [guildChannelConverter], a converter for all [IGuildChannel]s;
+/// - [textGuildChannelConverter], a converter for [ITextGuildChannel]s;
+/// - [voiceGuildChannelConverter], a converter for [IVoiceGuildChannel]s;
+/// - [categoryGuildChannelConverter], a converter for [ICategoryGuildChannel]s;
+/// - [stageVoiceChannelConverter], a converter for [IStageVoiceGuildChannel]s.
+class GuildChannelConverter<T extends IGuildChannel> implements Converter<T> {
+  /// The types of channels this converter allows users to select.
+  ///
+  /// If this is `null`, all channel types can be selected. Note that only channels which match both
+  /// these types *and* `T` will be parsed by this converter.
+  final List<ChannelType>? channelTypes;
+
+  final FallbackConverter<IGuildChannel> _internal = const FallbackConverter(
+    [
+      CombineConverter<Snowflake, IGuildChannel>(snowflakeConverter, snowflakeToGuildChannel),
+      Converter<IGuildChannel>(convertGuildChannel),
+    ],
+    type: CommandOptionType.channel,
+  );
+
+  /// Create a new [GuildChannelConverter].
+  const GuildChannelConverter(this.channelTypes);
+
+  @override
+  Iterable<ArgChoiceBuilder> get choices => [];
+
+  @override
+  FutureOr<T?> Function(StringView, IChatContext) get convert => (view, context) async {
+        IGuildChannel? channel = await _internal.convert(view, context);
+
+        if (channel is T) {
+          return channel;
+        }
+
+        return null;
+      };
+
+  @override
+  void Function(CommandOptionBuilder) get processOptionCallback =>
+      (builder) => builder.channelTypes = channelTypes;
+
+  @override
+  FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? get autocompleteCallback =>
+      null;
+
+  @override
+  Type get output => T;
+
+  @override
+  CommandOptionType get type => CommandOptionType.channel;
+}
+
 /// A converter that converts input to an [IGuildChannel].
 ///
 /// This will first attempt to parse the input as a [Snowflake] that will then be converted to an
 /// [IGuildChannel]. If this fails, the channel will be looked up by name in the current guild.
 ///
-/// This converter has a Discord Slash Command argument type of [CommandOptionType.channel].
-const Converter<IGuildChannel> guildChannelConverter = FallbackConverter(
-  [
-    CombineConverter<Snowflake, IGuildChannel>(
-        snowflakeConverter, snowflakeToGuildChannel<IGuildChannel>),
-    Converter<IGuildChannel>(convertGuildChannel<IGuildChannel>),
-  ],
-  type: CommandOptionType.channel,
-);
+/// This converter has a Discord Slash Command argument type of [CommandOptionType.channel] and is
+/// set to accept all channel types.
+const GuildChannelConverter<IGuildChannel> guildChannelConverter = GuildChannelConverter(null);
 
 /// A converter that converts input to an [ITextGuildChannel].
 ///
 /// This will first attempt to parse the input as a [Snowflake] that will then be converted to an
 /// [ITextGuildChannel]. If this fails, the channel will be looked up by name in the current guild.
 ///
-/// This converter has a Discord Slash Command argument type of [CommandOptionType.channel].
-const Converter<ITextGuildChannel> textGuildChannelConverter = FallbackConverter(
-  [
-    CombineConverter<Snowflake, ITextGuildChannel>(
-        snowflakeConverter, snowflakeToGuildChannel<ITextGuildChannel>),
-    Converter<ITextGuildChannel>(convertGuildChannel<ITextGuildChannel>),
-  ],
-  type: CommandOptionType.channel,
-);
+/// This converter has a Discord Slash Command argument type of [CommandOptionType.channel] and is
+/// set to accept channels of type [ChannelType.text].
+const GuildChannelConverter<ITextGuildChannel> textGuildChannelConverter = GuildChannelConverter([
+  ChannelType.text,
+]);
 
 /// A converter that converts input to an [IVoiceGuildChannel].
 ///
 /// This will first attempt to parse the input as a [Snowflake] that will then be converted to an
 /// [IVoiceGuildChannel]. If this fails, the channel will be looked up by name in the current guild.
 ///
-/// This converter has a Discord Slash Command argument type of [CommandOptionType.channel].
-const Converter<IVoiceGuildChannel> voiceGuildChannelConverter = FallbackConverter(
-  [
-    CombineConverter<Snowflake, IVoiceGuildChannel>(
-        snowflakeConverter, snowflakeToGuildChannel<IVoiceGuildChannel>),
-    Converter<IVoiceGuildChannel>(convertGuildChannel<IVoiceGuildChannel>),
-  ],
-  type: CommandOptionType.channel,
-);
+/// This converter has a Discord Slash Command argument type of [CommandOptionType.channel] and is
+/// set to accept channels of type [ChannelType.voice].
+const GuildChannelConverter<IVoiceGuildChannel> voiceGuildChannelConverter = GuildChannelConverter([
+  ChannelType.voice,
+]);
 
 /// A converter that converts input to an [ICategoryGuildChannel].
 ///
@@ -599,15 +755,12 @@ const Converter<IVoiceGuildChannel> voiceGuildChannelConverter = FallbackConvert
 /// [ICategoryGuildChannel]. If this fails, the channel will be looked up by name in the current
 /// guild.
 ///
-/// This converter has a Discord Slash Command argument type of [CommandOptionType.channel].
-const Converter<ICategoryGuildChannel> categoryGuildChannelConverter = FallbackConverter(
-  [
-    CombineConverter<Snowflake, ICategoryGuildChannel>(
-        snowflakeConverter, snowflakeToGuildChannel<ICategoryGuildChannel>),
-    Converter<ICategoryGuildChannel>(convertGuildChannel<ICategoryGuildChannel>),
-  ],
-  type: CommandOptionType.channel,
-);
+/// This converter has a Discord Slash Command argument type of [CommandOptionType.channel] and it
+/// set to accept channels of type [ChannelType.category].
+const GuildChannelConverter<ICategoryGuildChannel> categoryGuildChannelConverter =
+    GuildChannelConverter([
+  ChannelType.category,
+]);
 
 /// A converter that converts input to an [IStageVoiceGuildChannel].
 ///
@@ -615,15 +768,12 @@ const Converter<ICategoryGuildChannel> categoryGuildChannelConverter = FallbackC
 /// [IStageVoiceGuildChannel]. If this fails, the channel will be looked up by name in the current
 /// guild.
 ///
-/// This converter has a Discord Slash Command argument type of [CommandOptionType.channel].
-const Converter<IStageVoiceGuildChannel> stageVoiceChannelConverter = FallbackConverter(
-  [
-    CombineConverter<Snowflake, IStageVoiceGuildChannel>(
-        snowflakeConverter, snowflakeToGuildChannel<IStageVoiceGuildChannel>),
-    Converter<IStageVoiceGuildChannel>(convertGuildChannel<IStageVoiceGuildChannel>),
-  ],
-  type: CommandOptionType.channel,
-);
+/// This converter has a Discord Slash Command argument type of [CommandOptionType.channel] and is
+/// set to accept channels of type [ChannelType.guildStage].
+const GuildChannelConverter<IStageVoiceGuildChannel> stageVoiceChannelConverter =
+    GuildChannelConverter([
+  ChannelType.guildStage,
+]);
 
 FutureOr<IRole?> snowflakeToRole(Snowflake snowflake, IChatContext context) {
   if (context.guild != null) {
@@ -821,6 +971,7 @@ void registerDefaultConverters(CommandsPlugin commands) {
     ..addConverter(guildChannelConverter)
     ..addConverter(textGuildChannelConverter)
     ..addConverter(voiceGuildChannelConverter)
+    ..addConverter(categoryGuildChannelConverter)
     ..addConverter(stageVoiceChannelConverter)
     ..addConverter(roleConverter)
     ..addConverter(mentionableConverter)

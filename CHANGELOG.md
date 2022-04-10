@@ -1,3 +1,20 @@
+## 4.1.0
+__New features__:
+- Support for autocompletion has been added. See `Converter.autocompleteCallback` and the `@Autocomplete(...)` annotation for more.
+- Added the ability to allow only slash commands or disable them entirely. See `CommandType.def` and `CommandOptions.defaultCommandType` for more.
+- Added `ChatCommand.argumentTypes`, which allows developers to access the argument types for a chat command callback.
+- Added `Converter.processOptionCallback`, which allows developers to modify the builder generated for a command argument.
+- Added `IntConverter`, `DoubleConverter` and `NumConverter` for converting numbers with custom bounds. These new classes allow you to specify a minimum and maximum value for an argument when used with `@UseConverter(...)`.
+- Added `GUildChannelConverter` for converting more specific types of guild channels.
+
+__Bug fixes__:
+- Fixed an issue with `IContext.getButtonPress` not behaving correectly when `authorOnly` or `timeout` was specified.
+- Fixed the default converters for guild channels accepting all channels in the Discord UI even if they were not the correct type.
+
+__Miscellaneous__:
+- Updated the command name validation regex.
+- Bump `nyxx_interactions` to 4.1.0.
+
 ## 4.0.0
 __Breaking changes__:
 - `nyxx_interactions` has been upgraded to 4.0.0.

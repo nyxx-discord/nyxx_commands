@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 import 'checks/checks.dart';
+import 'context/autocomplete_context.dart';
 import 'context/chat_context.dart';
 import 'context/context.dart';
 import 'util/view.dart';
@@ -47,6 +48,28 @@ class CommandInvocationException extends CommandsException {
 
   /// Create a new [CommandInvocationException].
   CommandInvocationException(String message, this.context) : super(message);
+}
+
+/// A wrapper class for an exception that caused an autocomplete event to fail.
+///
+/// This generally indicates incorrect or slow code inside an autocomplete callback, and the
+/// developer should try to fix the issue.
+///
+/// If you are throwing exceptions to indicate autocomplete failure, consider returning `null`
+/// instead.
+class AutocompleteFailedException extends CommandsException {
+  /// The context in which the exception occurred.
+  ///
+  /// If the exception was not triggered by a slow response, default options can still be returned
+  /// by accessing the [AutocompleteContext.interactionEvent] and calling
+  /// [IAutocompleteInteractionEvent.respond] with the default options.
+  final AutocompleteContext context;
+
+  /// The exception that occurred.
+  final Exception exception;
+
+  /// Create a new [AutocompleteFailedException].
+  AutocompleteFailedException(this.exception, this.context) : super(exception.toString());
 }
 
 /// A wrapper class for an exception that was thrown inside the [ICommand.execute] callback.

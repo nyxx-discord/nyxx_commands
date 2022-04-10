@@ -18,32 +18,39 @@ import 'package:nyxx_interactions/nyxx_interactions.dart';
 import '../commands.dart';
 import '../commands/interfaces.dart';
 
+/// The base class for all contexts in nyxx_commands.
+///
+/// Contains data that all contexts provide.
+// TODO: Rename this class to IContext
+abstract class IContextBase {
+  /// The instance of [CommandsPlugin] which created this context.
+  CommandsPlugin get commands;
+
+  /// The guild in which the context was created, or `null` if created outside of a guild.
+  IGuild? get guild;
+
+  /// The channel in which the context was created.
+  ITextChannel get channel;
+
+  /// The member that triggered this context's created, or `null` if created outside of a guild.
+  IMember? get member;
+
+  /// The user that triggered this context's creation.
+  IUser get user;
+
+  /// The command that was executed or is being processed.
+  ICommand get command;
+
+  /// The client that emitted the event triggering this context's creation.
+  INyxx get client;
+}
+
 /// A context in which a command was executed.
 ///
 /// Contains data about how and where the command was executed, and provides a simple interfaces for
 /// responding to commands.
-abstract class IContext {
-  /// The instance of [CommandsPlugin] which created this context.
-  CommandsPlugin get commands;
-
-  /// The guild in which the command was executed, or `null` if invoked outside of a guild.
-  IGuild? get guild;
-
-  /// The channel in which the command was executed.
-  ITextChannel get channel;
-
-  /// The member that executed the command, or `null` if invoked outside of a guild.
-  IMember? get member;
-
-  /// The user that executed the command.
-  IUser get user;
-
-  /// The command that was executed.
-  ICommand get command;
-
-  /// The client that emitted the event triggering this command.
-  INyxx get client;
-
+// TODO: rename this class to ICommandContext (to differentiate from AutocompleteContext)
+abstract class IContext implements IContextBase {
   /// Send a response to the command.
   ///
   /// If [private] is set to `true`, then the response will only be made visible to the user that
