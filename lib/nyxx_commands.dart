@@ -36,8 +36,11 @@ export 'src/converters/converter.dart'
     show
         CombineConverter,
         Converter,
+        DoubleConverter,
         FallbackConverter,
         GuildChannelConverter,
+        IntConverter,
+        NumConverter,
         attachmentConverter,
         boolConverter,
         categoryGuildChannelConverter,
