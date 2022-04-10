@@ -317,6 +317,10 @@ int? convertInt(StringView view, IChatContext context) => int.tryParse(view.getQ
 /// A converter that converts input to various types of numbers, possibly with a minimum or maximum
 /// value.
 ///
+/// Note: this converter does not ensure that all values will be in the range `min..max`. [min] and
+/// [max] offer purely client-side validation and input from text commands is not validated beyond
+/// being a valid number.
+///
 /// You might also be interested in:
 /// - [IntConverter], for converting [int]s;
 /// - [DoubleConverter], for converting [double]s.
@@ -344,6 +348,10 @@ class NumConverter<T extends num> extends Converter<T> {
 
 /// A converter that converts input to [int]s, possibly with a minimum or maximum value.
 ///
+/// Note: this converter does not ensure that all values will be in the range `min..max`. [min] and
+/// [max] offer purely client-side validation and input from text commands is not validated beyond
+/// being a valid integer.
+///
 /// You might also be interested in:
 /// - [intConverter], the default [IntConverter].
 class IntConverter extends NumConverter<int> {
@@ -370,6 +378,10 @@ double? convertDouble(StringView view, IChatContext context) =>
     double.tryParse(view.getQuotedWord());
 
 /// A converter that converts input to [double]s, possibly with a minimum or maximum value.
+///
+/// Note: this converter does not ensure that all values will be in the range `min..max`. [min] and
+/// [max] offer purely client-side validation and input from text commands is not validated beyond
+/// being a valid double.
 ///
 /// You might also be interested in:
 /// - [doubleConverter], the default [DoubleConverter].
@@ -647,6 +659,11 @@ IGuildChannel? convertGuildChannel(StringView view, IChatContext context) {
 ///
 /// This converter will only allow users to select channels of one of the types in [channelTypes],
 /// and then will further only accept channels of type `T`.
+///
+///
+/// Note: this converter does not ensure that all values will conform to [channelTypes].
+/// [channelTypes] offers purely client-side validation and input from text commands will not be
+/// validated beyond being assignable to `T`.
 ///
 /// You might also be interested in:
 /// - [guildChannelConverter], a converter for all [IGuildChannel]s;
