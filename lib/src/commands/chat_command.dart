@@ -465,7 +465,8 @@ class ChatCommand
           'The first parameter of a command callback must be of type $contextType');
     }
 
-    for (final parameter in _functionData.parametersData) {
+    // Skip context parameter
+    for (final parameter in _functionData.parametersData.skip(1)) {
       if (parameter.description != null) {
         if (parameter.description!.isEmpty || parameter.description!.length > 100) {
           throw CommandRegistrationError(
@@ -478,6 +479,8 @@ class ChatCommand
           throw CommandRegistrationError('Invalid converter override');
         }
       }
+
+      argumentTypes.add(parameter.type);
     }
   }
 

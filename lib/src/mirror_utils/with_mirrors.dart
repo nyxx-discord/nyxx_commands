@@ -12,12 +12,14 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+import 'dart:async';
 import 'dart:mirrors';
 
 import 'package:nyxx_commands/src/commands.dart';
 import 'package:nyxx_commands/src/mirror_utils/mirror_utils.dart';
 import 'package:nyxx_commands/nyxx_commands.dart';
 import 'package:nyxx_commands/src/util/util.dart';
+import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 bool isAssignableTo(Type instance, Type target) =>
     instance == target || reflectType(instance).isSubtypeOf(reflectType(target));
@@ -84,6 +86,18 @@ FunctionData loadFunctionData(Function fn) {
       converterOverride = useConverterAnnotations.first.converter;
     }
 
+    // Get parameter autocomplete override
+
+    Iterable<Autocomplete> autocompleteAnnotations = getAnnotations<Autocomplete>();
+    if (autocompleteAnnotations.length > 1) {
+      throw CommandRegistrationError('parameters may have at most one Autocomplete decorator');
+    }
+
+    FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autocompleteOverride;
+    if (autocompleteAnnotations.isNotEmpty) {
+      autocompleteOverride = autocompleteAnnotations.first.callback;
+    }
+
     parametersData.add(ParameterData(
       name,
       type,
@@ -92,6 +106,7 @@ FunctionData loadFunctionData(Function fn) {
       parameterMirror.defaultValue?.reflectee,
       choices,
       converterOverride,
+      autocompleteOverride,
     ));
   }
 

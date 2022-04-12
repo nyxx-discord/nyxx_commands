@@ -623,29 +623,21 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     Iterator<CommandOptionBuilder> builderIterator = options.iterator;
     Iterator<Type> argumentTypeIterator = command.argumentTypes.iterator;
 
-    MethodMirror mirror = (reflect(command.execute) as ClosureMirror).function;
+    Iterable<FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)?> autocompleters =
+        loadFunctionData(command.execute)
+            .parametersData
+            // Skip context parameter
+            .skip(1)
+            .map((parameter) => parameter.autocompleteOverride);
 
-    // Skip context argument
-    Iterable<Autocomplete?> autocompleters = mirror.parameters.skip(1).map((parameter) {
-      Iterable<Autocomplete> annotations = parameter.metadata
-          .where((metadataMirror) => metadataMirror.hasReflectee)
-          .map((metadataMirror) => metadataMirror.reflectee)
-          .whereType<Autocomplete>();
-
-      if (annotations.isNotEmpty) {
-        return annotations.first;
-      }
-
-      return null;
-    });
-
-    Iterator<Autocomplete?> autocompletersIterator = autocompleters.iterator;
+    Iterator<FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)?>
+        autocompletersIterator = autocompleters.iterator;
 
     while (builderIterator.moveNext() &&
         argumentTypeIterator.moveNext() &&
         autocompletersIterator.moveNext()) {
       FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autocompleteCallback =
-          autocompletersIterator.current?.callback;
+          autocompletersIterator.current;
 
       autocompleteCallback ??= getConverter(argumentTypeIterator.current)?.autocompleteCallback;
 

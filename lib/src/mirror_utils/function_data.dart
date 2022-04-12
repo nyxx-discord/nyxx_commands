@@ -12,7 +12,11 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+import 'dart:async';
+
+import 'package:nyxx_commands/src/context/autocomplete_context.dart';
 import 'package:nyxx_commands/src/converters/converter.dart';
+import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 class FunctionData {
   final List<ParameterData> parametersData;
@@ -37,6 +41,8 @@ class ParameterData {
 
   final Converter<dynamic>? converterOverride;
 
+  final FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autocompleteOverride;
+
   const ParameterData(
     this.name,
     this.type,
@@ -45,5 +51,6 @@ class ParameterData {
     this.defaultValue,
     this.choices,
     this.converterOverride,
+    this.autocompleteOverride,
   );
 }
