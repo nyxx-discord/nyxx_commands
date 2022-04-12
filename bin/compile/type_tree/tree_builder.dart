@@ -93,6 +93,9 @@ ClassElement? choicesClassElement;
 int get useConverterId => getId(useConverterClassElement!.thisType);
 ClassElement? useConverterClassElement;
 
+int get autocompleteId => getId(autocompleteClassId!.thisType);
+ClassElement? autocompleteClassId;
+
 int get objectId => getId(objectClassElement!.thisType);
 ClassElement? objectClassElement;
 
@@ -110,6 +113,8 @@ Map<List<String>, void Function(ClassElement)> _specialInterfaceTypeSetters = {
       choicesClassElement = element,
   ['package:nyxx_commands/src/util/util.dart', 'UseConverter']: (element) =>
       useConverterClassElement = element,
+  ['package:nyxx_commands/src/util/util.dart', 'Autocomplete']: (element) =>
+      autocompleteClassId = element,
   ['dart:core/object.dart', 'Object']: (element) => objectClassElement = element,
   ['dart:core/function.dart', 'Function']: (element) => functionClassElement = element,
   ['package:nyxx_commands/src/util/util.dart', 'Id']: (element) => idClassElement = element,

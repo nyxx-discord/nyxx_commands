@@ -305,6 +305,8 @@ class Id {
     void setId(Function fn) {
       // For compiled lookup
       idMap[fn.hashCode] = id;
+      // Also save the wrapped function in the map
+      idMap[wrapped.hashCode] = id;
 
       // For checking with mirrors
       wrappedMap[fn.hashCode] = wrapped;

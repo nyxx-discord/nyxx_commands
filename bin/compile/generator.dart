@@ -296,6 +296,26 @@ String generateOutput(
         choicesSource = choicesData.first;
       }
 
+      String? autocompleteSource;
+
+      if (parameter.autocompleteOverride != null) {
+        List<String>? autocompleteOverrideData = toConverterSource(parameter.autocompleteOverride!);
+
+        if (autocompleteOverrideData == null) {
+          // Unresolved autocomplete functions are more severe than unresolved types as the only
+          // case where an autocomplete override is specified is when the @Autocomplete annotation
+          // is explicitly used
+          logger.shout(
+            'Unable to resolve converter override for parameter ${parameter.name}, skipping function',
+          );
+          continue outerLoop;
+        }
+
+        imports.addAll(autocompleteOverrideData.skip(1));
+
+        autocompleteSource = autocompleteOverrideData.first;
+      }
+
       parameterDataSource += '''
         ParameterData(
           "${parameter.name}",
@@ -305,6 +325,7 @@ String generateOutput(
           $defaultValueSource,
           $choicesSource,
           $converterSource,
+          $autocompleteSource,
         ),
       ''';
     }

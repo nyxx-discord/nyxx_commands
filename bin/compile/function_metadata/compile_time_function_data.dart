@@ -41,6 +41,8 @@ class CompileTimeParameterData {
 
   final Annotation? converterOverride;
 
+  final Annotation? autocompleteOverride;
+
   const CompileTimeParameterData(
     this.name,
     this.type,
@@ -49,6 +51,7 @@ class CompileTimeParameterData {
     this.defaultValue,
     this.choices,
     this.converterOverride,
+    this.autocompleteOverride,
   );
 
   @override
@@ -58,5 +61,6 @@ class CompileTimeParameterData {
       'description=$description, '
       'defaultValue=$defaultValue, '
       'choices=$choices, '
-      'converterOverride=$converterOverride]';
+      'converterOverride=$converterOverride,'
+      'autocompleteOverride=$autocompleteOverride]';
 }

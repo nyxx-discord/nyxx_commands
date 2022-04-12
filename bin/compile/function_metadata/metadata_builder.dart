@@ -31,8 +31,16 @@ Iterable<CompileTimeFunctionData> getFunctionData(
         (idCreation.argumentList.arguments[1] as FunctionExpression).parameters!;
 
     List<CompileTimeParameterData> parameterData = [
-      CompileTimeParameterData(parameterList.parameterElements.first!.name,
-          parameterList.parameterElements.first!.type, false, null, null, null, null)
+      CompileTimeParameterData(
+        parameterList.parameterElements.first!.name,
+        parameterList.parameterElements.first!.type,
+        false,
+        null,
+        null,
+        null,
+        null,
+        null,
+      )
     ];
 
     for (final parameter in parameterList.parameters.skip(1)) {
@@ -61,6 +69,8 @@ Iterable<CompileTimeFunctionData> getFunctionData(
       Iterable<Annotation> choicesAnnotations = annotationsWithType(choicesId);
 
       Iterable<Annotation> useConverterAnnotations = annotationsWithType(useConverterId);
+
+      Iterable<Annotation> autocompleteAnnotations = annotationsWithType(autocompleteId);
 
       if ([nameAnnotations, descriptionAnnotations, choicesAnnotations, useConverterAnnotations]
           .any((annotations) => annotations.length > 1)) {
@@ -105,6 +115,12 @@ Iterable<CompileTimeFunctionData> getFunctionData(
         converterOverride = useConverterAnnotations.first;
       }
 
+      Annotation? autocompleteOverride;
+
+      if (autocompleteAnnotations.isNotEmpty) {
+        autocompleteOverride = autocompleteAnnotations.first;
+      }
+
       parameterData.add(CompileTimeParameterData(
         name,
         parameter.declaredElement!.type,
@@ -113,6 +129,7 @@ Iterable<CompileTimeFunctionData> getFunctionData(
         defaultValue,
         choices,
         converterOverride,
+        autocompleteOverride,
       ));
     }
 
