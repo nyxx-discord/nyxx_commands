@@ -75,6 +75,7 @@ export 'src/errors.dart'
 export 'src/options.dart' show CommandsOptions;
 export 'src/util/util.dart'
     show
+        Autocomplete,
         Choices,
         Description,
         Name,
