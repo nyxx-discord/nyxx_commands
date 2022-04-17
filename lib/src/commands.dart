@@ -511,9 +511,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     const Snowflake zeroSnowflake = Snowflake.zero();
 
     for (final command in children) {
-      if (command is IChatCommandComponent &&
-          !command.hasSlashCommand &&
-          (command is! ChatCommand || command.resolvedType == CommandType.textOnly)) {
+      if (!_shouldGnerateBuildersFor(command)) {
         continue;
       }
 
@@ -602,6 +600,18 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     }
 
     return builders;
+  }
+
+  bool _shouldGnerateBuildersFor(ICommandRegisterable<IContext> child) {
+    if (child is IChatCommandComponent) {
+      if (child.hasSlashCommand) {
+        return true;
+      }
+
+      return child is ChatCommand && child.type != CommandType.textOnly;
+    }
+
+    return true;
   }
 
   Future<Iterable<CommandPermissionBuilderAbstract>> _getPermissions(IChecked command) async {
