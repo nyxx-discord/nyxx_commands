@@ -1,3 +1,7 @@
+## 4.1.2
+__Bug fixes__:
+- Fixes an issue where slash commands nested within text-only commands would not be registered
+
 ## 4.1.1
 __Bug fixes__:
 - Correctly export the `@AUtocomplete(...)` annotation.
