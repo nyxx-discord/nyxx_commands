@@ -511,14 +511,10 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     const Snowflake zeroSnowflake = Snowflake.zero();
 
     for (final command in children) {
-      if (command is IChatCommandComponent) {
-        if (command is ChatCommand && command.resolvedType == CommandType.textOnly) {
-          continue;
-        }
-
-        if (!command.hasSlashCommand && command is! ChatCommand) {
-          continue;
-        }
+      if (command is IChatCommandComponent &&
+          !command.hasSlashCommand &&
+          (command is! ChatCommand || command.resolvedType == CommandType.textOnly)) {
+        continue;
       }
 
       Iterable<CommandPermissionBuilderAbstract> permissions = await _getPermissions(command);
