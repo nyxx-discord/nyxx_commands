@@ -557,7 +557,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
             type: SlashCommandType.chat,
           );
 
-          if (command is ChatCommand) {
+          if (command is ChatCommand && command.resolvedType != CommandType.textOnly) {
             builder.registerHandler((interaction) => _processChatInteraction(interaction, command));
 
             _processAutocompleteHandlerRegistration(builder.options, command);
