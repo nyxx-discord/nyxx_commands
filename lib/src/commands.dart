@@ -510,7 +510,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     List<SlashCommandBuilder> builders = [];
 
     for (final command in children) {
-      if (!_shouldGnerateBuildersFor(command)) {
+      if (!_shouldGenerateBuildersFor(command)) {
         continue;
       }
 
@@ -581,7 +581,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     return builders;
   }
 
-  bool _shouldGnerateBuildersFor(ICommandRegisterable<IContext> child) {
+  bool _shouldGenerateBuildersFor(ICommandRegisterable<IContext> child) {
     if (child is IChatCommandComponent) {
       if (child.hasSlashCommand) {
         return true;
