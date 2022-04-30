@@ -153,9 +153,7 @@ abstract class AbstractCheck {
 /// Since some checks are so common, nyxx_commands provides a set of in-built checks that also
 /// integrate with the [Discord Slash Command Permissions](https://discord.com/developers/docs/interactions/application-commands#permissions)
 /// API:
-/// - [GuildCheck], for checking if a command was invoked in a specific guild;
-/// - [RoleCheck], for checking if a command was invoked by a member with a specific role;
-/// - [UserCheck], for checking if a command was invoked by a specific user.
+/// - [GuildCheck], for checking if a command was invoked in a specific guild.
 ///
 /// You might also be interested in:
 /// - [Check.any], [Check.deny] and [Check.all], for modifying the behaviour of checks;
