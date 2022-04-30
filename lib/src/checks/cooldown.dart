@@ -307,4 +307,10 @@ class CooldownCheck extends AbstractCheck {
 
   @override
   Iterable<void Function(IContext p1)> get postCallHooks => [];
+
+  @override
+  bool get allowsDm => true;
+
+  @override
+  int? get requiredPermissions => null;
 }

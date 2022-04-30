@@ -73,6 +73,29 @@ abstract class AbstractCheck {
   @Deprecated('Use allowsDm and requiredPermissions instead')
   final Future<Iterable<CommandPermissionBuilderAbstract>> permissions = Future.value([]);
 
+  /// Whether this check will allow commands to be executed in DM channels.
+  ///
+  /// If this is `false`, users will be unable to execute slash commands in DM channels with the
+  /// bot. However, users might still execute a text [ChatCommand] in DMs, so further validation in
+  /// the check itself is required.
+  ///
+  /// You might also be interested in:
+  /// - [requiredPermissions], for fine-tuning how commands can be executed in a guild.
+  FutureOr<bool> get allowsDm;
+
+  /// The permissions required from members to pass this check.
+  ///
+  /// If this is `null` (or `Future<Null>`), all members will be allowed to execute the command.
+  ///
+  /// Members that do not have at least one of these permissions will see the command as unavailable
+  /// in their Discord client. However, users might still execute a text [ChatCommand], so further
+  /// validation in the check itself is required.
+  ///
+  /// You might also be interested in:
+  /// - [allowsDm], for controlling whether a command can be executed in a DM;
+  /// - [PermissionsConstants], for finding the integer that represents a certain permission.
+  FutureOr<int?> get requiredPermissions;
+
   /// An iterable of callbacks executed before a command is executed but after all the checks for
   /// that command have succeeded.
   ///
@@ -140,13 +163,25 @@ abstract class AbstractCheck {
 class Check extends AbstractCheck {
   final FutureOr<bool> Function(IContext) _check;
 
+  @override
+  final FutureOr<bool> allowsDm;
+
+  @override
+  final FutureOr<int?> requiredPermissions;
+
   /// Create a new [Check].
   ///
   /// [_check] should be a callback that returns `true` or `false` to indicate check success or
   /// failure respectively. [_check] should not throw to indicate failure.
   ///
   /// [name] can optionally be provided and will be used in error messages to identify this check.
-  Check(this._check, [String name = 'Check']) : super(name);
+  // TODO: Use named parameters instead of positional parameters
+  Check(
+    this._check, [
+    String name = 'Check',
+    this.allowsDm = true,
+    this.requiredPermissions,
+  ]) : super(name);
 
   /// Creates a check that succeeds if any of [checks] succeeds.
   ///
@@ -273,6 +308,34 @@ class _AnyCheck extends AbstractCheck {
           }
         }
       ];
+
+  @override
+  Future<bool> get allowsDm async {
+    for (final check in checks) {
+      if (await check.allowsDm) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  @override
+  Future<int?> get requiredPermissions async {
+    int result = 0;
+
+    for (final check in checks) {
+      int? permissions = await check.requiredPermissions;
+
+      if (permissions == null) {
+        return null;
+      }
+
+      result |= permissions;
+    }
+
+    return result;
+  }
 }
 
 class _DenyCheck extends Check {
@@ -289,6 +352,20 @@ class _DenyCheck extends Check {
 
   @override
   Iterable<void Function(IContext)> get postCallHooks => source.postCallHooks;
+
+  @override
+  FutureOr<bool> get allowsDm async => !await source.allowsDm;
+
+  @override
+  FutureOr<int?> get requiredPermissions async {
+    int? permissions = await source.requiredPermissions;
+
+    if (permissions == null) {
+      return null;
+    }
+
+    return ~permissions & PermissionsConstants.allPermissions;
+  }
 }
 
 class _GroupCheck extends Check {
@@ -311,13 +388,37 @@ class _GroupCheck extends Check {
   @override
   Iterable<void Function(IContext)> get postCallHooks =>
       checks.map((e) => e.postCallHooks).expand((_) => _);
+
+  @override
+  FutureOr<bool> get allowsDm async {
+    for (final check in checks) {
+      if (!await check.allowsDm) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  @override
+  FutureOr<int?> get requiredPermissions async {
+    Iterable<int> permissions = checks.whereType<int>();
+
+    if (permissions.isEmpty) {
+      return null;
+    }
+
+    int result = PermissionsConstants.allPermissions;
+
+    for (final permission in permissions) {
+      result &= permission;
+    }
+
+    return result;
+  }
 }
 
 /// A check that checks that the user that executes a command has a specific role.
-///
-/// This check integrates with the [Discord Slash Command Permissions](https://discord.com/developers/docs/interactions/application-commands#permissions)
-/// API, so users that cannot use a command because of this check will have that command appear
-/// grayed out in their Discord client.
 class RoleCheck extends Check {
   /// The IDs of the roles this check allows.
   Iterable<Snowflake> roleIds;
@@ -357,10 +458,6 @@ class RoleCheck extends Check {
 }
 
 /// A check that checks that a command was executed by a specific user.
-///
-/// This check integrates with the [Discord Slash Command Permissions](https://discord.com/developers/docs/interactions/application-commands#permissions)
-/// API, so users that cannot use a command because of this check will have that command appear
-/// grayed out in their Discord client.
 class UserCheck extends Check {
   /// The IDs of the users this check allows.
   Iterable<Snowflake> userIds;
@@ -404,12 +501,16 @@ class UserCheck extends Check {
 ///
 /// The value of this check overrides [CommandsPlugin.guild].
 ///
+/// This check integrates with the [Discord Slash Command Permissions](https://discord.com/developers/docs/interactions/application-commands#permissions)
+/// API, so users that cannot use a command because of this check will have that command appear
+/// unavailable out in their Discord client.
+///
 /// You might also be interested in:
 /// - [CommandsPlugin.guild], for globally setting a guild to register slash commands to.
 class GuildCheck extends Check {
   /// The IDs of the guilds that this check allows.
   ///
-  /// If [guildIds] is `[null]`, then any guild is allowed, but not channels outside of guilds/
+  /// If [guildIds] is `[null]`, then any guild is allowed, but not channels outside of guilds.
   Iterable<Snowflake?> guildIds;
 
   /// Create a [GuildCheck] that succeeds if the context originated in [guild].
@@ -422,7 +523,7 @@ class GuildCheck extends Check {
   /// Create a [GuildCheck] that succeeds if the ID of the guild the context originated in is [id].
   GuildCheck.id(Snowflake id, [String? name])
       : guildIds = [id],
-        super((context) => context.guild?.id == id, name ?? 'Guild Check on $id');
+        super((context) => context.guild?.id == id, name ?? 'Guild Check on $id', false);
 
   /// Create a [GuildCheck] that succeeds if the context originated outside of a guild (generally,
   /// in private messages).
@@ -431,7 +532,7 @@ class GuildCheck extends Check {
   /// - [GuildCheck.all], for checking that a context originated in a guild.
   GuildCheck.none([String? name])
       : guildIds = [],
-        super((context) => context.guild == null, name ?? 'Guild Check on <none>');
+        super((context) => context.guild == null, name ?? 'Guild Check on <none>', true, 0);
 
   /// Create a [GuildCheck] that succeeds if the context originated in a guild.
   ///
@@ -442,6 +543,7 @@ class GuildCheck extends Check {
         super(
           (context) => context.guild != null,
           name ?? 'Guild Check on <any>',
+          false,
         );
 
   /// Create a [GuildCheck] that succeeds if the context originated in any of [guilds].
@@ -458,5 +560,6 @@ class GuildCheck extends Check {
         super(
           (context) => ids.contains(context.guild?.id),
           name ?? 'Guild Check on any of [${ids.join(', ')}]',
+          false,
         );
 }
