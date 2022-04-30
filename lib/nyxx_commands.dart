@@ -12,6 +12,7 @@ export 'src/checks/context_type.dart'
         UserCommandCheck;
 export 'src/checks/cooldown.dart' show CooldownCheck, CooldownType;
 export 'src/checks/guild.dart' show GuildCheck;
+export 'src/checks/permissions.dart' show PermissionsCheck;
 export 'src/checks/user.dart' show RoleCheck, UserCheck;
 export 'src/commands.dart' show CommandsPlugin;
 export 'src/commands/chat_command.dart' show ChatCommand, ChatGroup, CommandType;
