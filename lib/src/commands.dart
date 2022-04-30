@@ -20,6 +20,7 @@ import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import 'checks/checks.dart';
+import 'checks/guild.dart';
 import 'commands/chat_command.dart';
 import 'commands/interfaces.dart';
 import 'commands/message_command.dart';

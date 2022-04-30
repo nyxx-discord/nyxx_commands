@@ -1,7 +1,7 @@
 /// A framework for easily creating slash commands and text commands for Discord using the nyxx library.
 library nyxx_commands;
 
-export 'src/checks/checks.dart' show AbstractCheck, Check, GuildCheck, RoleCheck, UserCheck;
+export 'src/checks/checks.dart' show AbstractCheck, Check;
 export 'src/checks/context_type.dart'
     show
         ChatCommandCheck,
@@ -11,6 +11,8 @@ export 'src/checks/context_type.dart'
         MessageCommandCheck,
         UserCommandCheck;
 export 'src/checks/cooldown.dart' show CooldownCheck, CooldownType;
+export 'src/checks/guild.dart' show GuildCheck;
+export 'src/checks/user.dart' show RoleCheck, UserCheck;
 export 'src/commands.dart' show CommandsPlugin;
 export 'src/commands/chat_command.dart' show ChatCommand, ChatGroup, CommandType;
 export 'src/commands/interfaces.dart'
