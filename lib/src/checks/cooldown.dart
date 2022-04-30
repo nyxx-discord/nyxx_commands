@@ -307,6 +307,7 @@ class CooldownCheck extends AbstractCheck {
   ];
 
   @override
+  @Deprecated('Use allowsDm and requiredPermissions instead')
   Future<Iterable<CommandPermissionBuilderAbstract>> get permissions => Future.value([]);
 
   @override

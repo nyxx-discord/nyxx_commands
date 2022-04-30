@@ -70,6 +70,7 @@ abstract class AbstractCheck {
   ///   to a given role;
   /// - [CommandPermissionBuilderAbstract.user], for creating slash command permissions that apply
   ///   to a given user.
+  @Deprecated('Use allowsDm and requiredPermissions instead')
   Future<Iterable<CommandPermissionBuilderAbstract>> get permissions;
 
   /// An iterable of callbacks executed before a command is executed but after all the checks for
@@ -207,6 +208,7 @@ class Check extends AbstractCheck {
   FutureOr<bool> check(IContext context) => _check(context);
 
   @override
+  @Deprecated('Use allowsDm and requiredPermissions instead')
   Future<Iterable<CommandPermissionBuilderAbstract>> get permissions => Future.value([]);
 
   @override
@@ -245,6 +247,7 @@ class _AnyCheck extends AbstractCheck {
   }
 
   @override
+  @Deprecated('Use allowsDm and requiredPermissions instead')
   Future<Iterable<CommandPermissionBuilderAbstract>> get permissions async {
     Iterable<Iterable<CommandPermissionBuilderAbstract>> permissions =
         await Future.wait(checks.map((check) => check.permissions));
@@ -302,6 +305,7 @@ class _DenyCheck extends Check {
       : super((context) async => !(await source.check(context)), name ?? 'Denied ${source.name}');
 
   @override
+  @Deprecated('Use allowsDm and requiredPermissions instead')
   Future<Iterable<CommandPermissionBuilderAbstract>> get permissions async {
     Iterable<CommandPermissionBuilderAbstract> permissions = await source.permissions;
 
@@ -343,6 +347,7 @@ class _GroupCheck extends Check {
         }, name ?? 'All of [${checks.map((e) => e.name).join(', ')}]');
 
   @override
+  @Deprecated('Use allowsDm and requiredPermissions instead')
   Future<Iterable<CommandPermissionBuilderAbstract>> get permissions async =>
       (await Future.wait(checks.map(
         (e) => e.permissions,
@@ -402,6 +407,7 @@ class RoleCheck extends Check {
         );
 
   @override
+  @Deprecated('Use allowsDm and requiredPermissions instead')
   Future<Iterable<CommandPermissionBuilderAbstract>> get permissions => Future.value([
         CommandPermissionBuilderAbstract.role(Snowflake.zero(), hasPermission: false),
         ...roleIds.map((e) => CommandPermissionBuilderAbstract.role(e, hasPermission: true)),
@@ -446,6 +452,7 @@ class UserCheck extends Check {
         );
 
   @override
+  @Deprecated('Use allowsDm and requiredPermissions instead')
   Future<Iterable<CommandPermissionBuilderAbstract>> get permissions => Future.value([
         CommandPermissionBuilderAbstract.user(Snowflake.zero(), hasPermission: false),
         ...userIds.map((e) => CommandPermissionBuilderAbstract.user(e, hasPermission: true)),

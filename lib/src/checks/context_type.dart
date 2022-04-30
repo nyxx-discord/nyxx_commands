@@ -101,6 +101,7 @@ class MessageChatCommandCheck extends Check {
   MessageChatCommandCheck() : super((context) => context is MessageChatContext);
 
   @override
+  @Deprecated('Use allowsDm and requiredPermissions instead')
   Future<Iterable<CommandPermissionBuilderAbstract>> get permissions => Future.value([
         CommandPermissionBuilderAbstract.role(Snowflake.zero(), hasPermission: false),
       ]);
