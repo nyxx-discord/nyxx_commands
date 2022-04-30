@@ -71,7 +71,7 @@ abstract class AbstractCheck {
   /// - [CommandPermissionBuilderAbstract.user], for creating slash command permissions that apply
   ///   to a given user.
   @Deprecated('Use allowsDm and requiredPermissions instead')
-  Future<Iterable<CommandPermissionBuilderAbstract>> get permissions;
+  final Future<Iterable<CommandPermissionBuilderAbstract>> permissions = Future.value([]);
 
   /// An iterable of callbacks executed before a command is executed but after all the checks for
   /// that command have succeeded.
@@ -208,10 +208,6 @@ class Check extends AbstractCheck {
   FutureOr<bool> check(IContext context) => _check(context);
 
   @override
-  @Deprecated('Use allowsDm and requiredPermissions instead')
-  Future<Iterable<CommandPermissionBuilderAbstract>> get permissions => Future.value([]);
-
-  @override
   Iterable<void Function(IContext context)> get postCallHooks => [];
 
   @override
@@ -244,25 +240,6 @@ class _AnyCheck extends AbstractCheck {
       }
     }
     return false;
-  }
-
-  @override
-  @Deprecated('Use allowsDm and requiredPermissions instead')
-  Future<Iterable<CommandPermissionBuilderAbstract>> get permissions async {
-    Iterable<Iterable<CommandPermissionBuilderAbstract>> permissions =
-        await Future.wait(checks.map((check) => check.permissions));
-
-    return permissions.first.where(
-      (permission) =>
-          permission.hasPermission ||
-          // If permission is not granted, we check that it is not allowed by any of the other
-          // checks. If every check denies the permission for this id, also deny the permission in
-          // the combined version.
-          permissions.every((element) => element.any(
-                // CommandPermissionBuilderAbstract does not override == so we manually check it
-                (p) => p.id == permission.id && !p.hasPermission,
-              )),
-    );
   }
 
   @override
@@ -304,25 +281,6 @@ class _DenyCheck extends Check {
   _DenyCheck(this.source, [String? name])
       : super((context) async => !(await source.check(context)), name ?? 'Denied ${source.name}');
 
-  @override
-  @Deprecated('Use allowsDm and requiredPermissions instead')
-  Future<Iterable<CommandPermissionBuilderAbstract>> get permissions async {
-    Iterable<CommandPermissionBuilderAbstract> permissions = await source.permissions;
-
-    Iterable<RoleCommandPermissionBuilder> rolePermissions =
-        permissions.whereType<RoleCommandPermissionBuilder>();
-
-    Iterable<UserCommandPermissionBuilder> userPermissions =
-        permissions.whereType<UserCommandPermissionBuilder>();
-
-    return [
-      ...rolePermissions.map((permission) => CommandPermissionBuilderAbstract.role(permission.id,
-          hasPermission: !permission.hasPermission)),
-      ...userPermissions
-          .map((e) => CommandPermissionBuilderAbstract.user(e.id, hasPermission: !e.hasPermission)),
-    ];
-  }
-
   // It may seem counterintuitive to call the success hooks if the source check failed, and this is
   // a situation where there is no proper solution. Here, we assume that the source check will
   // reset its state on failure after failure, so calling the hooks is desireable.
@@ -345,15 +303,6 @@ class _GroupCheck extends Check {
 
           return !syncResults.contains(false) && !(await Future.wait(asyncResults)).contains(false);
         }, name ?? 'All of [${checks.map((e) => e.name).join(', ')}]');
-
-  @override
-  @Deprecated('Use allowsDm and requiredPermissions instead')
-  Future<Iterable<CommandPermissionBuilderAbstract>> get permissions async =>
-      (await Future.wait(checks.map(
-        (e) => e.permissions,
-      )))
-          .fold([],
-              (acc, element) => (acc as List<CommandPermissionBuilderAbstract>)..addAll(element));
 
   @override
   Iterable<void Function(IContext)> get preCallHooks =>
@@ -405,13 +354,6 @@ class RoleCheck extends Check {
           (context) => context.member?.roles.any((role) => roles.contains(role.id)) ?? false,
           name ?? 'Role Check on any of [${roles.join(', ')}]',
         );
-
-  @override
-  @Deprecated('Use allowsDm and requiredPermissions instead')
-  Future<Iterable<CommandPermissionBuilderAbstract>> get permissions => Future.value([
-        CommandPermissionBuilderAbstract.role(Snowflake.zero(), hasPermission: false),
-        ...roleIds.map((e) => CommandPermissionBuilderAbstract.role(e, hasPermission: true)),
-      ]);
 }
 
 /// A check that checks that a command was executed by a specific user.
@@ -450,13 +392,6 @@ class UserCheck extends Check {
           (context) => ids.contains(context.user.id),
           name ?? 'User Check on any of [${ids.join(', ')}]',
         );
-
-  @override
-  @Deprecated('Use allowsDm and requiredPermissions instead')
-  Future<Iterable<CommandPermissionBuilderAbstract>> get permissions => Future.value([
-        CommandPermissionBuilderAbstract.user(Snowflake.zero(), hasPermission: false),
-        ...userIds.map((e) => CommandPermissionBuilderAbstract.user(e, hasPermission: true)),
-      ]);
 }
 
 /// A check that checks that a command was executed in a particular guild, or in a channel that is

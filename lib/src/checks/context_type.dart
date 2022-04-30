@@ -1,8 +1,3 @@
-import 'dart:async';
-
-import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_interactions/nyxx_interactions.dart';
-
 import '../context/interaction_context.dart';
 import '../context/chat_context.dart';
 import '../context/message_context.dart';
@@ -99,10 +94,4 @@ class InteractionChatCommandCheck extends Check {
 class MessageChatCommandCheck extends Check {
   /// Create a new [MessageChatCommandCheck].
   MessageChatCommandCheck() : super((context) => context is MessageChatContext);
-
-  @override
-  @Deprecated('Use allowsDm and requiredPermissions instead')
-  Future<Iterable<CommandPermissionBuilderAbstract>> get permissions => Future.value([
-        CommandPermissionBuilderAbstract.role(Snowflake.zero(), hasPermission: false),
-      ]);
 }
