@@ -508,28 +508,12 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
   Future<Iterable<SlashCommandBuilder>> _getSlashBuilders() async {
     List<SlashCommandBuilder> builders = [];
 
-    const Snowflake zeroSnowflake = Snowflake.zero();
-
     for (final command in children) {
       if (!_shouldGnerateBuildersFor(command)) {
         continue;
       }
 
-      Iterable<CommandPermissionBuilderAbstract> permissions = await _getPermissions(command);
-
-      if (permissions.length == 1 &&
-          permissions.first.id == zeroSnowflake &&
-          !permissions.first.hasPermission) {
-        continue;
-      }
-
-      bool defaultPermission = true;
-      for (final permission in permissions) {
-        if (permission.id == zeroSnowflake) {
-          defaultPermission = permission.hasPermission;
-          break;
-        }
-      }
+      AbstractCheck allChecks = Check.all(command.checks);
 
       Iterable<GuildCheck> guildChecks = command.checks.whereType<GuildCheck>();
 
@@ -547,10 +531,8 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
             List.of(
               _processHandlerRegistration(command.getOptions(this), command),
             ),
-            defaultPermissions: defaultPermission,
-            permissions: List.of(
-              permissions.where((permission) => permission.id != zeroSnowflake),
-            ),
+            canBeUsedInDm: await allChecks.allowsDm,
+            requiredPermissions: await allChecks.requiredPermissions,
             guild: guildId ?? guild,
             type: SlashCommandType.chat,
           );
@@ -567,10 +549,8 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
             command.name,
             null,
             [],
-            defaultPermissions: defaultPermission,
-            permissions: List.of(
-              permissions.where((permission) => permission.id != zeroSnowflake),
-            ),
+            canBeUsedInDm: await allChecks.allowsDm,
+            requiredPermissions: await allChecks.requiredPermissions,
             guild: guildId ?? guild,
             type: SlashCommandType.user,
           );
@@ -583,10 +563,8 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
             command.name,
             null,
             [],
-            defaultPermissions: defaultPermission,
-            permissions: List.of(
-              permissions.where((permission) => permission.id != zeroSnowflake),
-            ),
+            canBeUsedInDm: await allChecks.allowsDm,
+            requiredPermissions: await allChecks.requiredPermissions,
             guild: guildId ?? guild,
             type: SlashCommandType.message,
           );
@@ -612,40 +590,6 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     }
 
     return true;
-  }
-
-  Future<Iterable<CommandPermissionBuilderAbstract>> _getPermissions(IChecked command) async {
-    Map<Snowflake, CommandPermissionBuilderAbstract> uniquePermissions = {};
-
-    for (final check in command.checks) {
-      Iterable<CommandPermissionBuilderAbstract> checkPermissions = await check.permissions;
-
-      for (final permission in checkPermissions) {
-        if (uniquePermissions.containsKey(permission.id) &&
-            uniquePermissions[permission.id]!.hasPermission != permission.hasPermission) {
-          logger.warning(
-            'Check "${check.name}" is in conflict with a previous check on '
-            'permissions for '
-            '${permission.id.id == 0 ? 'the default permission' : 'id ${permission.id}'}. '
-            'Permission has been set to false to prevent unintended usage.',
-          );
-
-          if (permission is RoleCommandPermissionBuilder) {
-            uniquePermissions[permission.id] =
-                CommandPermissionBuilderAbstract.role(permission.id, hasPermission: false);
-          } else {
-            uniquePermissions[permission.id] =
-                CommandPermissionBuilderAbstract.user(permission.id, hasPermission: false);
-          }
-
-          continue;
-        }
-
-        uniquePermissions[permission.id] = permission;
-      }
-    }
-
-    return uniquePermissions.values;
   }
 
   Iterable<CommandOptionBuilder> _processHandlerRegistration(
