@@ -70,7 +70,31 @@ abstract class AbstractCheck {
   ///   to a given role;
   /// - [CommandPermissionBuilderAbstract.user], for creating slash command permissions that apply
   ///   to a given user.
-  Future<Iterable<CommandPermissionBuilderAbstract>> get permissions;
+  @Deprecated('Use allowsDm and requiredPermissions instead')
+  final Future<Iterable<CommandPermissionBuilderAbstract>> permissions = Future.value([]);
+
+  /// Whether this check will allow commands to be executed in DM channels.
+  ///
+  /// If this is `false`, users will be unable to execute slash commands in DM channels with the
+  /// bot. However, users might still execute a text [ChatCommand] in DMs, so further validation in
+  /// the check itself is required.
+  ///
+  /// You might also be interested in:
+  /// - [requiredPermissions], for fine-tuning how commands can be executed in a guild.
+  FutureOr<bool> get allowsDm;
+
+  /// The permissions required from members to pass this check.
+  ///
+  /// If this is `null` (or `Future<Null>`), all members will be allowed to execute the command.
+  ///
+  /// Members that do not have at least one of these permissions will see the command as unavailable
+  /// in their Discord client. However, users might still execute a text [ChatCommand], so further
+  /// validation in the check itself is required.
+  ///
+  /// You might also be interested in:
+  /// - [allowsDm], for controlling whether a command can be executed in a DM;
+  /// - [PermissionsConstants], for finding the integer that represents a certain permission.
+  FutureOr<int?> get requiredPermissions;
 
   /// An iterable of callbacks executed before a command is executed but after all the checks for
   /// that command have succeeded.
@@ -129,9 +153,7 @@ abstract class AbstractCheck {
 /// Since some checks are so common, nyxx_commands provides a set of in-built checks that also
 /// integrate with the [Discord Slash Command Permissions](https://discord.com/developers/docs/interactions/application-commands#permissions)
 /// API:
-/// - [GuildCheck], for checking if a command was invoked in a specific guild;
-/// - [RoleCheck], for checking if a command was invoked by a member with a specific role;
-/// - [UserCheck], for checking if a command was invoked by a specific user.
+/// - [GuildCheck], for checking if a command was invoked in a specific guild.
 ///
 /// You might also be interested in:
 /// - [Check.any], [Check.deny] and [Check.all], for modifying the behaviour of checks;
@@ -139,13 +161,25 @@ abstract class AbstractCheck {
 class Check extends AbstractCheck {
   final FutureOr<bool> Function(IContext) _check;
 
+  @override
+  final FutureOr<bool> allowsDm;
+
+  @override
+  final FutureOr<int?> requiredPermissions;
+
   /// Create a new [Check].
   ///
   /// [_check] should be a callback that returns `true` or `false` to indicate check success or
   /// failure respectively. [_check] should not throw to indicate failure.
   ///
   /// [name] can optionally be provided and will be used in error messages to identify this check.
-  Check(this._check, [String name = 'Check']) : super(name);
+  // TODO: Use named parameters instead of positional parameters
+  Check(
+    this._check, [
+    String name = 'Check',
+    this.allowsDm = true,
+    this.requiredPermissions,
+  ]) : super(name);
 
   /// Creates a check that succeeds if any of [checks] succeeds.
   ///
@@ -207,9 +241,6 @@ class Check extends AbstractCheck {
   FutureOr<bool> check(IContext context) => _check(context);
 
   @override
-  Future<Iterable<CommandPermissionBuilderAbstract>> get permissions => Future.value([]);
-
-  @override
   Iterable<void Function(IContext context)> get postCallHooks => [];
 
   @override
@@ -245,24 +276,6 @@ class _AnyCheck extends AbstractCheck {
   }
 
   @override
-  Future<Iterable<CommandPermissionBuilderAbstract>> get permissions async {
-    Iterable<Iterable<CommandPermissionBuilderAbstract>> permissions =
-        await Future.wait(checks.map((check) => check.permissions));
-
-    return permissions.first.where(
-      (permission) =>
-          permission.hasPermission ||
-          // If permission is not granted, we check that it is not allowed by any of the other
-          // checks. If every check denies the permission for this id, also deny the permission in
-          // the combined version.
-          permissions.every((element) => element.any(
-                // CommandPermissionBuilderAbstract does not override == so we manually check it
-                (p) => p.id == permission.id && !p.hasPermission,
-              )),
-    );
-  }
-
-  @override
   Iterable<void Function(IContext)> get preCallHooks => [
         (context) {
           AbstractCheck? actualCheck = _succesfulChecks[context];
@@ -293,6 +306,34 @@ class _AnyCheck extends AbstractCheck {
           }
         }
       ];
+
+  @override
+  Future<bool> get allowsDm async {
+    for (final check in checks) {
+      if (await check.allowsDm) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  @override
+  Future<int?> get requiredPermissions async {
+    int result = 0;
+
+    for (final check in checks) {
+      int? permissions = await check.requiredPermissions;
+
+      if (permissions == null) {
+        return null;
+      }
+
+      result |= permissions;
+    }
+
+    return result;
+  }
 }
 
 class _DenyCheck extends Check {
@@ -300,24 +341,6 @@ class _DenyCheck extends Check {
 
   _DenyCheck(this.source, [String? name])
       : super((context) async => !(await source.check(context)), name ?? 'Denied ${source.name}');
-
-  @override
-  Future<Iterable<CommandPermissionBuilderAbstract>> get permissions async {
-    Iterable<CommandPermissionBuilderAbstract> permissions = await source.permissions;
-
-    Iterable<RoleCommandPermissionBuilder> rolePermissions =
-        permissions.whereType<RoleCommandPermissionBuilder>();
-
-    Iterable<UserCommandPermissionBuilder> userPermissions =
-        permissions.whereType<UserCommandPermissionBuilder>();
-
-    return [
-      ...rolePermissions.map((permission) => CommandPermissionBuilderAbstract.role(permission.id,
-          hasPermission: !permission.hasPermission)),
-      ...userPermissions
-          .map((e) => CommandPermissionBuilderAbstract.user(e.id, hasPermission: !e.hasPermission)),
-    ];
-  }
 
   // It may seem counterintuitive to call the success hooks if the source check failed, and this is
   // a situation where there is no proper solution. Here, we assume that the source check will
@@ -327,6 +350,20 @@ class _DenyCheck extends Check {
 
   @override
   Iterable<void Function(IContext)> get postCallHooks => source.postCallHooks;
+
+  @override
+  FutureOr<bool> get allowsDm async => !await source.allowsDm;
+
+  @override
+  FutureOr<int?> get requiredPermissions async {
+    int? permissions = await source.requiredPermissions;
+
+    if (permissions == null) {
+      return null;
+    }
+
+    return ~permissions & PermissionsConstants.allPermissions;
+  }
 }
 
 class _GroupCheck extends Check {
@@ -343,178 +380,38 @@ class _GroupCheck extends Check {
         }, name ?? 'All of [${checks.map((e) => e.name).join(', ')}]');
 
   @override
-  Future<Iterable<CommandPermissionBuilderAbstract>> get permissions async =>
-      (await Future.wait(checks.map(
-        (e) => e.permissions,
-      )))
-          .fold([],
-              (acc, element) => (acc as List<CommandPermissionBuilderAbstract>)..addAll(element));
-
-  @override
   Iterable<void Function(IContext)> get preCallHooks =>
       checks.map((e) => e.preCallHooks).expand((_) => _);
 
   @override
   Iterable<void Function(IContext)> get postCallHooks =>
       checks.map((e) => e.postCallHooks).expand((_) => _);
-}
-
-/// A check that checks that the user that executes a command has a specific role.
-///
-/// This check integrates with the [Discord Slash Command Permissions](https://discord.com/developers/docs/interactions/application-commands#permissions)
-/// API, so users that cannot use a command because of this check will have that command appear
-/// grayed out in their Discord client.
-class RoleCheck extends Check {
-  /// The IDs of the roles this check allows.
-  Iterable<Snowflake> roleIds;
-
-  /// Create a new [RoleCheck] that succeeds if the user that created the context has [role].
-  ///
-  /// You might also be interested in:
-  /// - [RoleCheck.id], for creating this same check without an instance of [IRole];
-  /// - [RoleCheck.any], for checking that the user that created a context has one of a set or
-  ///   roles.
-  RoleCheck(IRole role, [String? name]) : this.id(role.id, name);
-
-  /// Create a new [RoleCheck] that succeeds if the user that created the context has a role with
-  /// the id [id].
-  RoleCheck.id(Snowflake id, [String? name])
-      : roleIds = [id],
-        super(
-          (context) => context.member?.roles.any((role) => role.id == id) ?? false,
-          name ?? 'Role Check on $id',
-        );
-
-  /// Create a new [RoleCheck] that succeeds if the user that created the context has any of [roles].
-  ///
-  /// You might also be interested in:
-  /// - [RoleCheck.anyId], for creating this same check without instances of [IRole].
-  RoleCheck.any(Iterable<IRole> roles, [String? name])
-      : this.anyId(roles.map((role) => role.id), name);
-
-  /// Create a new [RoleCheck] that succeeds if the user that created the context has any role for
-  /// which the role's id is in [roles].
-  RoleCheck.anyId(Iterable<Snowflake> roles, [String? name])
-      : roleIds = roles,
-        super(
-          (context) => context.member?.roles.any((role) => roles.contains(role.id)) ?? false,
-          name ?? 'Role Check on any of [${roles.join(', ')}]',
-        );
 
   @override
-  Future<Iterable<CommandPermissionBuilderAbstract>> get permissions => Future.value([
-        CommandPermissionBuilderAbstract.role(Snowflake.zero(), hasPermission: false),
-        ...roleIds.map((e) => CommandPermissionBuilderAbstract.role(e, hasPermission: true)),
-      ]);
-}
+  FutureOr<bool> get allowsDm async {
+    for (final check in checks) {
+      if (!await check.allowsDm) {
+        return false;
+      }
+    }
 
-/// A check that checks that a command was executed by a specific user.
-///
-/// This check integrates with the [Discord Slash Command Permissions](https://discord.com/developers/docs/interactions/application-commands#permissions)
-/// API, so users that cannot use a command because of this check will have that command appear
-/// grayed out in their Discord client.
-class UserCheck extends Check {
-  /// The IDs of the users this check allows.
-  Iterable<Snowflake> userIds;
-
-  /// Create a new [UserCheck] that succeeds if the context was created by [user].
-  ///
-  /// You might also be interested in:
-  /// - [UserCheck.id], for creating this same check without an instance of [IUser],
-  /// - [UserCheck.any], for checking that a context was created by a user in a set or users.
-  UserCheck(IUser user, [String? name]) : this.id(user.id, name);
-
-  /// Create a new [UserCheck] that succeeds if the ID of the user that created the context is [id].
-  UserCheck.id(Snowflake id, [String? name])
-      : userIds = [id],
-        super((context) => context.user.id == id, name ?? 'User Check on $id');
-
-  /// Create a new [UserCheck] that succeeds if the context was created by any one of [users].
-  ///
-  /// You might also be interested in:
-  /// - [UserCheck.anyId], for creating this same check without instance of [IUser].
-  UserCheck.any(Iterable<IUser> users, [String? name])
-      : this.anyId(users.map((user) => user.id), name);
-
-  /// Create a new [UserCheck] that succeeds if the ID of the user that created the context is in
-  /// [ids].
-  UserCheck.anyId(Iterable<Snowflake> ids, [String? name])
-      : userIds = ids,
-        super(
-          (context) => ids.contains(context.user.id),
-          name ?? 'User Check on any of [${ids.join(', ')}]',
-        );
+    return true;
+  }
 
   @override
-  Future<Iterable<CommandPermissionBuilderAbstract>> get permissions => Future.value([
-        CommandPermissionBuilderAbstract.user(Snowflake.zero(), hasPermission: false),
-        ...userIds.map((e) => CommandPermissionBuilderAbstract.user(e, hasPermission: true)),
-      ]);
-}
+  FutureOr<int?> get requiredPermissions async {
+    Iterable<int> permissions = checks.whereType<int>();
 
-/// A check that checks that a command was executed in a particular guild, or in a channel that is
-/// not in a guild.
-///
-/// This check is special as commands with this check will only be registered as slash commands in
-/// the guilds specified by this guild check. For this functionality to work, however, this check
-/// must be a "top-level" check - that is, a check that is not nested within a modifier such as
-/// [Check.any], [Check.deny] or [Check.all].
-///
-/// The value of this check overrides [CommandsPlugin.guild].
-///
-/// You might also be interested in:
-/// - [CommandsPlugin.guild], for globally setting a guild to register slash commands to.
-class GuildCheck extends Check {
-  /// The IDs of the guilds that this check allows.
-  ///
-  /// If [guildIds] is `[null]`, then any guild is allowed, but not channels outside of guilds/
-  Iterable<Snowflake?> guildIds;
+    if (permissions.isEmpty) {
+      return null;
+    }
 
-  /// Create a [GuildCheck] that succeeds if the context originated in [guild].
-  ///
-  /// You might also be interested in:
-  /// - [GuildCheck.id], for creating this same check without an instance of [IGuild];
-  /// - [GuildCheck.any], for checking if the context originated in any of a set of guilds.
-  GuildCheck(IGuild guild, [String? name]) : this.id(guild.id, name);
+    int result = PermissionsConstants.allPermissions;
 
-  /// Create a [GuildCheck] that succeeds if the ID of the guild the context originated in is [id].
-  GuildCheck.id(Snowflake id, [String? name])
-      : guildIds = [id],
-        super((context) => context.guild?.id == id, name ?? 'Guild Check on $id');
+    for (final permission in permissions) {
+      result &= permission;
+    }
 
-  /// Create a [GuildCheck] that succeeds if the context originated outside of a guild (generally,
-  /// in private messages).
-  ///
-  /// You might also be interested in:
-  /// - [GuildCheck.all], for checking that a context originated in a guild.
-  GuildCheck.none([String? name])
-      : guildIds = [],
-        super((context) => context.guild == null, name ?? 'Guild Check on <none>');
-
-  /// Create a [GuildCheck] that succeeds if the context originated in a guild.
-  ///
-  /// You might also be interested in:
-  /// - [GuildCheck.none], for checking that a context originated outside a guild.
-  GuildCheck.all([String? name])
-      : guildIds = [null],
-        super(
-          (context) => context.guild != null,
-          name ?? 'Guild Check on <any>',
-        );
-
-  /// Create a [GuildCheck] that succeeds if the context originated in any of [guilds].
-  ///
-  /// You might also be interested in:
-  /// - [GuildCheck.anyId], for creating the same check without instances of [IGuild].
-  GuildCheck.any(Iterable<IGuild> guilds, [String? name])
-      : this.anyId(guilds.map((guild) => guild.id), name);
-
-  /// Create a [GuildCheck] that succeeds if the id of the guild the context originated in is in
-  /// [ids].
-  GuildCheck.anyId(Iterable<Snowflake> ids, [String? name])
-      : guildIds = ids,
-        super(
-          (context) => ids.contains(context.guild?.id),
-          name ?? 'Guild Check on any of [${ids.join(', ')}]',
-        );
+    return result;
+  }
 }

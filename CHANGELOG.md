@@ -1,3 +1,16 @@
+## 4.2.0-dev.0
+__Deprecations__:
+- Deprecated `AbstractCheck.permissions` and all associated features.
+
+__New features__:
+- Added `AbtractCheck.allowsDm` and `AbstractCheck.requiredPermissions` for integrating checks with permissions v2.
+- Updated `Check.deny`, `Check.any` and `Check.all` to work with permissions v2.
+- Added `PermissionsCheck`, for checking if users have a specific permission.
+
+__Miscellaneous__:
+- Bump `nyxx_interactions` to 4.2.0.
+- Added proper names to context type checks if none is provided.
+
 ## 4.1.2
 __Bug fixes__:
 - Fixes an issue where slash commands nested within text-only commands would not be registered
