@@ -93,6 +93,12 @@ class PermissionsCheck extends Check {
               ISlashCommandPermissionOverrides overrides =
                   await command.getPermissionOverridesInGuild(context.guild!.id).getOrDownload();
 
+              if (overrides.permissionOverrides.isEmpty) {
+                overrides = await context.commands.interactions
+                    .getGlobalOverridesInGuild(context.guild!.id)
+                    .getOrDownload();
+              }
+
               bool? def;
               bool? channelDef;
               bool? role;
