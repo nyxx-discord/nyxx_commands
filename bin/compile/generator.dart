@@ -155,13 +155,31 @@ String generateOutput(
 
   // Other types
   for (final type in typeTree.whereType<InterfaceTypeData>()) {
-    result.write(
-        '${type.id}: InterfaceTypeData(r"${type.name}", ${type.id}, ${type.strippedId}, [${type.superClasses.join(',')}], [${type.typeArguments.join(',')}], ${type.isNullable}),');
+    result.write('''
+      ${type.id}: InterfaceTypeData(
+        name: r"${type.name}",
+        id: ${type.id},
+        strippedId: ${type.strippedId},
+        superClasses: [${type.superClasses.join(',')}],
+        typeArguments: [${type.typeArguments.join(',')}],
+        isNullable: ${type.isNullable},
+      ),
+    ''');
   }
 
   for (final type in typeTree.whereType<FunctionTypeData>()) {
-    result.write(
-        '${type.id}: FunctionTypeData(r"${type.name}", ${type.id}, ${type.returnType}, [${type.parameterTypes.join(',')}], ${type.isNullable}),');
+    result.write('''
+      ${type.id}: FunctionTypeData(
+        name: r"${type.name}",
+        id: ${type.id},
+        returnType: ${type.returnType},
+        positionalParameterTypes: [${type.positionalParameterTypes.join(',')}],
+        requiredPositionalParametersCount: ${type.requiredPositionalParametersCount},
+        requiredNamedParametersType: {${type.requiredNamedParametersType.entries.map((entry) => 'r"${entry.key}": ${entry.value}').join(',')}},
+        optionalNamedParametersType: {${type.optionalNamedParametersType.entries.map((entry) => 'r"${entry.key}": ${entry.value}').join(',')}},
+        isNullable: ${type.isNullable},
+      ),
+    ''');
   }
 
   result.write('};');
@@ -318,14 +336,14 @@ String generateOutput(
 
       parameterDataSource += '''
         ParameterData(
-          "${parameter.name}",
-          t_${getId(parameter.type)},
-          ${parameter.isOptional},
-          ${parameter.description == null ? 'null' : '"${parameter.description}"'},
-          $defaultValueSource,
-          $choicesSource,
-          $converterSource,
-          $autocompleteSource,
+          name: "${parameter.name}",
+          type: t_${getId(parameter.type)},
+          isOptional: ${parameter.isOptional},
+          description: ${parameter.description == null ? 'null' : '"${parameter.description}"'},
+          defaultValue: $defaultValueSource,
+          choices: $choicesSource,
+          converterOverride: $converterSource,
+          autocompleteOverride: $autocompleteSource,
         ),
       ''';
     }

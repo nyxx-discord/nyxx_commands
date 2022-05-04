@@ -99,14 +99,14 @@ FunctionData loadFunctionData(Function fn) {
     }
 
     parametersData.add(ParameterData(
-      name,
-      type,
-      parameterMirror.isOptional,
-      description,
-      parameterMirror.defaultValue?.reflectee,
-      choices,
-      converterOverride,
-      autocompleteOverride,
+      name: name,
+      type: type,
+      isOptional: parameterMirror.isOptional,
+      description: description,
+      defaultValue: parameterMirror.defaultValue?.reflectee,
+      choices: choices,
+      converterOverride: converterOverride,
+      autocompleteOverride: autocompleteOverride,
     ));
   }
 

@@ -43,14 +43,14 @@ class ParameterData {
 
   final FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autocompleteOverride;
 
-  const ParameterData(
-    this.name,
-    this.type,
-    this.isOptional,
-    this.description,
-    this.defaultValue,
-    this.choices,
-    this.converterOverride,
-    this.autocompleteOverride,
-  );
+  const ParameterData({
+    required this.name,
+    required this.type,
+    required this.isOptional,
+    required this.description,
+    required this.defaultValue,
+    required this.choices,
+    required this.converterOverride,
+    required this.autocompleteOverride,
+  });
 }

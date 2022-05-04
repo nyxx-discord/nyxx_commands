@@ -45,15 +45,15 @@ class InterfaceTypeData implements TypeData, NullableTypeData {
   @override
   bool isNullable;
 
-  InterfaceTypeData(
-    this.name,
-    this.source,
-    this.id,
-    this.strippedId,
-    this.superClasses,
-    this.typeArguments,
-    this.isNullable,
-  );
+  InterfaceTypeData({
+    required this.name,
+    required this.source,
+    required this.id,
+    required this.strippedId,
+    required this.superClasses,
+    required this.typeArguments,
+    required this.isNullable,
+  });
 
   @override
   int get hashCode => id;
@@ -83,13 +83,26 @@ class FunctionTypeData implements TypeData, NullableTypeData {
 
   int returnType;
 
-  List<int> parameterTypes;
+  List<int> positionalParameterTypes;
+  int requiredPositionalParametersCount;
+
+  Map<String, int> optionalNamedParametersType;
+  Map<String, int> requiredNamedParametersType;
 
   @override
   bool isNullable;
 
-  FunctionTypeData(
-      this.name, this.source, this.id, this.returnType, this.parameterTypes, this.isNullable);
+  FunctionTypeData({
+    required this.name,
+    required this.source,
+    required this.id,
+    required this.returnType,
+    required this.positionalParameterTypes,
+    required this.isNullable,
+    required this.requiredPositionalParametersCount,
+    required this.optionalNamedParametersType,
+    required this.requiredNamedParametersType,
+  });
 
   @override
   int get hashCode => id;
@@ -102,7 +115,7 @@ class FunctionTypeData implements TypeData, NullableTypeData {
       'source=$source, '
       'name=$name, '
       'returnType=$returnType, '
-      'parameterTypes=$parameterTypes, '
+      'parameterTypes=$positionalParameterTypes, '
       'isNullable=$isNullable]';
 }
 

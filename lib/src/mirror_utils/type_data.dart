@@ -38,8 +38,14 @@ class InterfaceTypeData implements TypeData, NullableTypeData {
   @override
   final bool isNullable;
 
-  const InterfaceTypeData(
-      this.name, this.id, this.strippedId, this.superClasses, this.typeArguments, this.isNullable);
+  const InterfaceTypeData({
+    required this.name,
+    required this.id,
+    required this.strippedId,
+    required this.superClasses,
+    required this.typeArguments,
+    required this.isNullable,
+  });
 }
 
 class FunctionTypeData implements TypeData, NullableTypeData {
@@ -51,12 +57,25 @@ class FunctionTypeData implements TypeData, NullableTypeData {
 
   final int returnType;
 
-  final List<int> parameterTypes;
+  final List<int> positionalParameterTypes;
+  final int requiredPositionalParametersCount;
+
+  final Map<String, int> requiredNamedParametersType;
+  final Map<String, int> optionalNamedParametersType;
 
   @override
   final bool isNullable;
 
-  const FunctionTypeData(this.name, this.id, this.returnType, this.parameterTypes, this.isNullable);
+  const FunctionTypeData({
+    required this.name,
+    required this.id,
+    required this.returnType,
+    required this.positionalParameterTypes,
+    required this.requiredPositionalParametersCount,
+    required this.requiredNamedParametersType,
+    required this.optionalNamedParametersType,
+    required this.isNullable,
+  });
 }
 
 class DynamicTypeData implements TypeData {

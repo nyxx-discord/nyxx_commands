@@ -20,8 +20,6 @@ import 'package:nyxx_commands/src/errors.dart';
 import '../generator.dart';
 import 'type_data.dart';
 
-// TODO: optional & named parameters
-
 final List<DartType> processing = [];
 
 int getId(DartType type) {
@@ -182,28 +180,50 @@ Map<int, TypeData> buildTree(List<DartType> types) {
       }
 
       result[id] = InterfaceTypeData(
-        type.getDisplayString(withNullability: true),
-        type,
-        id,
-        getId(type.element.thisType),
-        type.allSupertypes.map(getId).toList(),
-        type.typeArguments.map(getId).toList(),
-        type.nullabilitySuffix == NullabilitySuffix.question,
+        name: type.getDisplayString(withNullability: true),
+        source: type,
+        id: id,
+        strippedId: getId(type.element.thisType),
+        superClasses: type.allSupertypes.map(getId).toList(),
+        typeArguments: type.typeArguments.map(getId).toList(),
+        isNullable: type.nullabilitySuffix == NullabilitySuffix.question,
       );
     } else if (type is FunctionType) {
       handle(type.returnType);
 
+      int requiredParameterCount = 0;
+      List<int> positionalParameterTypes = [];
+      Map<String, int> requiredNamedParameters = {};
+      Map<String, int> optionalNamedParameters = {};
+
       for (final parameter in type.parameters) {
         handle(parameter.type);
+
+        if (parameter.isPositional) {
+          if (parameter.isRequiredPositional) {
+            requiredParameterCount++;
+          }
+
+          positionalParameterTypes.add(getId(parameter.type));
+        } else if (parameter.isRequiredNamed) {
+          requiredNamedParameters[parameter.name] = getId(parameter.type);
+        } else if (parameter.isOptionalNamed) {
+          optionalNamedParameters[parameter.name] = getId(parameter.type);
+        } else {
+          throw CommandsError('Unknown parameter type $parameter');
+        }
       }
 
       result[id] = FunctionTypeData(
-        type.getDisplayString(withNullability: true),
-        type,
-        id,
-        getId(type.returnType),
-        type.parameters.map((e) => getId(e.type)).toList(),
-        type.nullabilitySuffix == NullabilitySuffix.question,
+        name: type.getDisplayString(withNullability: true),
+        source: type,
+        id: id,
+        returnType: getId(type.returnType),
+        positionalParameterTypes: positionalParameterTypes,
+        requiredPositionalParametersCount: requiredParameterCount,
+        requiredNamedParametersType: requiredNamedParameters,
+        optionalNamedParametersType: optionalNamedParameters,
+        isNullable: type.nullabilitySuffix == NullabilitySuffix.question,
       );
     } else if (type is DynamicType) {
       result[id] = DynamicTypeData();

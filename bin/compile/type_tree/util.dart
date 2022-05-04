@@ -65,18 +65,55 @@ bool isAAssignableToB(int aId, int bId, Map<int, TypeData> typeTree) {
     // Objects cannot be assigned to functions
     return false;
   } else if (a is FunctionTypeData && b is FunctionTypeData) {
-    if (a.parameterTypes.length != b.parameterTypes.length) {
-      return false; // TODO: optional & named parameters
+    if (a.positionalParameterTypes.length > b.positionalParameterTypes.length) {
+      return false;
+    }
+
+    if (b.requiredPositionalParametersCount > a.requiredPositionalParametersCount) {
+      return false;
     }
 
     // Parameter types can be widened but not narrowed
-    for (int i = 0; i < a.parameterTypes.length; i++) {
-      if (!isAAssignableToB(b.parameterTypes[i], a.parameterTypes[i], typeTree)) {
+    for (int i = 0; i < a.positionalParameterTypes.length; i++) {
+      if (!isAAssignableToB(
+          a.positionalParameterTypes[i], b.positionalParameterTypes[i], typeTree)) {
         return false;
       }
     }
 
-    // Return type can be widened but not narrowed
+    for (final entry in a.requiredNamedParametersType.entries) {
+      String name = entry.key;
+      int id = entry.value;
+
+      // Required named parameters in a must be in b, but can be either required or optional
+      int? matching = b.requiredNamedParametersType[name] ?? b.optionalNamedParametersType[name];
+
+      if (matching == null) {
+        return false;
+      }
+
+      if (!isAAssignableToB(id, matching, typeTree)) {
+        return false;
+      }
+    }
+
+    for (final entry in a.optionalNamedParametersType.entries) {
+      String name = entry.key;
+      int id = entry.value;
+
+      // Optional named parameters in a must also be optional in b
+      int? matching = b.optionalNamedParametersType[name];
+
+      if (matching == null) {
+        return false;
+      }
+
+      if (!isAAssignableToB(id, matching, typeTree)) {
+        return false;
+      }
+    }
+
+    // Return type can be narrowed but not widened
     if (!isAAssignableToB(b.returnType, a.returnType, typeTree)) {
       return false;
     }
