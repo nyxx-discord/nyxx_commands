@@ -18,12 +18,7 @@ import 'package:analyzer/dart/analysis/analysis_context.dart';
 import 'package:analyzer/dart/analysis/context_builder.dart';
 import 'package:analyzer/dart/analysis/context_locator.dart';
 import 'package:analyzer/dart/analysis/results.dart';
-import 'package:analyzer/dart/ast/ast.dart';
-import 'package:analyzer/dart/element/element.dart';
-import 'package:analyzer/dart/element/nullability_suffix.dart';
-import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/diagnostic/diagnostic.dart';
-import 'package:analyzer/src/dart/element/element.dart';
 import 'package:dart_style/dart_style.dart';
 import 'package:logging/logging.dart';
 import 'package:nyxx_commands/src/errors.dart';
@@ -32,12 +27,17 @@ import 'package:path/path.dart';
 import 'function_metadata/compile_time_function_data.dart';
 import 'function_metadata/metadata_builder_visitor.dart';
 import 'function_metadata/metadata_builder.dart';
+import 'to_source.dart';
 import 'type_tree/type_builder_visitor.dart';
 import 'type_tree/tree_builder.dart';
 import 'type_tree/type_data.dart';
 
 final Logger logger = Logger('Commands Compiler');
 
+/// Generates the metadata for the program located at [path], writing the output to the file at
+/// [outPath].
+///
+/// If [formatOutput] is `true`, the resulting file will be formatted with `dart format`.
 Future<void> generate(String path, String outPath, bool formatOutput) async {
   path = normalize(absolute(path));
 
@@ -58,6 +58,7 @@ Future<void> generate(String path, String outPath, bool formatOutput) async {
     throw CommandsException('Did not get a valid analysis result for "$path"');
   }
 
+  // Require our program to have a `main()` function so we can call it
   if (result.libraryElement.entryPoint == null) {
     logger.shout('No entry point was found for file "$path"');
     throw CommandsException('No entry point was found for file "$path"');
@@ -70,7 +71,7 @@ Future<void> generate(String path, String outPath, bool formatOutput) async {
 
   Map<int, TypeData> typeTree = await processTypes(result, context);
 
-  Iterable<CompileTimeFunctionData> functions = await processFunctions(result, context, typeTree);
+  Iterable<CompileTimeFunctionData> functions = await processFunctions(result, context);
 
   String output = generateOutput(
     {...typeTree.values},
@@ -87,6 +88,7 @@ Future<void> generate(String path, String outPath, bool formatOutput) async {
   logger.finest('Done');
 }
 
+/// Generates type metadata for [result] and all child units (includes imports, exports and parts).
 Future<Map<int, TypeData>> processTypes(ResolvedUnitResult result, AnalysisContext context) async {
   logger.info('Building type tree from AST');
 
@@ -105,8 +107,9 @@ Future<Map<int, TypeData>> processTypes(ResolvedUnitResult result, AnalysisConte
   return typeTree;
 }
 
+/// Generates function metadata for all creations of [Id] instances in [result] and child units.
 Future<Iterable<CompileTimeFunctionData>> processFunctions(
-    ResolvedUnitResult result, AnalysisContext context, Map<int, TypeData> typeTree) async {
+    ResolvedUnitResult result, AnalysisContext context) async {
   logger.info('Loading function metadata');
 
   final FunctionBuilderVisitor functionBuilder = FunctionBuilderVisitor(context);
@@ -124,6 +127,15 @@ Future<Iterable<CompileTimeFunctionData>> processFunctions(
   return data;
 }
 
+/// Generates the content that should be written to the output file from type and function metadata.
+///
+/// The resulting file will have an entrypoint that loads the program metadata, and then calls the
+/// entrypoint in the file [pathToMainFile].
+///
+/// If [hasArgsArgument] is set, the entrypoint will be called with the command-line arguments.
+///
+/// If [formatOutput] is set, the generated content will be passed through `dart format` before
+/// being returned.
 String generateOutput(
   Iterable<TypeData> typeTree,
   Iterable<CompileTimeFunctionData> functionData,
@@ -133,9 +145,15 @@ String generateOutput(
 ) {
   logger.info('Generating output');
 
+  // The base stub:
+  // - Imports the nyxx_commands runtime type data classes so we can instanciate them
+  // - Imports the specified program entrypoint so we can call it later
+  // - Imports `dart:core` so we don't remove it from the global scope by importing it with an alias
+  // - Adds a warning comment to the top of the file
   StringBuffer result = StringBuffer('''
   import 'package:nyxx_commands/src/mirror_utils/mirror_utils.dart';
   import '$pathToMainFile' as _main show main;
+  import "dart:core";
   
   // Auto-generated file
   // DO NOT EDIT
@@ -144,8 +162,63 @@ String generateOutput(
 
   ''');
 
+  // Import directives that will be placed at the start of the file
+  // Other steps in the generation process can add items to this set in order to import types from
+  // other files
+  Set<String> imports = {};
+
   typeTree = typeTree.toSet();
 
+  writeTypeMetadata(typeTree, result);
+
+  result.write('''
+  
+  // Nullable typedefs
+  
+  ''');
+
+  Set<int> successfulIds = writeTypeDefs(typeTree, result, imports);
+
+  result.write('''
+
+  // Type mappings
+
+  ''');
+
+  writeTypeMappings(successfulIds, result);
+
+  result.write('''
+
+  // Function data
+
+  ''');
+
+  writeFunctionData(functionData, result, imports, successfulIds);
+
+  result.write('''
+  
+  // Main function wrapper
+  void main(List<String> args) {
+    loadData(typeTree, typeMappings, functionData);
+
+    _main.main(${hasArgsArgument ? 'args' : ''});
+  }
+  ''');
+
+  logger.fine('Formatting output');
+
+  result = StringBuffer(imports.join('\n'))..write(result.toString());
+
+  if (!formatOutput) {
+    return result.toString();
+  }
+
+  return DartFormatter(lineEnding: '\n').format(result.toString());
+}
+
+/// Generates the content that represents the type metadata of a program from [typeTree] and writes
+/// it to [result].
+void writeTypeMetadata(Iterable<TypeData> typeTree, StringBuffer result) {
   result.write('const Map<int, TypeData> typeTree = {');
 
   // Special types
@@ -183,15 +256,17 @@ String generateOutput(
   }
 
   result.write('};');
+}
 
-  result.write('''
-  
-  // Nullable typedefs
-  
-  ''');
-
-  Set<String> imports = {'import "dart:core";'}; // Keep core library globally loaded
-
+/// Generates a set of `typedef` statements that can be used as keys in maps to represent types, and
+/// writes them to [result].
+///
+/// Imports needed to create the typedefs are added to [imports].
+///
+/// This method is needed as nullable type literals are interpreted as ternary statements in some
+/// cases, and can lead to errors. Creating a typedef that reflects the same type and using that
+/// instead of a type literal avoids this issue.
+Set<int> writeTypeDefs(Iterable<TypeData> typeTree, StringBuffer result, Set<String> imports) {
   Set<int> successfulIds = {};
 
   for (final type in typeTree) {
@@ -227,26 +302,33 @@ String generateOutput(
         'typedef t_${type.id}${typeSourceRepresentation.first} = ${typeSourceRepresentation[1]};\n');
   }
 
-  result.write('''
+  return successfulIds;
+}
 
-  // Type mappings
-
-  ''');
-
+/// Generates a map literal that maps runtime [Type] instances to an ID that can be used to look up
+/// their metadata, and writes the result to [result].
+void writeTypeMappings(Iterable<int> ids, StringBuffer result) {
   result.write('const Map<Type, int> typeMappings = {');
 
-  for (final id in successfulIds) {
+  for (final id in ids) {
     result.write('t_$id: $id,');
   }
 
   result.write('};');
+}
 
-  result.write('''
-
-  // Function data
-
-  ''');
-
+/// Generates a map literal that maps [Id] ids to function metadata that can be used to look up
+/// function metadata at runtime, and writes the result to [result].
+///
+/// Imports needed to write the metadata will be added to [imports].
+///
+/// [loadedTypeIds] must be a set of type metadata IDs that are available to use.
+void writeFunctionData(
+  Iterable<CompileTimeFunctionData> functionData,
+  StringBuffer result,
+  Set<String> imports,
+  Set<int> loadedTypeIds,
+) {
   Set<String> loadedIds = {};
 
   result.write('const Map<dynamic, FunctionData> functionData = {');
@@ -262,8 +344,6 @@ String generateOutput(
         List<String>? converterOverrideData = toConverterSource(parameter.converterOverride!);
 
         if (converterOverrideData == null) {
-          // Unresolved converters are more severe than unresolved types as the only case where a
-          // converter override is specified is when the @UseConverter annotation is explicitly used
           logger.shout(
             'Unable to resolve converter override for parameter ${parameter.name}, skipping function',
           );
@@ -275,8 +355,8 @@ String generateOutput(
         converterSource = converterOverrideData.first;
       }
 
-      if (!successfulIds.contains(getId(parameter.type))) {
-        logger.fine('Parameter ${parameter.name} has an unresolved type, skipping function');
+      if (!loadedTypeIds.contains(getId(parameter.type))) {
+        logger.shout('Parameter ${parameter.name} has an unresolved type, skipping function');
         continue outerLoop;
       }
 
@@ -371,535 +451,4 @@ String generateOutput(
   }
 
   result.write('};');
-
-  result.write('''
-  
-  // Main function wrapper
-  void main(List<String> args) {
-    loadData(typeTree, typeMappings, functionData);
-
-    _main.main(${hasArgsArgument ? 'args' : ''});
-  }
-  ''');
-
-  logger.fine('Formatting output');
-
-  result = StringBuffer(imports.join('\n'))..write(result.toString());
-
-  if (!formatOutput) {
-    return result.toString();
-  }
-
-  return DartFormatter(lineEnding: '\n').format(result.toString());
-}
-
-String toImportPrefix(String importPath) => importPath
-    .replaceAll(':', '_')
-    .replaceAll('/', '__')
-    .replaceAll(r'\', '__')
-    .replaceAll('.', '___');
-
-/// Returns a list - the first element is a type argument list, the second element is the type
-/// source representation and the others are needed import statements.
-List<String>? toTypeSource(DartType type, [bool handleTypeParameters = true]) {
-  String typeArguments = '';
-
-  Iterable<TypeParameterType> recursivelyGatherTypeParameters(DartType type,
-      [Iterable<TypeParameterType> noHandle = const []]) sync* {
-    if (type is TypeParameterType) {
-      yield type;
-      if (!noHandle.contains(type)) {
-        yield* recursivelyGatherTypeParameters(type.bound, [type, ...noHandle]);
-      }
-    } else if (type is ParameterizedType) {
-      for (final typeArgument in type.typeArguments) {
-        yield* recursivelyGatherTypeParameters(typeArgument, noHandle);
-      }
-    } else if (type is FunctionType) {
-      yield* recursivelyGatherTypeParameters(type.returnType, noHandle);
-
-      for (final parameterType in type.parameters.map((e) => e.type)) {
-        yield* recursivelyGatherTypeParameters(parameterType, noHandle);
-      }
-    }
-  }
-
-  if (handleTypeParameters) {
-    List<TypeParameterType> typeParameters =
-        recursivelyGatherTypeParameters(type).fold([], (previousValue, element) {
-      if (!previousValue.any((t) => t.element == element.element)) {
-        previousValue.add(element);
-      }
-      return previousValue;
-    });
-
-    if (typeParameters.isNotEmpty) {
-      typeArguments += '<';
-
-      for (final typeParameter in typeParameters) {
-        typeArguments += typeParameter.element.name;
-
-        if (typeParameter.bound is! DynamicType) {
-          typeArguments += ' extends ';
-
-          List<String>? data = toTypeSource(typeParameter.bound, false);
-
-          if (data == null) {
-            return null;
-          }
-
-          typeArguments += data[1];
-        }
-
-        if (typeParameter != typeParameters.last) {
-          typeArguments += ',';
-        }
-      }
-
-      typeArguments += '>';
-    }
-  }
-
-  /// First element is the name for the type
-  /// Other elements are needed import statements
-  List<String>? getNameFor(DartType type) {
-    if (type is DynamicType) {
-      return ['dynamic'];
-    } else if (type is VoidType) {
-      return ['void'];
-    } else if (type is NeverType) {
-      return ['Never'];
-    }
-
-    if (type.element?.library?.source.uri.toString().contains(':_') ?? false) {
-      return null; // Private library; cannot handle
-    } else if (type.getDisplayString(withNullability: true).startsWith('_')) {
-      return null; // Private type; cannot handle
-    }
-
-    String? importPrefix;
-    if (type.element is ClassElement) {
-      importPrefix = toImportPrefix(type.element!.library!.source.uri.toString());
-    }
-
-    List<String> imports = [];
-    if (importPrefix != null) {
-      imports.add('import "${type.element!.library!.source.uri.toString()}" as $importPrefix;');
-    }
-
-    String prefix = importPrefix != null ? '$importPrefix.' : '';
-
-    String typeString;
-    if (type is ParameterizedType) {
-      typeString = prefix;
-      typeString += type.element!.name!;
-
-      if (type.typeArguments.isNotEmpty) {
-        typeString += '<';
-
-        for (final typeArgument in type.typeArguments) {
-          List<String>? data = getNameFor(typeArgument);
-
-          if (data == null) {
-            return null;
-          }
-
-          typeString += data.first;
-
-          imports.addAll(data.skip(1));
-
-          typeString += ',';
-        }
-
-        typeString = typeString.substring(0, typeString.length - 1); // Remove last comma
-
-        typeString += '>';
-      }
-    } else if (type is FunctionType) {
-      List<String>? returnTypeData = getNameFor(type.returnType);
-
-      if (returnTypeData == null) {
-        return null;
-      }
-
-      imports.addAll(returnTypeData.skip(1));
-
-      typeString = returnTypeData.first;
-
-      typeString += ' Function(';
-
-      for (final parameterType in type.normalParameterTypes) {
-        List<String>? parameterData = getNameFor(parameterType);
-
-        if (parameterData == null) {
-          return null;
-        }
-
-        imports.addAll(parameterData.skip(1));
-
-        typeString += parameterData.first;
-
-        typeString += ',';
-      }
-
-      if (type.optionalParameterTypes.isNotEmpty) {
-        typeString += '[';
-
-        for (final optionalParameterType in type.optionalParameterTypes) {
-          List<String>? parameterData = getNameFor(optionalParameterType);
-
-          if (parameterData == null) {
-            return null;
-          }
-
-          imports.addAll(parameterData.skip(1));
-
-          typeString += parameterData.first;
-
-          typeString += ',';
-        }
-
-        if (typeString.endsWith(',')) {
-          typeString = typeString.substring(0, typeString.length - 1); // Remove last comma
-        }
-
-        typeString += ']';
-      }
-
-      if (type.namedParameterTypes.isNotEmpty) {
-        typeString += '{';
-
-        for (final entry in type.namedParameterTypes.entries) {
-          List<String>? parameterData = getNameFor(entry.value);
-
-          if (parameterData == null) {
-            return null;
-          }
-
-          imports.addAll(parameterData.skip(1));
-
-          typeString += '${parameterData.first} ${entry.key}';
-
-          typeString += ',';
-        }
-
-        if (typeString.endsWith(',')) {
-          typeString = typeString.substring(0, typeString.length - 1); // Remove last comma
-        }
-
-        typeString += '}';
-      }
-
-      if (typeString.endsWith(',')) {
-        typeString = typeString.substring(0, typeString.length - 1); // Remove last comma
-      }
-
-      typeString += ')';
-    } else if (type is TypeParameterType) {
-      typeString = type.element.name;
-    } else {
-      typeString = '$prefix${type.toString()}';
-    }
-
-    if (type.nullabilitySuffix == NullabilitySuffix.question && !typeString.endsWith('?')) {
-      typeString += '?';
-    }
-
-    return [typeString, ...imports];
-  }
-
-  List<String>? data = getNameFor(type);
-
-  if (data == null) {
-    return null;
-  }
-
-  return [typeArguments, ...data];
-}
-
-List<String>? toConverterSource(Annotation useConverterAnnotation) {
-  Expression argument = useConverterAnnotation.arguments!.arguments.first;
-
-  return toExpressionSource(argument);
-}
-
-List<String>? toExpressionSource(Expression expression) {
-  if (expression is StringLiteral) {
-    return ['"${expression.stringValue!.replaceAll(r'\', r'\\').replaceAll('"', r'\"')}"'];
-  } else if (expression is IntegerLiteral) {
-    return [expression.value!.toString()];
-  } else if (expression is BooleanLiteral) {
-    return [expression.value.toString()];
-  } else if (expression is ListLiteral || expression is SetOrMapLiteral) {
-    List<String> imports = [];
-
-    String openingBrace, closingBrace;
-    NodeList<CollectionElement> elements;
-
-    if (expression is ListLiteral) {
-      openingBrace = '[';
-      closingBrace = ']';
-
-      elements = expression.elements;
-    } else if (expression is SetOrMapLiteral) {
-      openingBrace = '{';
-      closingBrace = '}';
-
-      elements = expression.elements;
-    } else {
-      assert(false);
-      return null;
-    }
-
-    String ret = 'const $openingBrace';
-
-    for (final item in elements) {
-      List<String>? elementData = toCollectionElementSource(item);
-
-      if (elementData == null) {
-        return null;
-      }
-
-      imports.addAll(elementData.skip(1));
-
-      ret += elementData.first;
-
-      ret += ',';
-    }
-
-    ret += closingBrace;
-
-    return [
-      ret,
-      ...imports,
-    ];
-  } else if (expression is Identifier) {
-    Element referenced = expression.staticElement!;
-
-    if (referenced is PropertyAccessorElement) {
-      if (referenced.variable is TopLevelVariableElement) {
-        TopLevelVariableElement variable = referenced.variable as TopLevelVariableElement;
-
-        if (variable.library.source.uri.toString().contains(':_')) {
-          return null; // Private library; cannot handle
-        } else if (!variable.isPublic) {
-          return null; // Private variable; cannot handle
-        }
-
-        String importPrefix = toImportPrefix(variable.library.source.uri.toString());
-
-        return [
-          '$importPrefix.${variable.name}',
-          'import "${variable.library.source.uri.toString()}" as $importPrefix;',
-        ];
-      } else if (referenced.variable is FieldElement) {
-        List<String>? typeData =
-            toTypeSource((referenced.variable.enclosingElement as ClassElement).thisType);
-
-        if (typeData == null || !referenced.variable.isPublic || !referenced.variable.isStatic) {
-          return null;
-        }
-
-        if (typeData.first.isNotEmpty) {
-          // Can't handle type parameters
-          throw CommandsException('Cannot handle type parameters in expression toSource()');
-        }
-
-        return [
-          '${typeData[1]}.${referenced.variable.name}',
-          ...typeData.skip(2),
-        ];
-      } else {
-        throw CommandsError('Unhandled property accessor type ${referenced.variable.runtimeType}');
-      }
-    } else if (referenced is FunctionElement) {
-      if (referenced.isPublic) {
-        String importPrefix = toImportPrefix(referenced.library.source.uri.toString());
-
-        if (referenced.library.source.uri.toString().contains(':_')) {
-          return null; // Private library; cannot handle
-        }
-
-        return [
-          '$importPrefix.${referenced.name}',
-          'import "${referenced.library.source.uri.toString()}" as $importPrefix;',
-        ];
-      } else {
-        return null; // Cannot handle private functions
-      }
-    } else if (referenced is MethodElement) {
-      List<String>? typeData = toTypeSource((referenced.enclosingElement as ClassElement).thisType);
-
-      if (typeData == null || !referenced.isPublic || !referenced.isStatic) {
-        return null;
-      }
-
-      if (typeData.first.isNotEmpty) {
-        // Can't handle type parameters
-        throw CommandsException('Cannot handle type parameters in expression toSource()');
-      }
-
-      return [
-        '${typeData[1]}.${referenced.name}',
-        ...typeData.skip(2),
-      ];
-    } else if (referenced is ConstVariableElement) {
-      return toExpressionSource(referenced.constantInitializer!);
-    }
-  } else if (expression is InstanceCreationExpression) {
-    List<String>? typeData = toTypeSource(expression.staticType!);
-
-    if (typeData == null) {
-      return null;
-    }
-
-    List<String> imports = typeData.skip(2).toList();
-
-    if (typeData.first.isNotEmpty) {
-      // Can't handle type parameters
-      throw CommandsException('Cannot handle type parameters in toExpressionSource()');
-    }
-
-    String namedConstructor = '';
-    if (expression.constructorName.name != null) {
-      namedConstructor = '.${expression.constructorName.name!.name}';
-    }
-
-    String result = '${typeData[1]}$namedConstructor(';
-
-    for (final argument in expression.argumentList.arguments) {
-      List<String>? argumentData = toExpressionSource(argument);
-
-      if (argumentData == null) {
-        return null;
-      }
-
-      imports.addAll(argumentData.skip(1));
-
-      result += '${argumentData.first},';
-    }
-
-    result += ')';
-
-    return [
-      result,
-      ...imports,
-    ];
-  } else if (expression is NamedExpression) {
-    List<String>? wrappedExpressionData = toExpressionSource(expression.expression);
-
-    if (wrappedExpressionData == null) {
-      return null;
-    }
-
-    return [
-      '${expression.name.label.name}: ${wrappedExpressionData.first}',
-      ...wrappedExpressionData.skip(1),
-    ];
-  } else if (expression is PrefixExpression) {
-    List<String>? expressionData = toExpressionSource(expression.operand);
-
-    if (expressionData == null) {
-      return null;
-    }
-
-    return [
-      '${expression.operator.lexeme}${expressionData.first}',
-      ...expressionData.skip(1),
-    ];
-  } else if (expression is BinaryExpression) {
-    List<String>? leftData = toExpressionSource(expression.leftOperand);
-    List<String>? rightData = toExpressionSource(expression.rightOperand);
-
-    if (leftData == null || rightData == null) {
-      return null;
-    }
-
-    return [
-      '${leftData.first}${expression.operator.lexeme}${rightData.first}',
-      ...leftData.skip(1),
-      ...rightData.skip(1),
-    ];
-  }
-
-  throw CommandsError('Unhandled constant expression $expression');
-}
-
-List<String>? toCollectionElementSource(CollectionElement item) {
-  if (item is Expression) {
-    return toExpressionSource(item);
-  } else if (item is IfElement) {
-    String ret = 'if(';
-
-    List<String> imports = [];
-
-    List<String>? conditionSource = toExpressionSource(item.condition);
-
-    if (conditionSource == null) {
-      return null;
-    }
-
-    imports.addAll(conditionSource.skip(1));
-
-    ret += conditionSource.first;
-
-    ret += ') ';
-
-    List<String>? thenSource = toCollectionElementSource(item.thenElement);
-
-    if (thenSource == null) {
-      return null;
-    }
-
-    imports.addAll(thenSource.skip(1));
-
-    ret += thenSource.first;
-
-    if (item.elseElement != null) {
-      ret += ' else ';
-
-      List<String>? elseSource = toCollectionElementSource(item.elseElement!);
-
-      if (elseSource == null) {
-        return null;
-      }
-
-      imports.addAll(elseSource.skip(1));
-
-      ret += elseSource.first;
-    }
-
-    return [
-      ret,
-      ...imports,
-    ];
-  } else if (item is ForElement) {
-    throw CommandsException('Cannot reproduce for loops');
-  } else if (item is MapLiteralEntry) {
-    List<String>? keyData = toExpressionSource(item.key);
-    List<String>? valueData = toExpressionSource(item.value);
-
-    if (keyData == null || valueData == null) {
-      return null;
-    }
-
-    return [
-      '${keyData.first}: ${valueData.first}',
-      ...keyData.skip(1),
-      ...valueData.skip(1),
-    ];
-  } else if (item is SpreadElement) {
-    List<String>? expressionData = toExpressionSource(item.expression);
-
-    if (expressionData == null) {
-      return null;
-    }
-
-    return [
-      '...${item.isNullAware ? '?' : ''}${expressionData.first}',
-      ...expressionData.skip(1),
-    ];
-  } else {
-    throw CommandsError('Unhandled type in collection literal: ${item.runtimeType}');
-  }
 }

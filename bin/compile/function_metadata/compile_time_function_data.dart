@@ -15,9 +15,12 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/type.dart';
 
+/// Metadata about a function.
 class CompileTimeFunctionData {
+  /// The id that was associated with this function in the [Id] constructor.
   final Expression id;
 
+  /// The parameter data for this function.
   final List<CompileTimeParameterData> parametersData;
 
   const CompileTimeFunctionData(this.id, this.parametersData);
@@ -26,21 +29,32 @@ class CompileTimeFunctionData {
   String toString() => 'CompileTimeFunctionData[id=$id, parameters=$parametersData]';
 }
 
+/// Metadata about a function parameter.
 class CompileTimeParameterData {
+  /// The name of this parameter.
   final String name;
 
+  /// The type of this parameter.
   final DartType type;
 
+  /// Whether this parameter is optional.
   final bool isOptional;
 
+  // We don't care about named parameters because they aren't allowed in command callbacks.
+
+  /// The description of this parameter.
   final String? description;
 
+  /// The default value of this parameter.
   final Expression? defaultValue;
 
+  /// The choices for this parameter.
   final Expression? choices;
 
+  /// The converter override for this parameter.
   final Annotation? converterOverride;
 
+  /// The autocompletion handler override for this parameter.
   final Annotation? autocompleteOverride;
 
   const CompileTimeParameterData(

@@ -19,6 +19,7 @@ import 'package:analyzer/dart/element/type.dart';
 import '../element_tree_visitor.dart';
 import '../generator.dart';
 
+/// An AST visitor that collects all the types referenced in an entire program.
 class TypeBuilderVisitor extends EntireAstVisitor {
   final List<DartType> types = [];
 

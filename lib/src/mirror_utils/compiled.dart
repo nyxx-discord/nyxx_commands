@@ -37,7 +37,6 @@ bool isAssignableTo(Type instance, Type target) {
   return _isAAssignableToB(instanceId, targetId, _typeTree!);
 }
 
-// Essentially copied from bin/compile/type_tree/util.dart
 bool _isAAssignableToB(int aId, int bId, Map<int, TypeData> typeTree) {
   TypeData a = typeTree[aId]!;
   TypeData b = typeTree[bId]!;

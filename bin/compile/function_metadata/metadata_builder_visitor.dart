@@ -19,6 +19,7 @@ import '../element_tree_visitor.dart';
 import '../generator.dart';
 import '../type_tree/tree_builder.dart';
 
+/// An AST visitor that collects all instances of [Id] constructor calls.
 class FunctionBuilderVisitor extends EntireAstVisitor {
   final List<InstanceCreationExpression> idCreations = [];
 

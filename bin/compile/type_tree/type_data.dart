@@ -14,18 +14,25 @@
 
 import 'package:analyzer/dart/element/type.dart';
 
+/// A representation of a type.
 abstract class TypeData {
+  /// The ID of this type.
   int get id;
 
+  /// The [DartType] from which this type data was generated.
   DartType get source;
 
+  /// The name of this type.
   String get name;
 }
 
+/// A nullable type.
 abstract class NullableTypeData {
+  /// Whether this type is nullable.
   bool get isNullable;
 }
 
+/// Type data for a class, enum or mixin ("interfaces").
 class InterfaceTypeData implements TypeData, NullableTypeData {
   @override
   int id;
@@ -36,10 +43,15 @@ class InterfaceTypeData implements TypeData, NullableTypeData {
   @override
   String name;
 
+  /// The "stripped id" of this type.
+  ///
+  /// This is the ID of this same type, but without any specific type arguments.
   int strippedId;
 
+  /// The super classes of this type.
   List<int> superClasses;
 
+  /// The type arguments of this type.
   List<int> typeArguments;
 
   @override
@@ -71,6 +83,7 @@ class InterfaceTypeData implements TypeData, NullableTypeData {
       'isNullable=$isNullable]';
 }
 
+/// Type data for a function type.
 class FunctionTypeData implements TypeData, NullableTypeData {
   @override
   int id;
@@ -81,12 +94,19 @@ class FunctionTypeData implements TypeData, NullableTypeData {
   @override
   String name;
 
+  /// The ID of the return type of this function.
   int returnType;
 
+  /// The types of the positional parameters of this function.
   List<int> positionalParameterTypes;
+
+  /// The number of required parameters of this function.
   int requiredPositionalParametersCount;
 
+  /// The types of the optional named parameters of this function.
   Map<String, int> optionalNamedParametersType;
+
+  /// The types of the required named parameters of this function.
   Map<String, int> requiredNamedParametersType;
 
   @override
@@ -119,6 +139,7 @@ class FunctionTypeData implements TypeData, NullableTypeData {
       'isNullable=$isNullable]';
 }
 
+/// Type data for the `dynamic` type.
 class DynamicTypeData implements TypeData {
   @override
   int id = 0;
@@ -139,6 +160,7 @@ class DynamicTypeData implements TypeData {
   String toString() => 'DynamicTypeData';
 }
 
+/// Type data for the `void` type.
 class VoidTypeData implements TypeData {
   @override
   int id = 1;
@@ -159,6 +181,7 @@ class VoidTypeData implements TypeData {
   String toString() => 'VoidTypeData';
 }
 
+/// Type data for the "Never" type.
 class NeverTypeData implements TypeData {
   @override
   int id = 2;

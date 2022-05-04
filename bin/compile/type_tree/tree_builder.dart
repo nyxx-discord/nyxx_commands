@@ -22,6 +22,7 @@ import 'type_data.dart';
 
 final List<DartType> processing = [];
 
+/// Returns an ID that uniquely represents [type].
 int getId(DartType type) {
   if (processing.contains(type)) {
     // Probably a type parameter with a bound that references itself
@@ -79,27 +80,37 @@ int getId(DartType type) {
   return ret;
 }
 
+// We keep track of the IDs of special types
+
+/// The ID of the [Name] class type.
 int get nameId => getId(nameClassElement!.thisType);
 ClassElement? nameClassElement;
 
+/// The ID of the [Description] class type.
 int get descriptionId => getId(descriptionClassElement!.thisType);
 ClassElement? descriptionClassElement;
 
+/// The ID of the [Choices] class type.
 int get choicesId => getId(choicesClassElement!.thisType);
 ClassElement? choicesClassElement;
 
+/// The ID of the [UseConverter] class type.
 int get useConverterId => getId(useConverterClassElement!.thisType);
 ClassElement? useConverterClassElement;
 
+/// The ID of the [Autocomplete] class type.
 int get autocompleteId => getId(autocompleteClassId!.thisType);
 ClassElement? autocompleteClassId;
 
+/// The ID of the [Object] class type.
 int get objectId => getId(objectClassElement!.thisType);
 ClassElement? objectClassElement;
 
+/// The ID of the [Function] class type,
 int get functionId => getId(functionClassElement!.thisType);
 ClassElement? functionClassElement;
 
+/// The ID of the [Id] class type.
 int get idId => getId(idClassElement!.thisType);
 ClassElement? idClassElement;
 
@@ -118,6 +129,7 @@ Map<List<String>, void Function(ClassElement)> _specialInterfaceTypeSetters = {
   ['package:nyxx_commands/src/util/util.dart', 'Id']: (element) => idClassElement = element,
 };
 
+/// Update the special types if needed.
 void checkSpecialType(DartType type) {
   if (type is InterfaceType) {
     for (final key in _specialInterfaceTypeSetters.keys) {
@@ -131,10 +143,16 @@ void checkSpecialType(DartType type) {
   }
 }
 
+/// Takes a list of [types] and generates type data from them.
+/// 
+/// The return value is a mapping of type IDs to their type data.
 Map<int, TypeData> buildTree(List<DartType> types) {
   final Map<int, TypeData> result = {};
 
   List<int> processing = [];
+
+  // Type parameters can have a different ID to their actual reflected type, so we merge them at
+  // the end.
   Map<int, int> toMerge = {};
 
   void handle(DartType type) {

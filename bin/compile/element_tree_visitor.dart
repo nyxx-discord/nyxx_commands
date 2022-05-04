@@ -21,6 +21,8 @@ import 'package:analyzer/dart/ast/visitor.dart';
 
 import 'generator.dart';
 
+/// An AST visitor that visits the AST of every file it encounters, following imports, exports and
+/// part directives.
 class EntireAstVisitor extends RecursiveAstVisitor<void> {
   static final Map<String, SomeResolvedUnitResult> _cache = {};
 
