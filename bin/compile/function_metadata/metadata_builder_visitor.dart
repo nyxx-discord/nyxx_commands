@@ -26,7 +26,7 @@ class FunctionBuilderVisitor extends EntireAstVisitor {
 
   @override
   void visitInstanceCreationExpression(InstanceCreationExpression expression) {
-    if (getId(expression.constructorName.type2.type!) == idId) {
+    if (getId(expression.constructorName.type.type!) == idId) {
       idCreations.add(expression);
     }
 
