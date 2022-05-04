@@ -638,7 +638,7 @@ class ChatCommand
         arguments.add(await parse(
           context.commands,
           context,
-          StringView(rawArgument.toString()),
+          StringView(rawArgument.toString(), isRestBlock: true),
           expectedType,
           converterOverride: _mappedConverterOverrides[argumentName]?.converter,
         ));
