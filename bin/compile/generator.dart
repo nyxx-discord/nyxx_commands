@@ -18,7 +18,7 @@ import 'package:analyzer/dart/analysis/analysis_context.dart';
 import 'package:analyzer/dart/analysis/context_builder.dart';
 import 'package:analyzer/dart/analysis/context_locator.dart';
 import 'package:analyzer/dart/analysis/results.dart';
-import 'package:analyzer/diagnostic/diagnostic.dart';
+import 'package:analyzer/dart/element/element.dart';
 import 'package:dart_style/dart_style.dart';
 import 'package:logging/logging.dart';
 import 'package:nyxx_commands/src/errors.dart';
@@ -49,35 +49,30 @@ Future<void> generate(String path, String outPath, bool formatOutput) async {
   final AnalysisContext context =
       builder.createContext(contextRoot: locator.locateRoots(includedPaths: [path]).first);
 
-  final SomeResolvedUnitResult result = await context.currentSession.getResolvedUnit(path);
+  final SomeResolvedLibraryResult result = await context.currentSession.getResolvedLibrary(path);
 
   logger.info('Finished analyzing file "$path"');
 
-  if (result is! ResolvedUnitResult || !result.exists) {
+  if (result is! ResolvedLibraryResult) {
     logger.shout('Did not get a valid analysis result for "$path"');
     throw CommandsException('Did not get a valid analysis result for "$path"');
   }
 
   // Require our program to have a `main()` function so we can call it
-  if (result.libraryElement.entryPoint == null) {
+  if (result.element.entryPoint == null) {
     logger.shout('No entry point was found for file "$path"');
     throw CommandsException('No entry point was found for file "$path"');
   }
 
-  if (result.errors.where((element) => element.severity == Severity.error).isNotEmpty) {
-    logger.shout('File "$path" contains analysis errors');
-    throw CommandsException('File "$path" contains analysis errors');
-  }
+  Map<int, TypeData> typeTree = await processTypes(result.element, context);
 
-  Map<int, TypeData> typeTree = await processTypes(result, context);
-
-  Iterable<CompileTimeFunctionData> functions = await processFunctions(result, context);
+  Iterable<CompileTimeFunctionData> functions = await processFunctions(result.element, context);
 
   String output = generateOutput(
     {...typeTree.values},
     functions,
-    result.libraryElement.source.uri.toString(),
-    result.libraryElement.entryPoint!.parameters.isNotEmpty,
+    result.element.source.uri.toString(),
+    result.element.entryPoint!.parameters.isNotEmpty,
     formatOutput,
   );
 
@@ -89,14 +84,12 @@ Future<void> generate(String path, String outPath, bool formatOutput) async {
 }
 
 /// Generates type metadata for [result] and all child units (includes imports, exports and parts).
-Future<Map<int, TypeData>> processTypes(ResolvedUnitResult result, AnalysisContext context) async {
+Future<Map<int, TypeData>> processTypes(LibraryElement result, AnalysisContext context) async {
   logger.info('Building type tree from AST');
 
   final TypeBuilderVisitor typeBuilder = TypeBuilderVisitor(context);
 
-  result.unit.accept(typeBuilder);
-
-  await typeBuilder.completed;
+  await typeBuilder.visitLibrary(result);
 
   logger.fine('Found ${typeBuilder.types.length} type instances');
 
@@ -109,14 +102,12 @@ Future<Map<int, TypeData>> processTypes(ResolvedUnitResult result, AnalysisConte
 
 /// Generates function metadata for all creations of [Id] instances in [result] and child units.
 Future<Iterable<CompileTimeFunctionData>> processFunctions(
-    ResolvedUnitResult result, AnalysisContext context) async {
+    LibraryElement result, AnalysisContext context) async {
   logger.info('Loading function metadata');
 
   final FunctionBuilderVisitor functionBuilder = FunctionBuilderVisitor(context);
 
-  result.unit.accept(functionBuilder);
-
-  await functionBuilder.completed;
+  await functionBuilder.visitLibrary(result);
 
   logger.fine('Found ${functionBuilder.idCreations.length} function instances');
 

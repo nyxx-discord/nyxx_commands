@@ -99,8 +99,8 @@ int get useConverterId => getId(useConverterClassElement!.thisType);
 ClassElement? useConverterClassElement;
 
 /// The ID of the [Autocomplete] class type.
-int get autocompleteId => getId(autocompleteClassId!.thisType);
-ClassElement? autocompleteClassId;
+int get autocompleteId => getId(autocompleteClassElement!.thisType);
+ClassElement? autocompleteClassElement;
 
 /// The ID of the [Object] class type.
 int get objectId => getId(objectClassElement!.thisType);
@@ -123,7 +123,7 @@ Map<List<String>, void Function(ClassElement)> _specialInterfaceTypeSetters = {
   ['package:nyxx_commands/src/util/util.dart', 'UseConverter']: (element) =>
       useConverterClassElement = element,
   ['package:nyxx_commands/src/util/util.dart', 'Autocomplete']: (element) =>
-      autocompleteClassId = element,
+      autocompleteClassElement = element,
   ['dart:core/object.dart', 'Object']: (element) => objectClassElement = element,
   ['dart:core/function.dart', 'Function']: (element) => functionClassElement = element,
   ['package:nyxx_commands/src/util/util.dart', 'Id']: (element) => idClassElement = element,
@@ -144,7 +144,7 @@ void checkSpecialType(DartType type) {
 }
 
 /// Takes a list of [types] and generates type data from them.
-/// 
+///
 /// The return value is a mapping of type IDs to their type data.
 Map<int, TypeData> buildTree(List<DartType> types) {
   final Map<int, TypeData> result = {};

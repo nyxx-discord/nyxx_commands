@@ -18,89 +18,112 @@ import 'package:analyzer/dart/analysis/analysis_context.dart';
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
+import 'package:analyzer/dart/element/element.dart';
+import 'package:nyxx_commands/src/errors.dart';
 
 import 'generator.dart';
 
-/// An AST visitor that visits the AST of every file it encounters, following imports, exports and
-/// part directives.
+/// An AST visitor that checks every file in the entire program, following imports, exports and part
+/// directives. Files that are deemed "interesting" are visited in full by this visitor.
+///
+/// Files are deemed "interesting" if:
+/// - The file is part of `package:nyxx_commands`
+/// - The file imports an "interesting" file
 class EntireAstVisitor extends RecursiveAstVisitor<void> {
   static final Map<String, SomeResolvedUnitResult> _cache = {};
+  final List<String> _interestingSources = [];
 
   final AnalysisContext context;
 
-  final List<String> visited = [];
+  EntireAstVisitor(this.context);
 
-  EntireAstVisitor(this.context) {
-    // [_processing] can sometimes reach 0 in between processing cached units, so we instead only
-    // check periodically whether we are done.
-    Timer.periodic(Duration(milliseconds: 500), (timer) {
-      if (_processing == 0) {
-        logger.finer('#processing hit 0, completing visitor');
-        _completer.complete();
-        timer.cancel();
+  /// Makes this visitor check all the imported, exported or "part-ed" files in [element], visiting
+  /// ones that are deemed "interesting".
+  Future<void> visitLibrary(LibraryElement element) async {
+    List<String> visited = [];
+
+    void recursivelyGatherSources(LibraryElement element) {
+      String source = element.source.fullName;
+
+      logger.finest('Checking source "$source"');
+
+      if (visited.contains(source)) {
+        return;
       }
-    });
-  }
 
-  final Completer<void> _completer = Completer();
-  late final Future<void> completed = _completer.future;
+      visited.add(source);
 
-  int _processing = 0;
+      if (isLibraryInteresting(element)) {
+        _interestingSources.add(source);
+      }
 
-  void visitUriBasedDirective(UriBasedDirective directive) async {
-    String source = directive.uriSource!.fullName;
-
-    if (visited.contains(source)) {
-      logger.finest('Not visiting source $source as it has already been visited');
-      return;
+      for (final library in [...element.importedLibraries, ...element.exportedLibraries]) {
+        recursivelyGatherSources(library);
+      }
     }
 
-    _processing++;
+    recursivelyGatherSources(element);
 
-    visited.add(source);
+    while (_interestingSources.isNotEmpty) {
+      List<String> interestingSources = _interestingSources.sublist(0);
+      _interestingSources.clear();
 
-    logger.finer('Getting AST for source $source');
+      logger.fine('Visiting interesting sources $interestingSources');
+
+      await Future.wait(interestingSources.map(visitUnit));
+    }
+  }
+
+  final List<LibraryElement> _checkingLibraries = [];
+  static final Map<LibraryElement, bool> _interestingCache = {};
+
+  /// Returns whether a given library is "interesting"
+  bool isLibraryInteresting(LibraryElement element) {
+    if (_interestingCache.containsKey(element)) {
+      return _interestingCache[element]!;
+    }
+
+    if (_checkingLibraries.contains(element)) {
+      return false;
+    }
+
+    bool ret;
+
+    _checkingLibraries.add(element);
+
+    if (element.identifier.startsWith('package:nyxx_commands')) {
+      ret = true;
+    } else {
+      ret = element.importedLibraries.any((library) => isLibraryInteresting(library)) ||
+          element.exportedLibraries.any((library) => isLibraryInteresting(library));
+    }
+
+    _checkingLibraries.removeLast();
+
+    return _interestingCache[element] = ret;
+  }
+
+  /// Makes this visitor get the full AST for a given source and visit it.
+  Future<void> visitUnit(String source) async {
+    logger.finer('Getting AST for source "$source"');
 
     SomeResolvedUnitResult result =
-        (_cache[source] ??= await context.currentSession.getResolvedUnit(source));
+        _cache[source] ??= await context.currentSession.getResolvedUnit(source);
 
     if (result is! ResolvedUnitResult) {
-      logger.warning('Got invalid analysis result for source $source');
-      _processing--;
-      return;
+      throw CommandsError('Got invalid analysis result for source $source');
     }
 
+    logger.finer('Got AST for source "$source"');
+
     result.unit.accept(this);
-
-    logger.finest('Finished visiting source $source');
-
-    _processing--;
-  }
-
-  @override
-  void visitImportDirective(ImportDirective directive) {
-    super.visitImportDirective(directive);
-
-    logger.finer('Found import directive $directive in ${directive.element?.source.uri}');
-
-    visitUriBasedDirective(directive);
-  }
-
-  @override
-  void visitExportDirective(ExportDirective directive) {
-    super.visitExportDirective(directive);
-
-    logger.finer('Found export directive $directive in ${directive.element?.source.uri}');
-
-    visitUriBasedDirective(directive);
   }
 
   @override
   void visitPartDirective(PartDirective directive) {
     super.visitPartDirective(directive);
 
-    logger.finer('Found part directive $directive in ${directive.element?.source?.uri}');
-
-    visitUriBasedDirective(directive);
+    // Visit "part-ed" files of interesting sources
+    _interestingSources.add(directive.uriSource!.fullName);
   }
 }
