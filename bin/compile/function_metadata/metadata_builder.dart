@@ -18,19 +18,30 @@ import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/src/dart/element/element.dart';
 import 'package:nyxx_commands/nyxx_commands.dart';
 
+import '../generator.dart';
 import '../type_tree/tree_builder.dart';
 import 'compile_time_function_data.dart';
 
 /// Convert [idCreations] into function metadata.
 Iterable<CompileTimeFunctionData> getFunctionData(
-  Iterable<InstanceCreationExpression> idCreations,
+  Iterable<InvocationExpression> ids,
 ) {
   List<CompileTimeFunctionData> result = [];
 
   outerLoop:
-  for (final idCreation in idCreations) {
+  for (final id in ids) {
+    if (id.argumentList.arguments.length != 2) {
+      logger.shout(
+          'Unexpected number of arguments ${id.argumentList.arguments.length} in id invocation');
+      continue;
+    }
+
+    if (id.argumentList.arguments[1] is! FunctionExpression) {
+      throw CommandsError('Functions passed to the `id` function must be function literals');
+    }
+
     FormalParameterList parameterList =
-        (idCreation.argumentList.arguments[1] as FunctionExpression).parameters!;
+        (id.argumentList.arguments[1] as FunctionExpression).parameters!;
 
     List<CompileTimeParameterData> parameterData = [
       // The context parameter
@@ -146,7 +157,7 @@ Iterable<CompileTimeFunctionData> getFunctionData(
       ));
     }
 
-    result.add(CompileTimeFunctionData(idCreation.argumentList.arguments.first, parameterData));
+    result.add(CompileTimeFunctionData(id.argumentList.arguments.first, parameterData));
   }
 
   return result;

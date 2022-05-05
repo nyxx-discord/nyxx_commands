@@ -110,10 +110,6 @@ ClassElement? objectClassElement;
 int get functionId => getId(functionClassElement!.thisType);
 ClassElement? functionClassElement;
 
-/// The ID of the [Id] class type.
-int get idId => getId(idClassElement!.thisType);
-ClassElement? idClassElement;
-
 Map<List<String>, void Function(ClassElement)> _specialInterfaceTypeSetters = {
   ['package:nyxx_commands/src/util/util.dart', 'Description']: (element) =>
       descriptionClassElement = element,
@@ -126,7 +122,6 @@ Map<List<String>, void Function(ClassElement)> _specialInterfaceTypeSetters = {
       autocompleteClassElement = element,
   ['dart:core/object.dart', 'Object']: (element) => objectClassElement = element,
   ['dart:core/function.dart', 'Function']: (element) => functionClassElement = element,
-  ['package:nyxx_commands/src/util/util.dart', 'Id']: (element) => idClassElement = element,
 };
 
 /// Update the special types if needed.

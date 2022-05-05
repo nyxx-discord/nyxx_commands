@@ -153,7 +153,7 @@ FunctionData loadFunctionData(Function fn) {
     throw CommandsError('Function data was not correctly loaded. Did you compile the wrong file?');
   }
 
-  dynamic id = idMap[fn.hashCode];
+  dynamic id = idMap[fn];
 
   FunctionData? result = _functionData![id];
 

@@ -122,8 +122,8 @@ void main() {
 
     // The third parameter is the function that will be executed when the command is ran.
     //
-    // It is wrapped in a special class, `Id`, that allows nyxx_commands to be compiled and ran as
-    // an executable. If you just want to run nyxx_commands with `dart run`, this is optional and
+    // It is wrapped in a special function, `id`, that allows nyxx_commands to be compiled and ran
+    // as an executable. If you just want to run nyxx_commands with `dart run`, this is optional and
     // you can just pass a normal function to the constructor.
     //
     // The first parameter to this function must be a `IChatContext`. A `IChatContext` allows you to access
@@ -133,7 +133,7 @@ void main() {
     //
     // Since a ping command doesn't have any other arguments, we don't add any other parameters to
     // the function.
-    Id('ping', (IChatContext context) {
+    id('ping', (IChatContext context) {
       // For a ping command, all we need to do is respond with `pong`.
       // To do that, we can use the `IChatContext`'s `respond` method which responds to the command with
       // a message.
@@ -187,7 +187,7 @@ void main() {
       ChatCommand(
         'coin',
         'Throw a coin',
-        Id('throw-coin', (IChatContext context) {
+        id('throw-coin', (IChatContext context) {
           bool heads = Random().nextBool();
 
           context.respond(
@@ -202,7 +202,7 @@ void main() {
   throwGroup.addCommand(ChatCommand(
     'die',
     'Throw a die',
-    Id('throw-die', (IChatContext context) {
+    id('throw-die', (IChatContext context) {
       int number = Random().nextInt(6) + 1;
 
       context.respond(MessageBuilder.content('The die landed on the $number!'));
@@ -240,7 +240,7 @@ void main() {
     // As mentioned earlier, all we need to do to add an argument to our command is add it as a
     // parameter to our execute function. In this case, we take an argument called `message` and of
     // type `String`.
-    Id('say', (IChatContext context, String message) {
+    id('say', (IChatContext context, String message) {
       context.respond(MessageBuilder.content(message));
     }),
   );
@@ -298,7 +298,7 @@ void main() {
     "Change a user's nickname",
     // Setting the type of the `target` parameter to `IMember` will make nyxx_commands convert user
     // input to instances of `IMember`.
-    Id('nick', (IChatContext context, IMember target, String newNick) async {
+    id('nick', (IChatContext context, IMember target, String newNick) async {
       try {
         await target.edit(builder: MemberBuilder()..nick = newNick);
       } on IHttpResponseError {
@@ -440,7 +440,7 @@ void main() {
   ChatCommand favouriteShape = ChatCommand(
     'favourite-shape',
     'Outputs your favourite shape',
-    Id('favourite-shape', (IChatContext context, Shape shape, Dimension dimension) {
+    id('favourite-shape', (IChatContext context, Shape shape, Dimension dimension) {
       String favourite;
 
       switch (shape) {
@@ -509,7 +509,7 @@ void main() {
   ChatCommand favouriteFruit = ChatCommand(
     'favourite-fruit',
     'Outputs your favourite fruit',
-    Id('favourite-fruit', (IChatContext context, [String favourite = 'apple']) {
+    id('favourite-fruit', (IChatContext context, [String favourite = 'apple']) {
       context.respond(MessageBuilder.content('Your favourite fruit is $favourite!'));
     }),
   );
@@ -540,7 +540,7 @@ void main() {
   ChatCommand alphabet = ChatCommand(
     'alphabet',
     'Outputs the alphabet',
-    Id('alphabet', (IChatContext context) {
+    id('alphabet', (IChatContext context) {
       context.respond(MessageBuilder.content('ABCDEFGHIJKLMNOPQRSTUVWXYZ'));
     }),
     // Since this command is spammy, we can use a cooldown to restrict its usage:
@@ -582,7 +582,7 @@ void main() {
   ChatCommand betterSay = ChatCommand(
     'better-say',
     'A better version of the say command',
-    Id('better-say', (
+    id('better-say', (
       IChatContext context,
       @UseConverter(nonEmptyStringConverter) String input,
     ) {

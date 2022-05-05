@@ -105,7 +105,7 @@ Future<Map<int, TypeData>> processTypes(
   return typeTree;
 }
 
-/// Generates function metadata for all creations of [Id] instances in [result] and child units.
+/// Generates function metadata for all creations of [id] invocations in [result] and child units.
 Future<Iterable<CompileTimeFunctionData>> processFunctions(
   LibraryElement result,
   AnalysisContext context,
@@ -117,9 +117,9 @@ Future<Iterable<CompileTimeFunctionData>> processFunctions(
 
   await functionBuilder.visitLibrary(result);
 
-  logger.fine('Found ${functionBuilder.idCreations.length} function instances');
+  logger.fine('Found ${functionBuilder.ids.length} function instances');
 
-  final Iterable<CompileTimeFunctionData> data = getFunctionData(functionBuilder.idCreations);
+  final Iterable<CompileTimeFunctionData> data = getFunctionData(functionBuilder.ids);
 
   logger.info('Got data for ${data.length} functions');
 
@@ -316,7 +316,7 @@ void writeTypeMappings(Iterable<int> ids, StringBuffer result) {
   result.write('};');
 }
 
-/// Generates a map literal that maps [Id] ids to function metadata that can be used to look up
+/// Generates a map literal that maps [id] ids to function metadata that can be used to look up
 /// function metadata at runtime, and writes the result to [result].
 ///
 /// Imports needed to write the metadata will be added to [imports].
@@ -435,7 +435,7 @@ void writeFunctionData(
     }
 
     if (loadedIds.contains(idData.first)) {
-      throw CommandsException('Duplicate identifier for Id: ${function.id}');
+      throw CommandsException('Duplicate identifier for id: ${function.id}');
     }
 
     loadedIds.add(idData.first);

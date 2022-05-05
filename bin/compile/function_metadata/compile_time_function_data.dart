@@ -17,7 +17,7 @@ import 'package:analyzer/dart/element/type.dart';
 
 /// Metadata about a function.
 class CompileTimeFunctionData {
-  /// The id that was associated with this function in the [Id] constructor.
+  /// The id that was associated with this function in the [id] invocation.
   final Expression id;
 
   /// The parameter data for this function.

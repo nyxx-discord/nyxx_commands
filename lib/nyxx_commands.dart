@@ -95,11 +95,11 @@ export 'src/util/util.dart'
         Autocomplete,
         Choices,
         Description,
-        Id,
         Name,
         UseConverter,
         commandNameRegexp,
         convertToKebabCase,
         dmOr,
+        id,
         mentionOr;
 export 'src/util/view.dart' show StringView;

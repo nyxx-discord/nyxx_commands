@@ -424,7 +424,7 @@ class ChatCommand
   ChatCommand._(
     this.name,
     this.description,
-    Function execute,
+    this.execute,
     Type contextType, {
     this.aliases = const [],
     this.type = CommandType.def,
@@ -432,8 +432,7 @@ class ChatCommand
     Iterable<AbstractCheck> checks = const [],
     Iterable<AbstractCheck> singleChecks = const [],
     this.options = const CommandOptions(),
-    // Unwrap function if it was wrapped
-  }) : execute = wrappedMap[execute.hashCode] ?? execute {
+  }) {
     if (!commandNameRegexp.hasMatch(name) || name != name.toLowerCase()) {
       throw CommandRegistrationError('Invalid command name "$name"');
     }

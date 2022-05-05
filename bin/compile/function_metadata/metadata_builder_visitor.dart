@@ -16,23 +16,23 @@ import 'package:analyzer/dart/analysis/analysis_context.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 
 import '../element_tree_visitor.dart';
-import '../generator.dart';
-import '../type_tree/tree_builder.dart';
 
-/// An AST visitor that collects all instances of [Id] constructor calls.
+/// An AST visitor that collects all instances of [id] invocations.
 class FunctionBuilderVisitor extends EntireAstVisitor {
-  final List<InstanceCreationExpression> idCreations = [];
+  final List<InvocationExpression> ids = [];
 
   FunctionBuilderVisitor(AnalysisContext context, bool slow) : super(context, slow);
 
   @override
-  void visitInstanceCreationExpression(InstanceCreationExpression expression) {
-    if (getId(expression.constructorName.type.type!) == idId) {
-      idCreations.add(expression);
+  void visitMethodInvocation(MethodInvocation node) {
+    super.visitMethodInvocation(node);
+
+    Expression function = node.function;
+
+    if (function is Identifier &&
+        function.staticElement?.location?.encoding ==
+            'package:nyxx_commands/src/util/util.dart;package:nyxx_commands/src/util/util.dart;id') {
+      ids.add(node);
     }
-
-    logger.finest('Found ID creation $expression');
-
-    super.visitInstanceCreationExpression(expression);
   }
 }

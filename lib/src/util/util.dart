@@ -282,39 +282,19 @@ final RegExp commandNameRegexp = RegExp(
   unicode: true,
 );
 
-final Map<int, dynamic> idMap = {};
-final Map<int, Function> wrappedMap = {};
+final Map<Function, dynamic> idMap = {};
 
-/// A class that can be used to identify functions both at compile-time and at runtime.
+/// A special function that can be wrapped around another function in order to tell nyxx_commands
+/// how to identify the funcion at compile time.
 ///
-/// This class is used to identify a function so that compiled nyxx_commands can extract the
-/// type & annotation data for that function.
+/// This function is used to identify a callback function so that compiled nyxx_commands can extract
+/// the type & annotation data for that function.
 ///
-/// It is a compile-time error for two instances of [Id] to share the same [Id.id].
+/// It is a compile-time error for two [id] invocations to share the same [id] parameter.
 /// It is a runtime error in compiled nyxx_commands to create a [ChatCommand] with a non-wrapped
 /// function.
-class Id {
-  /// A unique ID representing the wrapped function
-  final dynamic id;
+T id<T extends Function>(dynamic id, T fn) {
+  idMap[fn] = id;
 
-  /// The wrapped function
-  final Function wrapped;
-
-  /// Create a new function wrapped
-  Id(this.id, this.wrapped) {
-    void setId(Function fn) {
-      // For compiled lookup
-      idMap[fn.hashCode] = id;
-      // Also save the wrapped function in the map
-      idMap[wrapped.hashCode] = id;
-
-      // For checking with mirrors
-      wrappedMap[fn.hashCode] = wrapped;
-    }
-
-    setId(this);
-  }
-
-  void call() => throw UnsupportedError(
-      'call() Ids. Access the wrapped function with `wrapped` and call that.');
+  return fn;
 }
