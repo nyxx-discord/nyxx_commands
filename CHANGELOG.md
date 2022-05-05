@@ -17,7 +17,7 @@ __Bug fixes__:
 
 ## 4.1.1
 __Bug fixes__:
-- Correctly export the `@AUtocomplete(...)` annotation.
+- Correctly export the `@Autocomplete(...)` annotation.
 
 ## 4.1.0
 __New features__:
