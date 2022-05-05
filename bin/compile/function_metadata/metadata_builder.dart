@@ -53,24 +53,26 @@ Iterable<CompileTimeFunctionData> getFunctionData(
       }
 
       /// Extracts all the annotations on a parameter that have a type with the type id [type].
-      Iterable<Annotation> annotationsWithType(int type) => parameter.metadata.where(
-            (node) =>
-                (node.elementAnnotation?.element is ConstructorElement &&
-                    getId(
-                          (node.elementAnnotation!.element as ConstructorElement)
-                              .enclosingElement
-                              .thisType,
-                        ) ==
-                        type) ||
-                (node.elementAnnotation?.element is ConstVariableElement &&
-                    getId(
-                          (node.elementAnnotation!.element as ConstVariableElement)
-                              .evaluationResult!
-                              .value!
-                              .type,
-                        ) ==
-                        type),
-          );
+      Iterable<Annotation> annotationsWithType(int type) {
+        Iterable<Annotation> constructorAnnotations = parameter.metadata
+            .where((node) => node.elementAnnotation?.element is ConstructorElement)
+            .where((node) =>
+                getId((node.elementAnnotation!.element as ConstructorElement)
+                    .enclosingElement
+                    .thisType) ==
+                type);
+
+        Iterable<Annotation> constVariableAnnotations = parameter.metadata
+            .where((node) => (node.elementAnnotation?.element is ConstVariableElement))
+            .where((node) =>
+                getId((node.elementAnnotation!.element as ConstVariableElement)
+                    .evaluationResult!
+                    .value!
+                    .type) ==
+                type);
+
+        return constructorAnnotations.followedBy(constVariableAnnotations);
+      }
 
       Iterable<Annotation> nameAnnotations = annotationsWithType(nameId);
 
