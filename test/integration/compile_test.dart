@@ -6,7 +6,7 @@ import '../../bin/compile/generator.dart';
 
 void main() {
   test('Compilation script', () async {
-    Future<void> generationFuture = generate('example/example.dart', 'out.g.dart', true);
+    Future<void> generationFuture = generate('example/example.dart', 'out.g.dart', true, false);
 
     expect(generationFuture, completes);
 
