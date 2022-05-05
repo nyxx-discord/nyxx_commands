@@ -23,7 +23,7 @@ import '../generator.dart';
 class TypeBuilderVisitor extends EntireAstVisitor {
   final List<DartType> types = [];
 
-  TypeBuilderVisitor(AnalysisContext context) : super(context);
+  TypeBuilderVisitor(AnalysisContext context, bool slow) : super(context, slow);
 
   @override
   void visitClassDeclaration(ClassDeclaration node) {

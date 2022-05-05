@@ -53,6 +53,12 @@ void main(List<String> args) async {
       abbr: 'f',
       defaultsTo: true,
       help: 'Format the generated output before compiling',
+    )
+    ..addFlag(
+      'slow',
+      defaultsTo: false,
+      help: 'Use a slower, more thourough version of the compiler. This can help in cases where'
+          ' the default compiler is unable to generate all the metadata needed for your program.',
     );
 
   if (args.isEmpty) {
@@ -80,7 +86,12 @@ void main(List<String> args) async {
 
   // Generation
 
-  await generate(result.rest.first, result['output'] as String, result['format'] as bool);
+  await generate(
+    result.rest.first,
+    result['output'] as String,
+    result['format'] as bool,
+    result['slow'] as bool,
+  );
 
   // Compilation
 

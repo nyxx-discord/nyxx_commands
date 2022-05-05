@@ -23,7 +23,7 @@ import '../type_tree/tree_builder.dart';
 class FunctionBuilderVisitor extends EntireAstVisitor {
   final List<InstanceCreationExpression> idCreations = [];
 
-  FunctionBuilderVisitor(AnalysisContext context) : super(context);
+  FunctionBuilderVisitor(AnalysisContext context, bool slow) : super(context, slow);
 
   @override
   void visitInstanceCreationExpression(InstanceCreationExpression expression) {

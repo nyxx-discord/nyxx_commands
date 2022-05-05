@@ -38,7 +38,7 @@ final Logger logger = Logger('Commands Compiler');
 /// [outPath].
 ///
 /// If [formatOutput] is `true`, the resulting file will be formatted with `dart format`.
-Future<void> generate(String path, String outPath, bool formatOutput) async {
+Future<void> generate(String path, String outPath, bool formatOutput, bool slow) async {
   path = normalize(absolute(path));
 
   logger.info('Analyzing file "$path"');
@@ -64,9 +64,10 @@ Future<void> generate(String path, String outPath, bool formatOutput) async {
     throw CommandsException('No entry point was found for file "$path"');
   }
 
-  Map<int, TypeData> typeTree = await processTypes(result.element, context);
+  Map<int, TypeData> typeTree = await processTypes(result.element, context, slow);
 
-  Iterable<CompileTimeFunctionData> functions = await processFunctions(result.element, context);
+  Iterable<CompileTimeFunctionData> functions =
+      await processFunctions(result.element, context, slow);
 
   String output = generateOutput(
     {...typeTree.values},
@@ -84,10 +85,14 @@ Future<void> generate(String path, String outPath, bool formatOutput) async {
 }
 
 /// Generates type metadata for [result] and all child units (includes imports, exports and parts).
-Future<Map<int, TypeData>> processTypes(LibraryElement result, AnalysisContext context) async {
+Future<Map<int, TypeData>> processTypes(
+  LibraryElement result,
+  AnalysisContext context,
+  bool slow,
+) async {
   logger.info('Building type tree from AST');
 
-  final TypeBuilderVisitor typeBuilder = TypeBuilderVisitor(context);
+  final TypeBuilderVisitor typeBuilder = TypeBuilderVisitor(context, slow);
 
   await typeBuilder.visitLibrary(result);
 
@@ -102,10 +107,13 @@ Future<Map<int, TypeData>> processTypes(LibraryElement result, AnalysisContext c
 
 /// Generates function metadata for all creations of [Id] instances in [result] and child units.
 Future<Iterable<CompileTimeFunctionData>> processFunctions(
-    LibraryElement result, AnalysisContext context) async {
+  LibraryElement result,
+  AnalysisContext context,
+  bool slow,
+) async {
   logger.info('Loading function metadata');
 
-  final FunctionBuilderVisitor functionBuilder = FunctionBuilderVisitor(context);
+  final FunctionBuilderVisitor functionBuilder = FunctionBuilderVisitor(context, slow);
 
   await functionBuilder.visitLibrary(result);
 

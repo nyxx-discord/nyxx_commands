@@ -34,8 +34,9 @@ class EntireAstVisitor extends RecursiveAstVisitor<void> {
   final List<String> _interestingSources = [];
 
   final AnalysisContext context;
+  final bool slow;
 
-  EntireAstVisitor(this.context);
+  EntireAstVisitor(this.context, this.slow);
 
   /// Makes this visitor check all the imported, exported or "part-ed" files in [element], visiting
   /// ones that are deemed "interesting".
@@ -79,6 +80,10 @@ class EntireAstVisitor extends RecursiveAstVisitor<void> {
 
   /// Returns whether a given library is "interesting"
   bool isLibraryInteresting(LibraryElement element) {
+    if (slow) {
+      return true;
+    }
+
     if (_interestingCache.containsKey(element)) {
       return _interestingCache[element]!;
     }
