@@ -62,4 +62,15 @@ class TypeBuilderVisitor extends EntireAstVisitor {
 
     super.visitTypeLiteral(node);
   }
+
+  @override
+  void visitTypeArgumentList(TypeArgumentList node) {
+    for (final argument in node.arguments) {
+      types.add(argument.type!);
+
+      logger.finest('Found type argument ${argument.type}');
+    }
+
+    super.visitTypeArgumentList(node);
+  }
 }
