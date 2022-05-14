@@ -42,19 +42,43 @@ bool _isAAssignableToB(int aId, int bId, Map<int, TypeData> typeTree) {
   TypeData b = typeTree[bId]!;
 
   // Identical
-  if (a.id == b.id) return true; // x => x
+  if (a.id == b.id) {
+    // x => x
+    return true;
+  }
 
   // Never
-  if (b is NeverTypeData || a is NeverTypeData) return false; // * => Never || Never => *
+  if (b is NeverTypeData || a is NeverTypeData) {
+    // * => Never || Never => *
+    return false;
+  }
 
   // Dynamic and void
-  if (b is VoidTypeData) return true; // * - {Never} => void
-  if (a is VoidTypeData) return false; // void => * - {void, Never}
-  if (b is DynamicTypeData) return true; // * - {void, Never} => dynamic
-  if (a is DynamicTypeData) return false; // dynamic => * - {void, Never, dynamic}
+  if (b is VoidTypeData) {
+    // * - {Never} => void
+    return true;
+  }
+
+  if (a is VoidTypeData) {
+    // void => * - {void, Never}
+    return false;
+  }
+
+  if (b is DynamicTypeData) {
+    // * - {void, Never} => dynamic
+    return true;
+  }
+
+  if (a is DynamicTypeData) {
+    // dynamic => * - {void, Never, dynamic}
+    return false;
+  }
 
   // Object to function
-  if (a is! FunctionTypeData && b is FunctionTypeData) return false; // * - {Function} => Function
+  if (a is! FunctionTypeData && b is FunctionTypeData) {
+    // * - {Function} => Function
+    return false;
+  }
 
   // Object to object
   if (a is InterfaceTypeData && b is InterfaceTypeData) {
