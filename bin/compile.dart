@@ -55,10 +55,11 @@ void main(List<String> args) async {
       help: 'Format the generated output before compiling',
     )
     ..addFlag(
-      'slow',
+      'complete',
       defaultsTo: false,
-      help: 'Use a slower, more thourough version of the compiler. This can help in cases where'
-          ' the default compiler is unable to generate all the metadata needed for your program.',
+      help: 'Generate metadata for all the files in your program, instead of just the necessary'
+          ' ones. This can help in cases where your program does not run when using the normal'
+          ' compiler.',
     );
 
   if (args.isEmpty) {
@@ -90,7 +91,7 @@ void main(List<String> args) async {
     result.rest.first,
     result['output'] as String,
     result['format'] as bool,
-    result['slow'] as bool,
+    result['complete'] as bool,
   );
 
   // Compilation
