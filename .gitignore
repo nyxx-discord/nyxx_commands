@@ -1,14 +1,16 @@
 # Files and directories created by pub.
 .dart_tool/
 .packages
+pubspec.lock
 
 # Conventional directory for build output.
 build/
 
+# Generated files
+*.g.dart
+*.exe
+
 # Local
 doc/
 .vscode/
-
-pubspec.lock
-
 .idea/

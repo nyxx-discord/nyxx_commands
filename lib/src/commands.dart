@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 import 'dart:async';
-import 'dart:mirrors';
 
 import 'package:logging/logging.dart';
 import 'package:nyxx/nyxx.dart';
@@ -32,6 +31,7 @@ import 'context/message_context.dart';
 import 'context/user_context.dart';
 import 'converters/converter.dart';
 import 'errors.dart';
+import 'mirror_utils/mirror_utils.dart';
 import 'options.dart';
 import 'util/util.dart';
 import 'util/view.dart';
@@ -623,29 +623,21 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     Iterator<CommandOptionBuilder> builderIterator = options.iterator;
     Iterator<Type> argumentTypeIterator = command.argumentTypes.iterator;
 
-    MethodMirror mirror = (reflect(command.execute) as ClosureMirror).function;
+    Iterable<FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)?> autocompleters =
+        loadFunctionData(command.execute)
+            .parametersData
+            // Skip context parameter
+            .skip(1)
+            .map((parameter) => parameter.autocompleteOverride);
 
-    // Skip context argument
-    Iterable<Autocomplete?> autocompleters = mirror.parameters.skip(1).map((parameter) {
-      Iterable<Autocomplete> annotations = parameter.metadata
-          .where((metadataMirror) => metadataMirror.hasReflectee)
-          .map((metadataMirror) => metadataMirror.reflectee)
-          .whereType<Autocomplete>();
-
-      if (annotations.isNotEmpty) {
-        return annotations.first;
-      }
-
-      return null;
-    });
-
-    Iterator<Autocomplete?> autocompletersIterator = autocompleters.iterator;
+    Iterator<FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)?>
+        autocompletersIterator = autocompleters.iterator;
 
     while (builderIterator.moveNext() &&
         argumentTypeIterator.moveNext() &&
         autocompletersIterator.moveNext()) {
       FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autocompleteCallback =
-          autocompletersIterator.current?.callback;
+          autocompletersIterator.current;
 
       autocompleteCallback ??= getConverter(argumentTypeIterator.current)?.autocompleteCallback;
 
@@ -685,17 +677,13 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
       return _converters[type]!;
     }
 
-    TypeMirror targetMirror = reflectType(type);
-
     List<Converter<dynamic>> assignable = [];
     List<Converter<dynamic>> superClasses = [];
 
     for (final key in _converters.keys) {
-      TypeMirror keyMirror = reflectType(key);
-
-      if (keyMirror.isSubtypeOf(targetMirror)) {
+      if (isAssignableTo(key, type)) {
         assignable.add(_converters[key]!);
-      } else if (targetMirror.isSubtypeOf(keyMirror)) {
+      } else if (isAssignableTo(type, key)) {
         superClasses.add(_converters[key]!);
       }
     }
@@ -704,7 +692,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
       // Converters for types that superclass the target type might return an instance of the
       // target type.
       assignable.add(CombineConverter(converter, (superInstance, context) {
-        if (reflect(superInstance).type.isSubtypeOf(targetMirror)) {
+        if (isAssignableTo(superInstance.runtimeType, type)) {
           return superInstance;
         }
         return null;
