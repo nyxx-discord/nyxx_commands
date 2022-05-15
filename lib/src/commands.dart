@@ -621,29 +621,24 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     ChatCommand command,
   ) {
     Iterator<CommandOptionBuilder> builderIterator = options.iterator;
-    Iterator<Type> argumentTypeIterator = command.argumentTypes.iterator;
 
-    Iterable<FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)?> autocompleters =
-        loadFunctionData(command.execute)
-            .parametersData
-            // Skip context parameter
-            .skip(1)
-            .map((parameter) => parameter.autocompleteOverride);
+    Iterable<ParameterData> parameters = loadFunctionData(command.execute)
+        .parametersData
+        // Skip context parameter
+        .skip(1);
 
-    Iterator<FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)?>
-        autocompletersIterator = autocompleters.iterator;
+    Iterator<ParameterData> parameterIterator = parameters.iterator;
 
-    while (builderIterator.moveNext() &&
-        argumentTypeIterator.moveNext() &&
-        autocompletersIterator.moveNext()) {
+    while (builderIterator.moveNext() && parameterIterator.moveNext()) {
+      Converter<dynamic>? converter = parameterIterator.current.converterOverride ??
+          getConverter(parameterIterator.current.type);
+
       FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autocompleteCallback =
-          autocompletersIterator.current;
-
-      autocompleteCallback ??= getConverter(argumentTypeIterator.current)?.autocompleteCallback;
+          parameterIterator.current.autocompleteOverride ?? converter?.autocompleteCallback;
 
       if (autocompleteCallback != null) {
         builderIterator.current.registerAutocompleteHandler(
-            (event) => _processAutocompleteInteraction(event, autocompleteCallback!, command));
+            (event) => _processAutocompleteInteraction(event, autocompleteCallback, command));
       }
     }
   }
