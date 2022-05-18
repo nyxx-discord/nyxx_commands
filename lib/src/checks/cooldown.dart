@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../context/context.dart';
 import 'checks.dart';
@@ -307,8 +306,11 @@ class CooldownCheck extends AbstractCheck {
   ];
 
   @override
-  Future<Iterable<CommandPermissionBuilderAbstract>> get permissions => Future.value([]);
+  Iterable<void Function(IContext p1)> get postCallHooks => [];
 
   @override
-  Iterable<void Function(IContext p1)> get postCallHooks => [];
+  bool get allowsDm => true;
+
+  @override
+  int? get requiredPermissions => null;
 }

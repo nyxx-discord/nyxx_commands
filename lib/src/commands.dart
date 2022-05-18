@@ -13,13 +13,13 @@
 //  limitations under the License.
 
 import 'dart:async';
-import 'dart:mirrors';
 
 import 'package:logging/logging.dart';
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import 'checks/checks.dart';
+import 'checks/guild.dart';
 import 'commands/chat_command.dart';
 import 'commands/interfaces.dart';
 import 'commands/message_command.dart';
@@ -31,6 +31,7 @@ import 'context/message_context.dart';
 import 'context/user_context.dart';
 import 'converters/converter.dart';
 import 'errors.dart';
+import 'mirror_utils/mirror_utils.dart';
 import 'options.dart';
 import 'util/util.dart';
 import 'util/view.dart';
@@ -508,28 +509,12 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
   Future<Iterable<SlashCommandBuilder>> _getSlashBuilders() async {
     List<SlashCommandBuilder> builders = [];
 
-    const Snowflake zeroSnowflake = Snowflake.zero();
-
     for (final command in children) {
-      if (!_shouldGnerateBuildersFor(command)) {
+      if (!_shouldGenerateBuildersFor(command)) {
         continue;
       }
 
-      Iterable<CommandPermissionBuilderAbstract> permissions = await _getPermissions(command);
-
-      if (permissions.length == 1 &&
-          permissions.first.id == zeroSnowflake &&
-          !permissions.first.hasPermission) {
-        continue;
-      }
-
-      bool defaultPermission = true;
-      for (final permission in permissions) {
-        if (permission.id == zeroSnowflake) {
-          defaultPermission = permission.hasPermission;
-          break;
-        }
-      }
+      AbstractCheck allChecks = Check.all(command.checks);
 
       Iterable<GuildCheck> guildChecks = command.checks.whereType<GuildCheck>();
 
@@ -547,10 +532,8 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
             List.of(
               _processHandlerRegistration(command.getOptions(this), command),
             ),
-            defaultPermissions: defaultPermission,
-            permissions: List.of(
-              permissions.where((permission) => permission.id != zeroSnowflake),
-            ),
+            canBeUsedInDm: await allChecks.allowsDm,
+            requiredPermissions: await allChecks.requiredPermissions,
             guild: guildId ?? guild,
             type: SlashCommandType.chat,
           );
@@ -567,10 +550,8 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
             command.name,
             null,
             [],
-            defaultPermissions: defaultPermission,
-            permissions: List.of(
-              permissions.where((permission) => permission.id != zeroSnowflake),
-            ),
+            canBeUsedInDm: await allChecks.allowsDm,
+            requiredPermissions: await allChecks.requiredPermissions,
             guild: guildId ?? guild,
             type: SlashCommandType.user,
           );
@@ -583,10 +564,8 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
             command.name,
             null,
             [],
-            defaultPermissions: defaultPermission,
-            permissions: List.of(
-              permissions.where((permission) => permission.id != zeroSnowflake),
-            ),
+            canBeUsedInDm: await allChecks.allowsDm,
+            requiredPermissions: await allChecks.requiredPermissions,
             guild: guildId ?? guild,
             type: SlashCommandType.message,
           );
@@ -602,7 +581,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     return builders;
   }
 
-  bool _shouldGnerateBuildersFor(ICommandRegisterable<IContext> child) {
+  bool _shouldGenerateBuildersFor(ICommandRegisterable<IContext> child) {
     if (child is IChatCommandComponent) {
       if (child.hasSlashCommand) {
         return true;
@@ -612,40 +591,6 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     }
 
     return true;
-  }
-
-  Future<Iterable<CommandPermissionBuilderAbstract>> _getPermissions(IChecked command) async {
-    Map<Snowflake, CommandPermissionBuilderAbstract> uniquePermissions = {};
-
-    for (final check in command.checks) {
-      Iterable<CommandPermissionBuilderAbstract> checkPermissions = await check.permissions;
-
-      for (final permission in checkPermissions) {
-        if (uniquePermissions.containsKey(permission.id) &&
-            uniquePermissions[permission.id]!.hasPermission != permission.hasPermission) {
-          logger.warning(
-            'Check "${check.name}" is in conflict with a previous check on '
-            'permissions for '
-            '${permission.id.id == 0 ? 'the default permission' : 'id ${permission.id}'}. '
-            'Permission has been set to false to prevent unintended usage.',
-          );
-
-          if (permission is RoleCommandPermissionBuilder) {
-            uniquePermissions[permission.id] =
-                CommandPermissionBuilderAbstract.role(permission.id, hasPermission: false);
-          } else {
-            uniquePermissions[permission.id] =
-                CommandPermissionBuilderAbstract.user(permission.id, hasPermission: false);
-          }
-
-          continue;
-        }
-
-        uniquePermissions[permission.id] = permission;
-      }
-    }
-
-    return uniquePermissions.values;
   }
 
   Iterable<CommandOptionBuilder> _processHandlerRegistration(
@@ -676,37 +621,24 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     ChatCommand command,
   ) {
     Iterator<CommandOptionBuilder> builderIterator = options.iterator;
-    Iterator<Type> argumentTypeIterator = command.argumentTypes.iterator;
 
-    MethodMirror mirror = (reflect(command.execute) as ClosureMirror).function;
+    Iterable<ParameterData> parameters = loadFunctionData(command.execute)
+        .parametersData
+        // Skip context parameter
+        .skip(1);
 
-    // Skip context argument
-    Iterable<Autocomplete?> autocompleters = mirror.parameters.skip(1).map((parameter) {
-      Iterable<Autocomplete> annotations = parameter.metadata
-          .where((metadataMirror) => metadataMirror.hasReflectee)
-          .map((metadataMirror) => metadataMirror.reflectee)
-          .whereType<Autocomplete>();
+    Iterator<ParameterData> parameterIterator = parameters.iterator;
 
-      if (annotations.isNotEmpty) {
-        return annotations.first;
-      }
+    while (builderIterator.moveNext() && parameterIterator.moveNext()) {
+      Converter<dynamic>? converter = parameterIterator.current.converterOverride ??
+          getConverter(parameterIterator.current.type);
 
-      return null;
-    });
-
-    Iterator<Autocomplete?> autocompletersIterator = autocompleters.iterator;
-
-    while (builderIterator.moveNext() &&
-        argumentTypeIterator.moveNext() &&
-        autocompletersIterator.moveNext()) {
       FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autocompleteCallback =
-          autocompletersIterator.current?.callback;
-
-      autocompleteCallback ??= getConverter(argumentTypeIterator.current)?.autocompleteCallback;
+          parameterIterator.current.autocompleteOverride ?? converter?.autocompleteCallback;
 
       if (autocompleteCallback != null) {
         builderIterator.current.registerAutocompleteHandler(
-            (event) => _processAutocompleteInteraction(event, autocompleteCallback!, command));
+            (event) => _processAutocompleteInteraction(event, autocompleteCallback, command));
       }
     }
   }
@@ -740,17 +672,13 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
       return _converters[type]!;
     }
 
-    TypeMirror targetMirror = reflectType(type);
-
     List<Converter<dynamic>> assignable = [];
     List<Converter<dynamic>> superClasses = [];
 
     for (final key in _converters.keys) {
-      TypeMirror keyMirror = reflectType(key);
-
-      if (keyMirror.isSubtypeOf(targetMirror)) {
+      if (isAssignableTo(key, type)) {
         assignable.add(_converters[key]!);
-      } else if (targetMirror.isSubtypeOf(keyMirror)) {
+      } else if (isAssignableTo(type, key)) {
         superClasses.add(_converters[key]!);
       }
     }
@@ -759,7 +687,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
       // Converters for types that superclass the target type might return an instance of the
       // target type.
       assignable.add(CombineConverter(converter, (superInstance, context) {
-        if (reflect(superInstance).type.isSubtypeOf(targetMirror)) {
+        if (isAssignableTo(superInstance.runtimeType, type)) {
           return superInstance;
         }
         return null;

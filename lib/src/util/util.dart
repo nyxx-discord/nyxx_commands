@@ -281,3 +281,20 @@ final RegExp commandNameRegexp = RegExp(
   r'^[-_\p{L}\p{N}\p{sc=Deva}\p{sc=Thai}]{1,32}$',
   unicode: true,
 );
+
+final Map<Function, dynamic> idMap = {};
+
+/// A special function that can be wrapped around another function in order to tell nyxx_commands
+/// how to identify the funcion at compile time.
+///
+/// This function is used to identify a callback function so that compiled nyxx_commands can extract
+/// the type & annotation data for that function.
+///
+/// It is a compile-time error for two [id] invocations to share the same [id] parameter.
+/// It is a runtime error in compiled nyxx_commands to create a [ChatCommand] with a non-wrapped
+/// function.
+T id<T extends Function>(dynamic id, T fn) {
+  idMap[fn] = id;
+
+  return fn;
+}

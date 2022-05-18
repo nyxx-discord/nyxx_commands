@@ -52,10 +52,27 @@ class StringView {
   /// A record of all the previous indices the cursor was at preceding an operation.
   List<int> history = [];
 
+  int? _restIsBlockFromIndex;
+
+  /// Whether [remaining] should be considered to be one "block" of text, which [getQuotedWord] will
+  /// return all of.
+  ///
+  /// This will be reset to `false` whenever [index] changes.
+  bool get isRestBlock => index == _restIsBlockFromIndex;
+  set isRestBlock(bool value) {
+    if (value) {
+      _restIsBlockFromIndex = index;
+    } else {
+      _restIsBlockFromIndex = null;
+    }
+  }
+
   /// Create a new [StringView] wrapping [buffer].
   ///
   /// The cursor will initially be positioned at the start of [buffer].
-  StringView(this.buffer);
+  StringView(this.buffer, {bool isRestBlock = false}) {
+    this.isRestBlock = isRestBlock;
+  }
 
   /// The largest possible index for the cursor.
   int get end => buffer.length;
@@ -165,6 +182,8 @@ class StringView {
   /// between an opening quote and a corresponding, non-escaped closing quote if the next word
   /// begins with a quote. The quotes are consumed but not returned.
   ///
+  /// If [isRestBlock] is `true`, [remaining] is returned.
+  ///
   /// The word or quoted sequence is escaped before it is returned.
   ///
   /// You might also be interested in:
@@ -173,7 +192,13 @@ class StringView {
   String getQuotedWord() {
     skipWhitespace();
 
-    if (_quotes.containsKey(current)) {
+    if (isRestBlock) {
+      String content = remaining;
+
+      index = end;
+
+      return content;
+    } else if (_quotes.containsKey(current)) {
       String closingQuote = _quotes[current]!;
 
       index++;

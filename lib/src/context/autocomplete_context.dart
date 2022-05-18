@@ -61,6 +61,24 @@ class AutocompleteContext implements IContextBase, IInteractionContextBase {
   /// for more.
   final String currentValue;
 
+  /// A map containing the arguments and the values that the user has inputted so far.
+  ///
+  /// The keys of this map depend on the names of the arguments set in [command]. If a user has not
+  /// yet filled in an argument, it will not be present in this map.
+  ///
+  /// The values might contain partial data.
+  late final Map<String, String> existingArguments = Map.fromEntries(
+    interactionEvent.options.map((option) => MapEntry(option.name, option.value.toString())),
+  );
+
+  /// A map containing the arguments of [command] and their value, if the user has inputted a value
+  /// for them.
+  ///
+  /// The keys of this map depend on the names of the arguments set in [command].
+  ///
+  /// The values might contain partial data.
+  late final Map<String, String?> arguments;
+
   /// Create a new [AutocompleteContext].
   AutocompleteContext({
     required this.commands,
@@ -74,5 +92,17 @@ class AutocompleteContext implements IContextBase, IInteractionContextBase {
     required this.interactionEvent,
     required this.option,
     required this.currentValue,
-  });
+  }) {
+    ISlashCommand command = commands.interactions.commands.singleWhere(
+      (command) => command.id == interaction.commandId,
+    );
+
+    arguments = Map.fromIterable(
+      command.options.map((option) => option.name),
+      value: (option) => existingArguments[option],
+    );
+  }
+
+  /// Whether the user has inputted a value for an argument with the name [name].
+  bool hasArgument(String name) => existingArguments.containsKey(name);
 }

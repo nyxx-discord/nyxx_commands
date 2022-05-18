@@ -392,7 +392,7 @@ class DoubleConverter extends NumConverter<double> {
     double? max,
   }) : super(
           convertDouble,
-          type: CommandOptionType.integer,
+          type: CommandOptionType.number,
           min: min,
           max: max,
         );

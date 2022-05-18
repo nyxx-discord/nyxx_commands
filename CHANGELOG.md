@@ -1,10 +1,35 @@
+## 4.2.0
+__New features__:
+- Added a script which allows `nyxx_commands` to be compiled. For more information, run `dart pub global activate nyxx_commands` and `nyxx-compile --help`.
+- Implemented support for permissions V2. See `PermissionsCheck` for more.
+
+__Deprecaations__:
+- Deprecated `AbstractCheck.permissions` and all associated features.
+
+## 4.2.0-dev.1
+__New features__:
+- Added a script which allows `nyxx_commands` to be compiled. For more information, run `dart pub global activate nyxx_commands` and `nyxx-compile --help`.
+
+## 4.2.0-dev.0
+__Deprecations__:
+- Deprecated `AbstractCheck.permissions` and all associated features.
+
+__New features__:
+- Added `AbtractCheck.allowsDm` and `AbstractCheck.requiredPermissions` for integrating checks with permissions v2.
+- Updated `Check.deny`, `Check.any` and `Check.all` to work with permissions v2.
+- Added `PermissionsCheck`, for checking if users have a specific permission.
+
+__Miscellaneous__:
+- Bump `nyxx_interactions` to 4.2.0.
+- Added proper names to context type checks if none is provided.
+
 ## 4.1.2
 __Bug fixes__:
 - Fixes an issue where slash commands nested within text-only commands would not be registered
 
 ## 4.1.1
 __Bug fixes__:
-- Correctly export the `@AUtocomplete(...)` annotation.
+- Correctly export the `@Autocomplete(...)` annotation.
 
 ## 4.1.0
 __New features__:
