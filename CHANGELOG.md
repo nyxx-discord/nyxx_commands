@@ -1,3 +1,11 @@
+## 4.2.0
+__New features__:
+- Added a script which allows `nyxx_commands` to be compiled. For more information, run `dart pub global activate nyxx_commands` and `nyxx-compile --help`.
+- Implemented support for permissions V2. See `PermissionsCheck` for more.
+
+__Deprecaations__:
+- Deprecated `AbstractCheck.permissions` and all associated features.
+
 ## 4.2.0-dev.1
 __New features__:
 - Added a script which allows `nyxx_commands` to be compiled. For more information, run `dart pub global activate nyxx_commands` and `nyxx-compile --help`.
