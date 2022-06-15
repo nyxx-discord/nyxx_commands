@@ -16,7 +16,8 @@ dependencies:
   logging: ^1.0.2
   meta: ^1.7.0
   nyxx: ^3.0.0
-  nyxx_interactions: ^4.2.1
+  nyxx_interactions:
+    git: https://github.com/Rapougnac/nyxx_interactions.git
   random_string: ^2.3.1
   path: ^1.8.1
 

@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 import 'package:nyxx_commands/src/commands/chat_command.dart';
+import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 /// Options that modify how a command behaves.
 ///
@@ -65,6 +66,9 @@ class CommandOptions {
   /// The default [CommandType] for [ChatCommand]s that are children of this entity.
   final CommandType? defaultCommandType;
 
+  /// The localization options for this command.
+  final LocalizationOptions? localizationOptions;
+
   /// Create a set of command options.
   ///
   /// Options set to `null` will be inherited from the parent.
@@ -74,5 +78,18 @@ class CommandOptions {
     this.acceptSelfCommands,
     this.hideOriginalResponse,
     this.defaultCommandType,
+    this.localizationOptions,
   });
+}
+
+/// Options that modify how the names and descriptions behaves of commands and subcommands.
+class LocalizationOptions {
+  /// The localized names of the command.
+  final Map<Locale, String>? localizedNames;
+
+  /// The localized descriptions of the command.
+  final Map<Locale, String>? localizedDescriptions;
+
+  /// Create a set of localization options.
+  const LocalizationOptions({this.localizedNames, this.localizedDescriptions});
 }

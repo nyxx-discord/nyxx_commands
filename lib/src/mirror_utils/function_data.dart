@@ -35,6 +35,8 @@ class ParameterData {
 
   final String? description;
 
+  final Map<Locale, String>? localizedDescription;
+
   final dynamic defaultValue;
 
   final Map<String, dynamic>? choices;
@@ -48,6 +50,7 @@ class ParameterData {
     required this.type,
     required this.isOptional,
     required this.description,
+    required this.localizedDescription,
     required this.defaultValue,
     required this.choices,
     required this.converterOverride,

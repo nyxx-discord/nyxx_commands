@@ -53,8 +53,10 @@ FunctionData loadFunctionData(Function fn) {
     }
 
     String? description;
+    Map<Locale, String>? descriptionLocales;
     if (descriptionAnnotations.isNotEmpty) {
       description = descriptionAnnotations.first.value;
+      descriptionLocales = descriptionAnnotations.first.localizedDescription;
     }
 
     // Get parameter choices
@@ -98,6 +100,7 @@ FunctionData loadFunctionData(Function fn) {
       type: type,
       isOptional: parameterMirror.isOptional,
       description: description,
+      localizedDescription: descriptionLocales,
       defaultValue: parameterMirror.defaultValue?.reflectee,
       choices: choices,
       converterOverride: converterOverride,

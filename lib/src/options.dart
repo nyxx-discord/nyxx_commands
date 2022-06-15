@@ -53,6 +53,9 @@ class CommandsOptions implements CommandOptions {
   @override
   final CommandType defaultCommandType;
 
+  @override
+  final LocalizationOptions? localizationOptions = null;
+
   /// Create a new set of [CommandsOptions].
   const CommandsOptions({
     this.logErrors = true,
