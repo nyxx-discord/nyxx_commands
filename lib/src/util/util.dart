@@ -84,7 +84,6 @@ class Description {
   /// ChatCommand test = ChatCommand(
   ///  'hi',
   ///  'A test command',
-  ///   'hi',
   ///   (
   ///     IChatContext context,
   ///     @Description('This is a description', {Locale.german: 'Dies ist eine Beschreibung'})
