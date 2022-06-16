@@ -42,8 +42,12 @@ FunctionData loadFunctionData(Function fn) {
         parameterMirror.metadata.map((e) => e.reflectee).whereType<T>();
 
     // If present, get name annotation and localized names
-    Map<Locale, String>? nameLocales;
     Iterable<Name> nameAnnotations = getAnnotations<Name>();
+    Map<Locale, String>? nameLocales;
+
+    if (nameAnnotations.length > 1) {
+      throw CommandRegistrationError('parameters may have at most one Name annotation');
+    }
 
     if (nameAnnotations.isNotEmpty) {
       // Override name
