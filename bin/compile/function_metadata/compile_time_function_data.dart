@@ -34,6 +34,9 @@ class CompileTimeParameterData {
   /// The name of this parameter.
   final String name;
 
+  /// The localized names of this parameter.
+  final Expression? localizedNames;
+
   /// The type of this parameter.
   final DartType type;
 
@@ -70,6 +73,7 @@ class CompileTimeParameterData {
     this.converterOverride,
     this.autocompleteOverride,
     this.localizedDescriptions,
+    this.localizedNames,
   );
 
   @override
@@ -81,5 +85,6 @@ class CompileTimeParameterData {
       'choices=$choices, '
       'converterOverride=$converterOverride, '
       'autocompleteOverride=$autocompleteOverride, '
-      'localizedDescriptions=$localizedDescriptions]';
+      'localizedDescriptions=$localizedDescriptions, '
+      'localizedNames=$localizedNames]';
 }
