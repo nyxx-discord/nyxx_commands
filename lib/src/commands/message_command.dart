@@ -14,6 +14,8 @@
 
 import 'dart:async';
 
+import 'package:nyxx_interactions/nyxx_interactions.dart';
+
 import '../checks/checks.dart';
 import '../context/context.dart';
 import '../context/message_context.dart';
@@ -69,12 +71,16 @@ class MessageCommand
   @override
   final CommandOptions options;
 
+  @override
+  final Map<Locale, String>? localizedNames;
+
   /// Create a new [MessageCommand].
   MessageCommand(
     this.name,
     this.execute, {
     Iterable<AbstractCheck> checks = const [],
     this.options = const CommandOptions(),
+    this.localizedNames,
   }) {
     for (final check in checks) {
       this.check(check);

@@ -66,7 +66,7 @@ FunctionData loadFunctionData(Function fn) {
     Map<Locale, String>? descriptionLocales;
     if (descriptionAnnotations.isNotEmpty) {
       description = descriptionAnnotations.first.value;
-      descriptionLocales = descriptionAnnotations.first.localizedDescription;
+      descriptionLocales = descriptionAnnotations.first.localizedDescriptions;
     }
 
     // Get parameter choices

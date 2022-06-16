@@ -96,16 +96,16 @@ class Description {
   /// Will be displayed as `This is a description` in English, but `Dies ist eine Beschreibung` in German, like so:
   /// 
   /// ![](https://user-images.githubusercontent.com/74512338/174033266-88017e8a-bc13-4031-bf9d-31f9343967a4.png)
-  final Map<Locale, String>? localizedDescription;
+  final Map<Locale, String>? localizedDescriptions;
 
   /// Create a new [Description].
   ///
   /// This is intended to be used as an `@Description(...)` annotation, and has no functionality as
   /// a standalone class.
-  const Description(this.value, [this.localizedDescription]);
+  const Description(this.value, [this.localizedDescriptions]);
 
   @override
-  String toString() => 'Description[value="$value", localizedDescription=$localizedDescription]';
+  String toString() => 'Description[value="$value", localizedDescription=$localizedDescriptions]';
 }
 
 /// An annotation used to restrict input to a set of choices for a given parameter.
