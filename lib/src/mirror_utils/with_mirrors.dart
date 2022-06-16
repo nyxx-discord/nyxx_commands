@@ -38,6 +38,16 @@ FunctionData loadFunctionData(Function fn) {
     // Get parameter name
     String name = MirrorSystem.getName(parameterMirror.simpleName);
 
+    // If present, get name annotation and localized names
+    Map<Locale, String>? nameLocales;
+    Iterable<Name> nameAnnotations = parameterMirror.metadata.whereType<Name>();
+
+    if (nameAnnotations.isNotEmpty) {
+      // Override name
+      name = nameAnnotations.first.name;
+      nameLocales = nameAnnotations.first.localizedNames;
+    }
+
     // Get parameter type
     Type type =
         parameterMirror.type.hasReflectedType ? parameterMirror.type.reflectedType : dynamic;
@@ -97,6 +107,7 @@ FunctionData loadFunctionData(Function fn) {
 
     parametersData.add(ParameterData(
       name: name,
+      localizedNames: nameLocales,
       type: type,
       isOptional: parameterMirror.isOptional,
       description: description,

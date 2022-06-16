@@ -29,6 +29,8 @@ class FunctionData {
 class ParameterData {
   final String name;
 
+  final Map<Locale, String>? localizedNames;
+
   final Type type;
 
   final bool isOptional;
@@ -47,6 +49,7 @@ class ParameterData {
 
   const ParameterData({
     required this.name,
+    required this.localizedNames,
     required this.type,
     required this.isOptional,
     required this.description,
