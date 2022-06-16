@@ -170,7 +170,7 @@ class Name {
   ///  (
   ///   IChatContext context,
   ///   @Name('message', {Locale.german: 'hallo'}) String foo,
-  ///  ) async => context.respond(MessageBuilder.content(foo));
+  ///  ) async => context.respond(MessageBuilder.content(foo))
   /// );
   /// ```
   /// Will be displayed as 'hallo' in German, like so:
