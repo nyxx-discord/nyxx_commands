@@ -45,6 +45,9 @@ class CompileTimeParameterData {
   /// The description of this parameter.
   final String? description;
 
+  /// The localized descriptions of this parameter.
+  final Expression? localizedDescriptions;
+
   /// The default value of this parameter.
   final Expression? defaultValue;
 
@@ -66,6 +69,7 @@ class CompileTimeParameterData {
     this.choices,
     this.converterOverride,
     this.autocompleteOverride,
+    this.localizedDescriptions,
   );
 
   @override
@@ -75,6 +79,7 @@ class CompileTimeParameterData {
       'description=$description, '
       'defaultValue=$defaultValue, '
       'choices=$choices, '
-      'converterOverride=$converterOverride,'
-      'autocompleteOverride=$autocompleteOverride]';
+      'converterOverride=$converterOverride, '
+      'autocompleteOverride=$autocompleteOverride, '
+      'localizedDescriptions=$localizedDescriptions]';
 }

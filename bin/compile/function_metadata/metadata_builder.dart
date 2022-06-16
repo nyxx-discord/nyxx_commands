@@ -54,6 +54,7 @@ Iterable<CompileTimeFunctionData> getFunctionData(
         null,
         null,
         null,
+        null,
       )
     ];
 
@@ -110,6 +111,7 @@ Iterable<CompileTimeFunctionData> getFunctionData(
 
       String name;
       String? description;
+      Expression? localizedDescriptions;
       Expression? choices;
       Expression? defaultValue;
       Annotation? converterOverride;
@@ -127,6 +129,8 @@ Iterable<CompileTimeFunctionData> getFunctionData(
         description = getAnnotationData(descriptionAnnotations.first.elementAnnotation!)
             .getField('value')!
             .toStringValue()!;
+        
+        localizedDescriptions = descriptionAnnotations.first.arguments?.arguments.last;
       }
 
       if (choicesAnnotations.isNotEmpty) {
@@ -154,6 +158,7 @@ Iterable<CompileTimeFunctionData> getFunctionData(
         choices,
         converterOverride,
         autocompleteOverride,
+        localizedDescriptions,
       ));
     }
 
