@@ -79,6 +79,24 @@ class Description {
   final String value;
 
   /// The localized descriptions for the command.
+  /// 
+  /// ```dart
+  /// ChatCommand test = ChatCommand(
+  ///  'hi',
+  ///  'A test command',
+  ///   'hi',
+  ///   (
+  ///     IChatContext context,
+  ///     @Description('This is a description', {Locale.german: 'Dies ist eine Beschreibung'})
+  ///         String foo,
+  ///   ) async {
+  ///     context.respond(MessageBuilder.content(foo));
+  ///   },
+  /// );
+  /// ```
+  /// Will be displayed as `This is a description` in English, but `Dies ist eine Beschreibung` in German, like so:
+  /// 
+  /// ![](https://user-images.githubusercontent.com/74512338/174033266-88017e8a-bc13-4031-bf9d-31f9343967a4.png)
   final Map<Locale, String>? localizedDescription;
 
   /// Create a new [Description].
