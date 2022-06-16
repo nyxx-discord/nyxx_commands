@@ -577,6 +577,7 @@ class ChatCommand
           parameter.description ?? 'No description provided',
           required: !parameter.isOptional,
           choices: choices?.toList(),
+          localizationsDescription: parameter.localizedDescriptions,
         );
 
         argumentConverter?.processOptionCallback?.call(builder);
