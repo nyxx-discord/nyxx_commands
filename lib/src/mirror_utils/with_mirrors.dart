@@ -100,7 +100,7 @@ FunctionData loadFunctionData(Function fn) {
       type: type,
       isOptional: parameterMirror.isOptional,
       description: description,
-      localizedDescription: descriptionLocales,
+      localizedDescriptions: descriptionLocales,
       defaultValue: parameterMirror.defaultValue?.reflectee,
       choices: choices,
       converterOverride: converterOverride,
