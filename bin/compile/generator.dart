@@ -413,7 +413,7 @@ void writeFunctionData(
         autocompleteSource = autocompleteOverrideData.first;
       }
 
-      String? localizedNames;
+      String? localizedNamesSource;
 
       if (parameter.localizedNames != null) {
         List<String>? localizedNamesData = toExpressionSource(parameter.localizedNames!);
@@ -427,7 +427,7 @@ void writeFunctionData(
 
         imports.addAll(localizedNamesData.skip(1));
 
-        localizedNames = localizedNamesData.first;
+        localizedNamesSource = localizedNamesData.first;
       }
 
       String? localizedDescriptionsSource;
@@ -458,7 +458,7 @@ void writeFunctionData(
           converterOverride: $converterSource,
           autocompleteOverride: $autocompleteSource,
           localizedDescriptions: $localizedDescriptionsSource,
-          localizedNames: $localizedNames,
+          localizedNames: $localizedNamesSource,
         ),
       ''';
     }
