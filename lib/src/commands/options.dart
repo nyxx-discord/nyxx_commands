@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 import 'package:nyxx_commands/src/commands/chat_command.dart';
-import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 /// Options that modify how a command behaves.
 ///
