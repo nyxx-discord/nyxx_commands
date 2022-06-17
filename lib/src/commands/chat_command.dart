@@ -174,6 +174,8 @@ mixin ChatGroupMixin implements IChatCommandComponent {
           child.name,
           child.description,
           options: List.of(child.getOptions(commands)),
+          localizationsName: child.localizedNames,
+          localizationsDescription: child.localizedDescriptions,
         ));
       } else if (child is ChatCommand && child.resolvedType != CommandType.textOnly) {
         options.add(CommandOptionBuilder(
@@ -181,6 +183,8 @@ mixin ChatGroupMixin implements IChatCommandComponent {
           child.name,
           child.description,
           options: List.of(child.getOptions(commands)),
+          localizationsName: child.localizedNames,
+          localizationsDescription: child.localizedDescriptions,
         ));
       }
     }
@@ -216,6 +220,12 @@ class ChatGroup
   @override
   final CommandOptions options;
 
+  @override
+  final Map<Locale, String>? localizedNames;
+
+  @override
+  final Map<Locale, String>? localizedDescriptions;
+
   /// Create a new [ChatGroup].
   ChatGroup(
     this.name,
@@ -224,6 +234,8 @@ class ChatGroup
     Iterable<IChatCommandComponent> children = const [],
     Iterable<AbstractCheck> checks = const [],
     this.options = const CommandOptions(),
+    this.localizedNames,
+    this.localizedDescriptions,
   }) {
     if (!commandNameRegexp.hasMatch(name) || name != name.toLowerCase()) {
       throw CommandRegistrationError('Invalid group name "$name"');
@@ -347,6 +359,12 @@ class ChatCommand
 
   late final FunctionData _functionData;
 
+  @override
+  final Map<Locale, String>? localizedNames;
+
+  @override
+  final Map<Locale, String>? localizedDescriptions;
+
   /// Create a new [ChatCommand].
   ///
   /// You might also be interested in:
@@ -362,6 +380,8 @@ class ChatCommand
     Iterable<AbstractCheck> checks = const [],
     Iterable<AbstractCheck> singleChecks = const [],
     CommandOptions options = const CommandOptions(),
+    Map<Locale, String>? localizedNames,
+    Map<Locale, String>? localizedDescriptions,
   }) : this._(
           name,
           description,
@@ -373,6 +393,8 @@ class ChatCommand
           checks: checks,
           singleChecks: singleChecks,
           options: options,
+          localizedNames: localizedNames,
+          localizedDescriptions: localizedDescriptions,
         );
 
   /// Create a new [ChatCommand] with type [CommandType.textOnly].
@@ -408,6 +430,8 @@ class ChatCommand
     Iterable<AbstractCheck> checks = const [],
     Iterable<AbstractCheck> singleChecks = const [],
     CommandOptions options = const CommandOptions(),
+    Map<Locale, String>? localizedNames,
+    Map<Locale, String>? localizedDescriptions,
   }) : this._(
           name,
           description,
@@ -419,6 +443,8 @@ class ChatCommand
           checks: checks,
           singleChecks: singleChecks,
           options: options,
+          localizedNames: localizedNames,
+          localizedDescriptions: localizedDescriptions,
         );
 
   ChatCommand._(
@@ -432,9 +458,16 @@ class ChatCommand
     Iterable<AbstractCheck> checks = const [],
     Iterable<AbstractCheck> singleChecks = const [],
     this.options = const CommandOptions(),
+    this.localizedNames,
+    this.localizedDescriptions,
   }) {
     if (!commandNameRegexp.hasMatch(name) || name != name.toLowerCase()) {
       throw CommandRegistrationError('Invalid command name "$name"');
+    }
+
+    if ((localizedNames != null && localizedNames!.values.any((names) => 
+          !commandNameRegexp.hasMatch(names) || names != names.toLowerCase()))) {
+      throw CommandRegistrationError('Invalid localized name for command "$name".');
     }
 
     _loadArguments(execute, contextType);
@@ -577,6 +610,8 @@ class ChatCommand
           parameter.description ?? 'No description provided',
           required: !parameter.isOptional,
           choices: choices?.toList(),
+          localizationsName: parameter.localizedNames,
+          localizationsDescription: parameter.localizedDescriptions,
         );
 
         argumentConverter?.processOptionCallback?.call(builder);

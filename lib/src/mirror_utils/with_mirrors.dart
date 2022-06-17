@@ -38,12 +38,26 @@ FunctionData loadFunctionData(Function fn) {
     // Get parameter name
     String name = MirrorSystem.getName(parameterMirror.simpleName);
 
+    Iterable<T> getAnnotations<T>() =>
+        parameterMirror.metadata.map((e) => e.reflectee).whereType<T>();
+
+    // If present, get name annotation and localized names
+    Iterable<Name> nameAnnotations = getAnnotations<Name>();
+    Map<Locale, String>? nameLocales;
+
+    if (nameAnnotations.length > 1) {
+      throw CommandRegistrationError('parameters may have at most one Name annotation');
+    }
+
+    if (nameAnnotations.isNotEmpty) {
+      // Override name
+      name = nameAnnotations.first.name;
+      nameLocales = nameAnnotations.first.localizedNames;
+    }
+
     // Get parameter type
     Type type =
         parameterMirror.type.hasReflectedType ? parameterMirror.type.reflectedType : dynamic;
-
-    Iterable<T> getAnnotations<T>() =>
-        parameterMirror.metadata.map((e) => e.reflectee).whereType<T>();
 
     // Get parameter description (if any)
 
@@ -53,8 +67,10 @@ FunctionData loadFunctionData(Function fn) {
     }
 
     String? description;
+    Map<Locale, String>? descriptionLocales;
     if (descriptionAnnotations.isNotEmpty) {
       description = descriptionAnnotations.first.value;
+      descriptionLocales = descriptionAnnotations.first.localizedDescriptions;
     }
 
     // Get parameter choices
@@ -95,9 +111,11 @@ FunctionData loadFunctionData(Function fn) {
 
     parametersData.add(ParameterData(
       name: name,
+      localizedNames: nameLocales,
       type: type,
       isOptional: parameterMirror.isOptional,
       description: description,
+      localizedDescriptions: descriptionLocales,
       defaultValue: parameterMirror.defaultValue?.reflectee,
       choices: choices,
       converterOverride: converterOverride,
