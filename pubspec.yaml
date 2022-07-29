@@ -15,8 +15,8 @@ dependencies:
   dart_style: ^2.2.1
   logging: ^1.0.2
   meta: ^1.7.0
-  nyxx: ^3.0.0
-  nyxx_interactions: ^4.2.1
+  nyxx: ^4.0.0
+  nyxx_interactions: ^4.3.0
   random_string: ^2.3.1
   path: ^1.8.1
 
@@ -26,10 +26,6 @@ dev_dependencies:
   lints: ^1.0.1
   mockito: ^5.0.16
   test: ^1.19.0
-
-dependency_overrides:
-  nyxx_interactions: 
-    git: https://github.com/Rapougnac/nyxx_interactions.git
 
 executables:
   nyxx-compile: compile
