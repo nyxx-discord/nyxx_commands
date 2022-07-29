@@ -216,10 +216,10 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
   }
 
   @override
-  void onBotStop(INyxx nyxx, Logger logger) {
-    _onPostCallController.close();
-    _onPreCallController.close();
-    _onCommandErrorController.close();
+  Future<void> onBotStop(INyxx nyxx, Logger logger) async {
+    await _onPostCallController.close();
+    await _onPreCallController.close();
+    await _onCommandErrorController.close();
   }
 
   Future<void> _syncWithInteractions() async {
