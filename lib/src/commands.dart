@@ -215,6 +215,13 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     }
   }
 
+  @override
+  void onBotStop(INyxx nyxx, Logger logger) {
+    _onPostCallController.close();
+    _onPreCallController.close();
+    _onCommandErrorController.close();
+  }
+
   Future<void> _syncWithInteractions() async {
     for (final builder in await _getSlashBuilders()) {
       interactions.registerSlashCommand(builder);
