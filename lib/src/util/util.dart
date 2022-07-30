@@ -78,14 +78,34 @@ class Description {
   /// The value of the description.
   final String value;
 
+  /// The localized descriptions for the command.
+  /// 
+  /// ```dart
+  /// ChatCommand test = ChatCommand(
+  ///  'hi',
+  ///  'A test command',
+  ///   (
+  ///     IChatContext context,
+  ///     @Description('This is a description', {Locale.german: 'Dies ist eine Beschreibung'})
+  ///         String foo,
+  ///   ) async {
+  ///     context.respond(MessageBuilder.content(foo));
+  ///   },
+  /// );
+  /// ```
+  /// Will be displayed as `This is a description` in English, but `Dies ist eine Beschreibung` in German, like so:
+  /// 
+  /// ![](https://user-images.githubusercontent.com/74512338/174033266-88017e8a-bc13-4031-bf9d-31f9343967a4.png)
+  final Map<Locale, String>? localizedDescriptions;
+
   /// Create a new [Description].
   ///
   /// This is intended to be used as an `@Description(...)` annotation, and has no functionality as
   /// a standalone class.
-  const Description(this.value);
+  const Description(this.value, [this.localizedDescriptions]);
 
   @override
-  String toString() => 'Description[value="$value"]';
+  String toString() => 'Description[value="$value", localizedDescription=$localizedDescriptions]';
 }
 
 /// An annotation used to restrict input to a set of choices for a given parameter.
@@ -159,14 +179,30 @@ class Name {
   /// The custom name to use.
   final String name;
 
+  /// The localized names to use.
+  /// ```dart
+  /// ChatCommand test = ChatCommand(
+  ///  'hi',
+  ///  'A test command',
+  ///  (
+  ///   IChatContext context,
+  ///   @Name('message', {Locale.german: 'hallo'}) String foo,
+  ///  ) async => context.respond(MessageBuilder.content(foo))
+  /// );
+  /// ```
+  /// Will be displayed as 'hallo' in German, like so:
+  /// 
+  /// ![](https://user-images.githubusercontent.com/74512338/173841767-6e2c5215-ebc3-4a89-a2ac-8115949e2f0b.png)
+  final Map<Locale, String>? localizedNames;
+
   /// Create a new [Name].
   ///
   /// This is intended to be used as an `@Name(...)` annotation, and has no functionality as
   /// a standalone class.
-  const Name(this.name);
+  const Name(this.name, [this.localizedNames]);
 
   @override
-  String toString() => 'Name[name=$name]';
+  String toString() => 'Name[name=$name, localizedNames=$localizedNames]';
 }
 
 /// An annotation used to specify the converter to use for an argument, overriding the default

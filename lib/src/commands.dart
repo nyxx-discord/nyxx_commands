@@ -536,6 +536,8 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
             requiredPermissions: await allChecks.requiredPermissions,
             guild: guildId ?? guild,
             type: SlashCommandType.chat,
+            localizationsName: command.localizedNames,
+            localizationsDescription: command.localizedDescriptions,
           );
 
           if (command is ChatCommand && command.resolvedType != CommandType.textOnly) {
@@ -554,6 +556,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
             requiredPermissions: await allChecks.requiredPermissions,
             guild: guildId ?? guild,
             type: SlashCommandType.user,
+            localizationsName: command.localizedNames,
           );
 
           builder.registerHandler((interaction) => _processUserInteraction(interaction, command));
@@ -568,6 +571,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
             requiredPermissions: await allChecks.requiredPermissions,
             guild: guildId ?? guild,
             type: SlashCommandType.message,
+            localizationsName: command.localizedNames,
           );
 
           builder

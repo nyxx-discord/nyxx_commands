@@ -14,6 +14,8 @@
 
 import 'dart:async';
 
+import 'package:nyxx_interactions/nyxx_interactions.dart';
+
 import '../checks/checks.dart';
 import '../context/context.dart';
 import '../context/user_context.dart';
@@ -65,12 +67,16 @@ class UserCommand
   @override
   final CommandOptions options;
 
+  @override
+  final Map<Locale, String>? localizedNames;
+
   /// Create a new [UserCommand].
   UserCommand(
     this.name,
     this.execute, {
     Iterable<AbstractCheck> checks = const [],
     this.options = const CommandOptions(),
+    this.localizedNames,
   }) {
     for (final check in checks) {
       this.check(check);
