@@ -465,8 +465,9 @@ class ChatCommand
       throw CommandRegistrationError('Invalid command name "$name"');
     }
 
-    if ((localizedNames != null && localizedNames!.values.any((names) => 
-          !commandNameRegexp.hasMatch(names) || names != names.toLowerCase()))) {
+    if ((localizedNames != null &&
+        localizedNames!.values
+            .any((names) => !commandNameRegexp.hasMatch(names) || names != names.toLowerCase()))) {
       throw CommandRegistrationError('Invalid localized name for command "$name".');
     }
 

@@ -123,12 +123,11 @@ Iterable<CompileTimeFunctionData> getFunctionData(
         name = getAnnotationData(nameAnnotations.first.elementAnnotation!)
             .getField('name')!
             .toStringValue()!;
-        
+
         final nameArgs = nameAnnotations.first.arguments?.arguments;
         if (nameArgs?.length == 2) {
           localizedNames = nameArgs?.last;
         }
-
       } else {
         name = parameter.identifier!.name;
       }
@@ -142,7 +141,6 @@ Iterable<CompileTimeFunctionData> getFunctionData(
         if (descArgs?.length == 2) {
           localizedDescriptions = descArgs?.last;
         }
-        
       }
 
       if (choicesAnnotations.isNotEmpty) {
