@@ -7,6 +7,9 @@ __Bug fixes__:
 - Fixes the plugin not correctly disposing when the client is disposed.
 - Fixed the automatic response sometimes failing.
 
+__Miscellaneous__:
+- Bump `nyxx` to 4.0.0 and `nyxx_interactions` to 4.3.1.
+
 ## 4.2.0
 __New features__:
 - Added a script which allows `nyxx_commands` to be compiled. For more information, run `dart pub global activate nyxx_commands` and `nyxx-compile --help`.
