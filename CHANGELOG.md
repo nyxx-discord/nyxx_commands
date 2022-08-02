@@ -1,3 +1,12 @@
+## 4.3.0
+__New features__:
+- Added support for command localization. See `localizedNames` on all `ICommand`s and `localizedDescriptions` for `ChatCommand`s and the `@Description()` annotation.
+
+__Bug fixes__:
+- Fixes `@Name` annotations not working when running with `dart:mirrors`.
+- Fixes the plugin not correctly disposing when the client is disposed.
+- Fixed the automatic response sometimes failing.
+
 ## 4.2.0
 __New features__:
 - Added a script which allows `nyxx_commands` to be compiled. For more information, run `dart pub global activate nyxx_commands` and `nyxx-compile --help`.
