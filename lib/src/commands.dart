@@ -265,7 +265,14 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
       IChatContext context = await _interactionChatContext(interactionEvent, command);
 
       if (context.command.resolvedOptions.autoAcknowledgeInteractions!) {
-        Timer(Duration(seconds: 2), () async {
+        Duration latency = Duration.zero;
+        if (client is INyxxWebsocket) {
+          latency = (client as INyxxWebsocket).shardManager.gatewayLatency;
+        }
+
+        Duration timeout = Duration(seconds: 3) - latency * 2;
+
+        Timer(timeout, () async {
           try {
             await interactionEvent.acknowledge(
               hidden: context.command.resolvedOptions.hideOriginalResponse!,

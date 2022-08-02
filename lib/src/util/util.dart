@@ -79,7 +79,7 @@ class Description {
   final String value;
 
   /// The localized descriptions for the command.
-  /// 
+  ///
   /// ```dart
   /// ChatCommand test = ChatCommand(
   ///  'hi',
@@ -94,7 +94,7 @@ class Description {
   /// );
   /// ```
   /// Will be displayed as `This is a description` in English, but `Dies ist eine Beschreibung` in German, like so:
-  /// 
+  ///
   /// ![](https://user-images.githubusercontent.com/74512338/174033266-88017e8a-bc13-4031-bf9d-31f9343967a4.png)
   final Map<Locale, String>? localizedDescriptions;
 
@@ -191,7 +191,7 @@ class Name {
   /// );
   /// ```
   /// Will be displayed as 'hallo' in German, like so:
-  /// 
+  ///
   /// ![](https://user-images.githubusercontent.com/74512338/173841767-6e2c5215-ebc3-4a89-a2ac-8115949e2f0b.png)
   final Map<Locale, String>? localizedNames;
 

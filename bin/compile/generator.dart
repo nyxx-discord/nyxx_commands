@@ -433,7 +433,8 @@ void writeFunctionData(
       String? localizedDescriptionsSource;
 
       if (parameter.localizedDescriptions != null) {
-        List<String>? localizedDescriptionsData = toExpressionSource(parameter.localizedDescriptions!);
+        List<String>? localizedDescriptionsData =
+            toExpressionSource(parameter.localizedDescriptions!);
 
         if (localizedDescriptionsData == null) {
           logger.warning(
