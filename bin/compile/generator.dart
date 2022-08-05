@@ -413,6 +413,41 @@ void writeFunctionData(
         autocompleteSource = autocompleteOverrideData.first;
       }
 
+      String? localizedNamesSource;
+
+      if (parameter.localizedNames != null) {
+        List<String>? localizedNamesData = toExpressionSource(parameter.localizedNames!);
+
+        if (localizedNamesData == null) {
+          logger.warning(
+            'Unable to resolve localized names for parameter ${parameter.name}, skipping function',
+          );
+          continue outerLoop;
+        }
+
+        imports.addAll(localizedNamesData.skip(1));
+
+        localizedNamesSource = localizedNamesData.first;
+      }
+
+      String? localizedDescriptionsSource;
+
+      if (parameter.localizedDescriptions != null) {
+        List<String>? localizedDescriptionsData =
+            toExpressionSource(parameter.localizedDescriptions!);
+
+        if (localizedDescriptionsData == null) {
+          logger.warning(
+            'Unable to resolve localized descriptions for parameter ${parameter.name}, skipping function',
+          );
+          continue outerLoop;
+        }
+
+        imports.addAll(localizedDescriptionsData.skip(1));
+
+        localizedDescriptionsSource = localizedDescriptionsData.first;
+      }
+
       parameterDataSource += '''
         ParameterData(
           name: "${parameter.name}",
@@ -423,6 +458,8 @@ void writeFunctionData(
           choices: $choicesSource,
           converterOverride: $converterSource,
           autocompleteOverride: $autocompleteSource,
+          localizedDescriptions: $localizedDescriptionsSource,
+          localizedNames: $localizedNamesSource,
         ),
       ''';
     }

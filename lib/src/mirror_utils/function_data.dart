@@ -29,11 +29,15 @@ class FunctionData {
 class ParameterData {
   final String name;
 
+  final Map<Locale, String>? localizedNames;
+
   final Type type;
 
   final bool isOptional;
 
   final String? description;
+
+  final Map<Locale, String>? localizedDescriptions;
 
   final dynamic defaultValue;
 
@@ -45,9 +49,11 @@ class ParameterData {
 
   const ParameterData({
     required this.name,
+    required this.localizedNames,
     required this.type,
     required this.isOptional,
     required this.description,
+    required this.localizedDescriptions,
     required this.defaultValue,
     required this.choices,
     required this.converterOverride,

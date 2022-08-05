@@ -215,6 +215,13 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     }
   }
 
+  @override
+  Future<void> onBotStop(INyxx nyxx, Logger logger) async {
+    await _onPostCallController.close();
+    await _onPreCallController.close();
+    await _onCommandErrorController.close();
+  }
+
   Future<void> _syncWithInteractions() async {
     for (final builder in await _getSlashBuilders()) {
       interactions.registerSlashCommand(builder);
@@ -258,7 +265,14 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
       IChatContext context = await _interactionChatContext(interactionEvent, command);
 
       if (context.command.resolvedOptions.autoAcknowledgeInteractions!) {
-        Timer(Duration(seconds: 2), () async {
+        Duration latency = Duration.zero;
+        if (client is INyxxWebsocket) {
+          latency = (client as INyxxWebsocket).shardManager.gatewayLatency;
+        }
+
+        Duration timeout = Duration(seconds: 3) - latency * 2;
+
+        Timer(timeout, () async {
           try {
             await interactionEvent.acknowledge(
               hidden: context.command.resolvedOptions.hideOriginalResponse!,
@@ -536,6 +550,8 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
             requiredPermissions: await allChecks.requiredPermissions,
             guild: guildId ?? guild,
             type: SlashCommandType.chat,
+            localizationsName: command.localizedNames,
+            localizationsDescription: command.localizedDescriptions,
           );
 
           if (command is ChatCommand && command.resolvedType != CommandType.textOnly) {
@@ -554,6 +570,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
             requiredPermissions: await allChecks.requiredPermissions,
             guild: guildId ?? guild,
             type: SlashCommandType.user,
+            localizationsName: command.localizedNames,
           );
 
           builder.registerHandler((interaction) => _processUserInteraction(interaction, command));
@@ -568,6 +585,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
             requiredPermissions: await allChecks.requiredPermissions,
             guild: guildId ?? guild,
             type: SlashCommandType.message,
+            localizationsName: command.localizedNames,
           );
 
           builder

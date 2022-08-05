@@ -97,6 +97,24 @@ abstract class ICommandRegisterable<T extends IContext>
   /// You might also be interested in:
   /// - [options], for getting the options unique to this child.
   CommandOptions get resolvedOptions;
+
+  /// The localized names of this child.
+  /// Since you cannot add descriptions to [UserCommand] and [MessageCommand], can't set localized descriptions too.
+  ///
+  /// ```dart
+  /// ChatCommand test = ChatCommand(
+  ///  'hi',
+  ///  'A test command',
+  ///  (
+  ///   IChatContext context,
+  ///   @Name('message', {Locale.german: 'hallo'}) String foo,
+  ///  ) async => context.respond(MessageBuilder.content(foo))
+  /// );
+  /// ```
+  /// Will be displayed as 'hallo' in German, like so:
+  ///
+  /// ![](https://user-images.githubusercontent.com/74512338/173841767-6e2c5215-ebc3-4a89-a2ac-8115949e2f0b.png)
+  Map<Locale, String>? get localizedNames;
 }
 
 /// An entity capable of having multiple child entities.
@@ -200,6 +218,28 @@ abstract class IChatCommandComponent
 
   /// Whether this entity has a child entity that is a slash command or has a slash command itself.
   bool get hasSlashCommand;
+
+  /// The localized descriptions of this entity.
+  ///
+  /// The localized descriptions for the command.
+  ///
+  /// ```dart
+  /// ChatCommand test = ChatCommand(
+  ///  'hi',
+  ///  'A test command',
+  ///   (
+  ///     IChatContext context,
+  ///     @Description('This is a description', {Locale.german: 'Dies ist eine Beschreibung'})
+  ///         String foo,
+  ///   ) async {
+  ///     context.respond(MessageBuilder.content(foo));
+  ///   },
+  /// );
+  /// ```
+  /// Will be displayed as `This is a description` in English, but `Dies ist eine Beschreibung` in German, like so:
+  ///
+  /// ![](https://user-images.githubusercontent.com/74512338/174033266-88017e8a-bc13-4031-bf9d-31f9343967a4.png)
+  Map<Locale, String>? get localizedDescriptions;
 
   /// Return the [CommandOptionBuilder]s that represent this entity for slash command registration.
   Iterable<CommandOptionBuilder> getOptions(CommandsPlugin commands);
