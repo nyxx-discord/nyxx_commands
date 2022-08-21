@@ -16,6 +16,7 @@ import 'dart:async';
 
 import 'package:logging/logging.dart';
 import 'package:nyxx/nyxx.dart';
+import 'package:nyxx_commands/src/context/context_manager.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import 'checks/checks.dart';
@@ -160,6 +161,9 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
   /// - [INyxx.registerPlugin], for adding plugins to clients.
   INyxx? client;
 
+  /// The [ContextManager] attached to this [CommandsPlugin].
+  late final ContextManager contextManager = ContextManager(this);
+
   @override
   final List<AbstractCheck> checks = [];
 
@@ -237,7 +241,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
       StringView view = StringView(message.content);
 
       if (view.skipString(prefix)) {
-        IChatContext context = await _messageChatContext(message, view, prefix);
+        IChatContext context = await contextManager.createMessageChatContext(message, view, prefix);
 
         if (message.author.bot && !context.command.resolvedOptions.acceptBotCommands!) {
           return;
@@ -262,7 +266,8 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     ChatCommand command,
   ) async {
     try {
-      IChatContext context = await _interactionChatContext(interactionEvent, command);
+      IChatContext context =
+          await contextManager.createInteractionChatContext(interactionEvent, command);
 
       if (context.command.resolvedOptions.autoAcknowledgeInteractions!) {
         Duration latency = Duration.zero;
@@ -295,7 +300,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
   Future<void> _processUserInteraction(
       ISlashCommandInteractionEvent interactionEvent, UserCommand command) async {
     try {
-      UserContext context = await _interactionUserContext(interactionEvent, command);
+      UserContext context = await contextManager.createUserContext(interactionEvent, command);
 
       if (options.autoAcknowledgeInteractions) {
         Timer(Duration(seconds: 2), () async {
@@ -321,7 +326,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
   Future<void> _processMessageInteraction(
       ISlashCommandInteractionEvent interactionEvent, MessageCommand command) async {
     try {
-      MessageContext context = await _interactionMessageContext(interactionEvent, command);
+      MessageContext context = await contextManager.createMessageContext(interactionEvent, command);
 
       if (options.autoAcknowledgeInteractions) {
         Timer(Duration(seconds: 2), () async {
@@ -350,7 +355,8 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     ChatCommand command,
   ) async {
     try {
-      AutocompleteContext context = await _autocompleteContext(interactionEvent, command);
+      AutocompleteContext context =
+          await contextManager.createAutocompleteContext(interactionEvent, command);
 
       try {
         Iterable<ArgChoiceBuilder>? choices = await callback(context);
@@ -364,160 +370,6 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     } on CommandsException catch (e) {
       _onCommandErrorController.add(e);
     }
-  }
-
-  Future<IChatContext> _messageChatContext(
-      IMessage message, StringView contentView, String prefix) async {
-    ChatCommand command = getCommand(contentView) ?? (throw CommandNotFoundException(contentView));
-
-    ITextChannel channel = await message.channel.getOrDownload();
-
-    IGuild? guild;
-    IMember? member;
-    IUser user;
-    if (message.guild != null) {
-      guild = await message.guild!.getOrDownload();
-
-      member = message.member;
-      user = await member!.user.getOrDownload();
-    } else {
-      user = message.author as IUser;
-    }
-
-    return MessageChatContext(
-      commands: this,
-      guild: guild,
-      channel: channel,
-      member: member,
-      user: user,
-      command: command,
-      client: client!,
-      prefix: prefix,
-      message: message,
-      rawArguments: contentView.remaining,
-    );
-  }
-
-  Future<IChatContext> _interactionChatContext(
-      ISlashCommandInteractionEvent interactionEvent, ChatCommand command) async {
-    ISlashCommandInteraction interaction = interactionEvent.interaction;
-
-    IMember? member = interaction.memberAuthor;
-    IUser user;
-    if (member != null) {
-      user = await member.user.getOrDownload();
-    } else {
-      user = interaction.userAuthor!;
-    }
-
-    Map<String, dynamic> rawArguments = <String, dynamic>{};
-
-    for (final option in interactionEvent.args) {
-      rawArguments[option.name] = option.value;
-    }
-
-    return InteractionChatContext(
-      commands: this,
-      guild: await interaction.guild?.getOrDownload(),
-      channel: await interaction.channel.getOrDownload(),
-      member: member,
-      user: user,
-      command: command,
-      client: client!,
-      interaction: interaction,
-      rawArguments: rawArguments,
-      interactionEvent: interactionEvent,
-    );
-  }
-
-  Future<UserContext> _interactionUserContext(
-      ISlashCommandInteractionEvent interactionEvent, UserCommand command) async {
-    ISlashCommandInteraction interaction = interactionEvent.interaction;
-
-    IMember? member = interaction.memberAuthor;
-    IUser user;
-    if (member != null) {
-      user = await member.user.getOrDownload();
-    } else {
-      user = interaction.userAuthor!;
-    }
-
-    IUser targetUser = client!.users[interaction.targetId] ??
-        await client!.httpEndpoints.fetchUser(interaction.targetId!);
-
-    IGuild? guild = await interaction.guild?.getOrDownload();
-
-    return UserContext(
-      commands: this,
-      client: client!,
-      interactionEvent: interactionEvent,
-      interaction: interaction,
-      command: command,
-      channel: await interaction.channel.getOrDownload(),
-      member: member,
-      user: user,
-      guild: guild,
-      targetUser: targetUser,
-      targetMember: guild?.members[targetUser.id] ?? await guild?.fetchMember(targetUser.id),
-    );
-  }
-
-  Future<MessageContext> _interactionMessageContext(
-      ISlashCommandInteractionEvent interactionEvent, MessageCommand command) async {
-    ISlashCommandInteraction interaction = interactionEvent.interaction;
-
-    IMember? member = interaction.memberAuthor;
-    IUser user;
-    if (member != null) {
-      user = await member.user.getOrDownload();
-    } else {
-      user = interaction.userAuthor!;
-    }
-
-    IGuild? guild = await interaction.guild?.getOrDownload();
-
-    return MessageContext(
-      commands: this,
-      client: client!,
-      interactionEvent: interactionEvent,
-      interaction: interaction,
-      command: command,
-      channel: await interaction.channel.getOrDownload(),
-      member: member,
-      user: user,
-      guild: guild,
-      targetMessage: interaction.channel.getFromCache()!.messageCache[interaction.targetId] ??
-          await interaction.channel.getFromCache()!.fetchMessage(interaction.targetId!),
-    );
-  }
-
-  Future<AutocompleteContext> _autocompleteContext(
-    IAutocompleteInteractionEvent interactionEvent,
-    ChatCommand command,
-  ) async {
-    ISlashCommandInteraction interaction = interactionEvent.interaction;
-
-    IMember? member = interaction.memberAuthor;
-    IUser user;
-    if (member != null) {
-      user = await member.user.getOrDownload();
-    } else {
-      user = interaction.userAuthor!;
-    }
-
-    return AutocompleteContext(
-      commands: this,
-      guild: await interaction.guild?.getOrDownload(),
-      channel: await interaction.channel.getOrDownload(),
-      member: member,
-      user: user,
-      command: command,
-      client: client!,
-      interaction: interaction,
-      interactionEvent: interactionEvent,
-      option: interactionEvent.focusedOption,
-      currentValue: interactionEvent.focusedOption.value.toString(),
-    );
   }
 
   Future<Iterable<SlashCommandBuilder>> _getSlashBuilders() async {
