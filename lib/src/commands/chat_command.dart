@@ -57,14 +57,6 @@ enum CommandType {
 
   /// Indicates that a [ChatCommand] can be executed by both Slash Commands and text messages.
   all,
-
-  /// Indicates that a [ChatCommand] should use the default type provided by [IOptions.options].
-  ///
-  /// If the default type provided by the options is itself [def], the behaviour is identical to
-  /// [all].
-  // TODO: Instead of having [def], make [ChatCommand.type] be a classical option
-  // ([ChatCommand.options.type]) and have it be inherited.
-  def,
 }
 
 mixin ChatGroupMixin implements IChatCommandComponent {
@@ -134,7 +126,7 @@ mixin ChatGroupMixin implements IChatCommandComponent {
     if (_childrenMap.containsKey(name)) {
       IChatCommandComponent child = _childrenMap[name]!;
 
-      if (child is ChatCommand && child.resolvedType != CommandType.slashOnly) {
+      if (child is ChatCommand && child.resolvedOptions.type != CommandType.slashOnly) {
         ChatCommand? found = child.getCommand(view);
 
         if (found == null) {
@@ -160,7 +152,7 @@ mixin ChatGroupMixin implements IChatCommandComponent {
 
   @override
   bool get hasSlashCommand => children.any((child) =>
-      (child is ChatCommand && child.resolvedType != CommandType.textOnly) ||
+      (child is ChatCommand && child.resolvedOptions.type != CommandType.textOnly) ||
       child.hasSlashCommand);
 
   @override
@@ -177,7 +169,7 @@ mixin ChatGroupMixin implements IChatCommandComponent {
           localizationsName: child.localizedNames,
           localizationsDescription: child.localizedDescriptions,
         ));
-      } else if (child is ChatCommand && child.resolvedType != CommandType.textOnly) {
+      } else if (child is ChatCommand && child.resolvedOptions.type != CommandType.textOnly) {
         options.add(CommandOptionBuilder(
           CommandOptionType.subCommand,
           child.name,
@@ -293,32 +285,6 @@ class ChatCommand
   @override
   final String description;
 
-  /// The type of this [ChatCommand].
-  ///
-  /// The type of a [ChatCommand] influences how it can be invoked and can be used to make chat
-  /// commands executable only through Slash Commands, or only through text messages.
-  ///
-  /// You might also be interested in:
-  /// - [resolvedType], for getting the resolved type of this command.
-  /// - [ChatCommand.slashOnly], for creating [ChatCommand]s with type [CommandType.slashOnly];
-  /// - [ChatCommand.textOnly], for creating [ChatCommand]s with type [CommandType.textOnly].
-  final CommandType type;
-
-  /// The resolved type of this [ChatCommand].
-  ///
-  /// If [type] is [CommandType.def], this will query the parent of this command for the default
-  /// type. Otherwise, [type] is returned.
-  ///
-  /// If [type] is [CommandType.def] and no parent provides a default type, [CommandType.def] is
-  /// returned.
-  CommandType get resolvedType {
-    if (type != CommandType.def) {
-      return type;
-    }
-
-    return resolvedOptions.defaultCommandType ?? CommandType.def;
-  }
-
   /// The function called to execute this command.
   ///
   /// The argument types for the function are dynamically loaded, so you should specify the types of
@@ -375,7 +341,6 @@ class ChatCommand
     String description,
     Function execute, {
     List<String> aliases = const [],
-    CommandType type = CommandType.def,
     Iterable<IChatCommandComponent> children = const [],
     Iterable<AbstractCheck> checks = const [],
     Iterable<AbstractCheck> singleChecks = const [],
@@ -388,7 +353,6 @@ class ChatCommand
           execute,
           IChatContext,
           aliases: aliases,
-          type: type,
           children: children,
           checks: checks,
           singleChecks: singleChecks,
@@ -413,7 +377,6 @@ class ChatCommand
           execute,
           MessageChatContext,
           aliases: aliases,
-          type: CommandType.textOnly,
           children: children,
           checks: checks,
           singleChecks: singleChecks,
@@ -438,7 +401,6 @@ class ChatCommand
           execute,
           InteractionChatContext,
           aliases: aliases,
-          type: CommandType.slashOnly,
           children: children,
           checks: checks,
           singleChecks: singleChecks,
@@ -453,7 +415,6 @@ class ChatCommand
     this.execute,
     Type contextType, {
     this.aliases = const [],
-    this.type = CommandType.def,
     Iterable<IChatCommandComponent> children = const [],
     Iterable<AbstractCheck> checks = const [],
     Iterable<AbstractCheck> singleChecks = const [],
@@ -593,7 +554,7 @@ class ChatCommand
 
   @override
   Iterable<CommandOptionBuilder> getOptions(CommandsPlugin commands) {
-    if (resolvedType != CommandType.textOnly) {
+    if (resolvedOptions.type != CommandType.textOnly) {
       List<CommandOptionBuilder> options = [];
 
       for (final parameter in _functionData.parametersData.skip(1)) {
@@ -634,9 +595,9 @@ class ChatCommand
           'All child commands of chat groups or commands must implement IChatCommandComponent');
     }
 
-    if (resolvedType != CommandType.textOnly) {
+    if (resolvedOptions.type != CommandType.textOnly) {
       if (command.hasSlashCommand ||
-          (command is ChatCommand && command.resolvedType != CommandType.textOnly)) {
+          (command is ChatCommand && command.resolvedOptions.type != CommandType.textOnly)) {
         throw CommandRegistrationError('Cannot nest Slash commands!');
       }
     }

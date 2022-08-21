@@ -62,8 +62,11 @@ class CommandOptions {
   /// - [IInteractionContext.respond], which can override this setting by setting the `hidden` flag.
   final bool? hideOriginalResponse;
 
-  /// The default [CommandType] for [ChatCommand]s that are children of this entity.
-  final CommandType? defaultCommandType;
+  /// The type of [ChatCommand]s that are children of this entity.
+  ///
+  /// The type of a [ChatCommand] influences how it can be invoked and can be used to make chat
+  /// commands executable only through Slash Commands, or only through text messages.
+  final CommandType? type;
 
   /// Create a set of command options.
   ///
@@ -73,6 +76,6 @@ class CommandOptions {
     this.acceptBotCommands,
     this.acceptSelfCommands,
     this.hideOriginalResponse,
-    this.defaultCommandType,
+    this.type,
   });
 }
