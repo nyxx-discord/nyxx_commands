@@ -110,6 +110,7 @@ class StringView {
   ///
   /// You might also be interested in:
   /// - [skipWhitespace], for skipping arbitrary spans of whitespace.
+  /// - [skipPattern], for testing arbitrary patterns.
   bool skipString(String s) {
     if (index + s.length < end && buffer.substring(index, index + s.length) == s) {
       history.add(index);
@@ -117,6 +118,24 @@ class StringView {
       return true;
     }
     return false;
+  }
+
+  /// Match [p] at the text directly after the cursor and skip over the match if it exists, else
+  /// return `null`.
+  ///
+  /// You might also be interested in:
+  /// - [skipWhitespace], for skipping arbitrary spans of whitespace.
+  /// - [skipString], for skipping arbitrary strings.
+  Match? skipPattern(Pattern p) {
+    Match? m = p.matchAsPrefix(buffer.substring(index));
+
+    if (m != null) {
+      history.add(index);
+      // The end of the match is the same as its length since it was matched as a prefix.
+      index += m.end;
+    }
+
+    return m;
   }
 
   /// Skip to the next non-whitespace character in [buffer].
