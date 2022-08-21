@@ -34,6 +34,8 @@ class ContextManager {
   /// message's content with the prefix already skipped and [prefix] is the content of the match
   /// that was skipped.
   ///
+  /// Throws a [CommandNotFoundException] if [message] did not match any command on [commands].
+  ///
   /// You might also be interested in:
   /// - [createInteractionChatContext], for creating [IChatContext]s from interaction events.
   Future<MessageChatContext> createMessageChatContext(
