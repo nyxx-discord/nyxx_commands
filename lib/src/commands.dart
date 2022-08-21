@@ -17,6 +17,7 @@ import 'dart:async';
 import 'package:logging/logging.dart';
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/src/context/context_manager.dart';
+import 'package:nyxx_commands/src/context/interaction_context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import 'checks/checks.dart';
@@ -28,8 +29,6 @@ import 'commands/user_command.dart';
 import 'context/chat_context.dart';
 import 'context/autocomplete_context.dart';
 import 'context/context.dart';
-import 'context/message_context.dart';
-import 'context/user_context.dart';
 import 'converters/converter.dart';
 import 'errors.dart';
 import 'mirror_utils/mirror_utils.dart';
@@ -261,14 +260,8 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     }
   }
 
-  Future<void> _processChatInteraction(
-    ISlashCommandInteractionEvent interactionEvent,
-    ChatCommand command,
-  ) async {
+  Future<void> _processInteractionCommand(IInteractionContext context) async {
     try {
-      IChatContext context =
-          await contextManager.createInteractionChatContext(interactionEvent, command);
-
       if (context.command.resolvedOptions.autoAcknowledgeInteractions!) {
         Duration latency = Duration.zero;
         if (client is INyxxWebsocket) {
@@ -279,7 +272,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
 
         Timer(timeout, () async {
           try {
-            await interactionEvent.acknowledge(
+            await context.interactionEvent.acknowledge(
               hidden: context.command.resolvedOptions.hideOriginalResponse!,
             );
           } on AlreadyRespondedError {
@@ -289,65 +282,37 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
       }
 
       logger.fine('Invoking command ${context.command.name} '
-          'from interaction ${interactionEvent.interaction.token}');
+          'from interaction ${context.interactionEvent.interaction.token}');
 
       await context.command.invoke(context);
     } on CommandsException catch (e) {
       _onCommandErrorController.add(e);
     }
   }
+
+  Future<void> _processChatInteraction(
+    ISlashCommandInteractionEvent interactionEvent,
+    ChatCommand command,
+  ) async =>
+      _processInteractionCommand(
+        await contextManager.createInteractionChatContext(interactionEvent, command),
+      );
 
   Future<void> _processUserInteraction(
-      ISlashCommandInteractionEvent interactionEvent, UserCommand command) async {
-    try {
-      UserContext context = await contextManager.createUserContext(interactionEvent, command);
-
-      if (options.autoAcknowledgeInteractions) {
-        Timer(Duration(seconds: 2), () async {
-          try {
-            await interactionEvent.acknowledge(
-              hidden: options.hideOriginalResponse,
-            );
-          } on AlreadyRespondedError {
-            // ignore: command has responded itself
-          }
-        });
-      }
-
-      logger.fine('Invoking command ${context.command.name} '
-          'from interaction ${interactionEvent.interaction.token}');
-
-      await context.command.invoke(context);
-    } on CommandsException catch (e) {
-      _onCommandErrorController.add(e);
-    }
-  }
+    ISlashCommandInteractionEvent interactionEvent,
+    UserCommand command,
+  ) async =>
+      _processInteractionCommand(
+        await contextManager.createUserContext(interactionEvent, command),
+      );
 
   Future<void> _processMessageInteraction(
-      ISlashCommandInteractionEvent interactionEvent, MessageCommand command) async {
-    try {
-      MessageContext context = await contextManager.createMessageContext(interactionEvent, command);
-
-      if (options.autoAcknowledgeInteractions) {
-        Timer(Duration(seconds: 2), () async {
-          try {
-            await interactionEvent.acknowledge(
-              hidden: options.hideOriginalResponse,
-            );
-          } on AlreadyRespondedError {
-            // ignore: command has responded itself
-          }
-        });
-      }
-
-      logger.fine('Invoking command ${context.command.name} '
-          'from interaction ${interactionEvent.interaction.token}');
-
-      await context.command.invoke(context);
-    } on CommandsException catch (e) {
-      _onCommandErrorController.add(e);
-    }
-  }
+    ISlashCommandInteractionEvent interactionEvent,
+    MessageCommand command,
+  ) async =>
+      _processInteractionCommand(
+        await contextManager.createMessageContext(interactionEvent, command),
+      );
 
   Future<void> _processAutocompleteInteraction(
     IAutocompleteInteractionEvent interactionEvent,
