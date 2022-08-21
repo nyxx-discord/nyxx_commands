@@ -337,83 +337,9 @@ class ChatCommand
   /// - [ChatCommand.slashOnly], for creating [ChatCommand]s with type [CommandType.slashOnly];
   /// - [ChatCommand.textOnly], for creating [ChatCommand]s with type [CommandType.textOnly].
   ChatCommand(
-    String name,
-    String description,
-    Function execute, {
-    List<String> aliases = const [],
-    Iterable<IChatCommandComponent> children = const [],
-    Iterable<AbstractCheck> checks = const [],
-    Iterable<AbstractCheck> singleChecks = const [],
-    CommandOptions options = const CommandOptions(),
-    Map<Locale, String>? localizedNames,
-    Map<Locale, String>? localizedDescriptions,
-  }) : this._(
-          name,
-          description,
-          execute,
-          IChatContext,
-          aliases: aliases,
-          children: children,
-          checks: checks,
-          singleChecks: singleChecks,
-          options: options,
-          localizedNames: localizedNames,
-          localizedDescriptions: localizedDescriptions,
-        );
-
-  /// Create a new [ChatCommand] with type [CommandType.textOnly].
-  ChatCommand.textOnly(
-    String name,
-    String description,
-    Function execute, {
-    List<String> aliases = const [],
-    Iterable<IChatCommandComponent> children = const [],
-    Iterable<AbstractCheck> checks = const [],
-    Iterable<AbstractCheck> singleChecks = const [],
-    CommandOptions options = const CommandOptions(),
-  }) : this._(
-          name,
-          description,
-          execute,
-          MessageChatContext,
-          aliases: aliases,
-          children: children,
-          checks: checks,
-          singleChecks: singleChecks,
-          options: options,
-        );
-
-  /// Create a new [ChatCommand] with type [CommandType.slashOnly].
-  ChatCommand.slashOnly(
-    String name,
-    String description,
-    Function execute, {
-    List<String> aliases = const [],
-    Iterable<IChatCommandComponent> children = const [],
-    Iterable<AbstractCheck> checks = const [],
-    Iterable<AbstractCheck> singleChecks = const [],
-    CommandOptions options = const CommandOptions(),
-    Map<Locale, String>? localizedNames,
-    Map<Locale, String>? localizedDescriptions,
-  }) : this._(
-          name,
-          description,
-          execute,
-          InteractionChatContext,
-          aliases: aliases,
-          children: children,
-          checks: checks,
-          singleChecks: singleChecks,
-          options: options,
-          localizedNames: localizedNames,
-          localizedDescriptions: localizedDescriptions,
-        );
-
-  ChatCommand._(
     this.name,
     this.description,
-    this.execute,
-    Type contextType, {
+    this.execute, {
     this.aliases = const [],
     Iterable<IChatCommandComponent> children = const [],
     Iterable<AbstractCheck> checks = const [],
@@ -430,6 +356,13 @@ class ChatCommand
         localizedNames!.values
             .any((names) => !commandNameRegexp.hasMatch(names) || names != names.toLowerCase()))) {
       throw CommandRegistrationError('Invalid localized name for command "$name".');
+    }
+
+    Type contextType = IChatContext;
+    if (resolvedOptions.type == CommandType.slashOnly) {
+      contextType = InteractionChatContext;
+    } else {
+      contextType = MessageChatContext;
     }
 
     _loadArguments(execute, contextType);
