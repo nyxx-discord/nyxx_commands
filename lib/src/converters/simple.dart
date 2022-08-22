@@ -8,12 +8,49 @@ import '../context/chat_context.dart';
 import '../util/view.dart';
 import 'converter.dart';
 
+/// A basic wrapper around a converter, providing an easy way to create custom converters.
+///
+/// This class allows you to create a custom converter by simply specifying a function to retrieve
+/// the available elements to convert and a function to convert elements to a [String] displayed to
+/// the user.
+///
+/// This converter provides the core converter functionality as well as autocompletion and, if
+/// [SimpleConverter.fixed] is used, command parameter choices.
+///
+/// You might also be interested in:
+/// - [Converter], the base class for creating custom converters.
+/// - [FallbackConverter] and [CombineConverter], two other helpers for creating custom converters.
 abstract class SimpleConverter<T> implements Converter<T> {
+  /// A function called to retrieve the available elements to convert.
+  ///
+  /// This should return an iterable of all the instances of `T` that this converter should allow to
+  /// be returned. It does not have to always return the same number of instances, and will be
+  /// called for each new operation requested from this converter.
   Iterable<T> Function() get provider;
+
+  /// A function called to convert elements into [String]s that can be displayed in the Discord
+  /// client.
+  ///
+  /// This function should return a unique textual representation for each element [provider]
+  /// returns. It should be consistent (that is, if `a == b`, `stringify(a) == stringify(b)`) or the
+  /// converter might fail unexpectedly.
   String Function(T) get stringify;
 
+  /// A function called if this converter fails to convert the input.
+  ///
+  /// You can provide additional logic here to convert inputs that would otherwise fail. When this
+  /// function is called, it can either return an instance of `T` which will be returned from this
+  /// converter or `null`, in which case the converter will fail.
   final T? Function(StringView, IChatContext)? reviver;
 
+  /// The sensitivity of this converter.
+  ///
+  /// The sensitivity of a [SimpleConverter] determines how similar the input must be to the
+  /// [String] returned by [stringify] for this converter to succeed.
+  ///
+  /// If [sensitivity] is `0`, this converter will always succeed with the element most similar to
+  /// the input provided [provider] at least one element. If [sensitivity] is `100`, this converter
+  /// will only succeed if the input matches exactly with one of the elements.
   final int sensitivity;
 
   @override
@@ -24,6 +61,11 @@ abstract class SimpleConverter<T> implements Converter<T> {
 
   const SimpleConverter._({required this.sensitivity, required this.output, this.reviver});
 
+  /// Create a new [SimpleConverter].
+  ///
+  /// If you want this instance to be `const` (for use with @[UseConverter]), [provider] and
+  /// [stringify] must be top-level or static functions. Function literals are not `const`, so they
+  /// cannot be used in a constant creation expression.
   const factory SimpleConverter({
     required Iterable<T> Function() provider,
     required String Function(T) stringify,
@@ -31,6 +73,11 @@ abstract class SimpleConverter<T> implements Converter<T> {
     T? Function(StringView, IChatContext) reviver,
   }) = _DynamicSimpleConverter;
 
+  /// Create a new [SimpleConverter] which converts an unchanging number of elements.
+  ///
+  /// This differs from a normal [SimpleConverter] in that it will use parameter choices instead
+  /// of autocompletion if the number of elements is small enough. If the number of elements is not
+  /// small enough to use choices, the normal [SimpleConverter] behavior is used instead.
   const factory SimpleConverter.fixed({
     required List<T> elements,
     required String Function(T) stringify,
