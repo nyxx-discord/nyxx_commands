@@ -242,10 +242,10 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
       Pattern prefix = await this.prefix!(message);
       StringView view = StringView(message.content);
 
-      Match? m = view.skipPattern(prefix);
+      Match? matchedPrefix = view.skipPattern(prefix);
 
-      if (m != null) {
-        IChatContext context = await _messageChatContext(message, view, m.group(0)!);
+      if (matchedPrefix != null) {
+        IChatContext context = await _messageChatContext(message, view, matchedPrefix.group(0)!);
 
         if (message.author.bot && !context.command.resolvedOptions.acceptBotCommands!) {
           return;

@@ -127,15 +127,15 @@ class StringView {
   /// - [skipWhitespace], for skipping arbitrary spans of whitespace.
   /// - [skipString], for skipping arbitrary strings.
   Match? skipPattern(Pattern p) {
-    Match? m = p.matchAsPrefix(buffer.substring(index));
+    Match? match = p.matchAsPrefix(buffer.substring(index));
 
-    if (m != null) {
+    if (match != null) {
       history.add(index);
       // The end of the match is the same as its length since it was matched as a prefix.
-      index += m.end;
+      index += match.end;
     }
 
-    return m;
+    return match;
   }
 
   /// Skip to the next non-whitespace character in [buffer].
