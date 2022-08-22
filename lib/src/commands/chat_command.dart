@@ -358,11 +358,16 @@ class ChatCommand
       throw CommandRegistrationError('Invalid localized name for command "$name".');
     }
 
-    Type contextType = IChatContext;
-    if (resolvedOptions.type == CommandType.slashOnly) {
-      contextType = InteractionChatContext;
-    } else {
-      contextType = MessageChatContext;
+    Type contextType;
+    switch (resolvedOptions.type) {
+      case CommandType.textOnly:
+        contextType = MessageChatContext;
+        break;
+      case CommandType.slashOnly:
+        contextType = InteractionChatContext;
+        break;
+      default:
+        contextType = IChatContext;
     }
 
     _loadArguments(execute, contextType);
