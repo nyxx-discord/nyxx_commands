@@ -17,7 +17,7 @@ import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands.dart';
 import '../commands/chat_command.dart';
-import '../context/component_wrappers.dart';
+import '../util/component_wrappers.dart';
 import '../context/context.dart';
 import '../context/interaction_context.dart';
 

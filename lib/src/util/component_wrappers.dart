@@ -16,7 +16,7 @@ import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 import 'package:random_string/random_string.dart';
 
-import 'context.dart';
+import '../context/context.dart';
 
 mixin ComponentWrappersMixin implements IContext {
   @override

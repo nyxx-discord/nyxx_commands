@@ -17,7 +17,7 @@ import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands.dart';
 import '../commands/user_command.dart';
-import '../context/component_wrappers.dart';
+import '../util/component_wrappers.dart';
 import '../context/interaction_context.dart';
 
 /// Represents a context in which a [UserCommand] was executed.
