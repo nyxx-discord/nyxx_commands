@@ -562,7 +562,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
             localizationsDescription: command.localizedDescriptions,
           );
 
-          if (command is ChatCommand && command.resolvedType != CommandType.textOnly) {
+          if (command is ChatCommand && command.resolvedOptions.type != CommandType.textOnly) {
             builder.registerHandler((interaction) => _processChatInteraction(interaction, command));
 
             _processAutocompleteHandlerRegistration(builder.options, command);
@@ -613,7 +613,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
         return true;
       }
 
-      return child is ChatCommand && child.type != CommandType.textOnly;
+      return child is ChatCommand && child.resolvedOptions.type != CommandType.textOnly;
     }
 
     return true;
@@ -796,7 +796,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     if (_chatCommands.containsKey(name)) {
       IChatCommandComponent child = _chatCommands[name]!;
 
-      if (child is ChatCommand && child.resolvedType != CommandType.slashOnly) {
+      if (child is ChatCommand && child.resolvedOptions.type != CommandType.slashOnly) {
         ChatCommand? found = child.getCommand(view);
 
         if (found == null) {

@@ -51,7 +51,7 @@ class CommandsOptions implements CommandOptions {
   final bool hideOriginalResponse;
 
   @override
-  final CommandType defaultCommandType;
+  final CommandType type;
 
   /// Create a new set of [CommandsOptions].
   const CommandsOptions({
@@ -61,6 +61,6 @@ class CommandsOptions implements CommandOptions {
     this.acceptSelfCommands = false,
     this.backend,
     this.hideOriginalResponse = true,
-    this.defaultCommandType = CommandType.all,
+    this.type = CommandType.all,
   });
 }
