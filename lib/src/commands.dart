@@ -77,7 +77,10 @@ final Logger logger = Logger('Commands');
 class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
   /// A function called to determine the prefix for a specific message.
   ///
-  /// This function should return a [String] representing the prefix to use for a given message.
+  /// This function should return a [Pattern] that should match the start of the message content if
+  /// it begins with the prefix.
+  ///
+  /// If this function is `null`, message commands are disabled.
   ///
   /// For example, for a prefix of `!`:
   /// ```dart
@@ -86,13 +89,14 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
   ///
   /// Or, for either `!` or `$` as a prefix:
   /// ```dart
-  /// (message) => message.content.startsWith('!') ? '!' : '$'
+  /// (_) => RegExp(r'!|\$')
   /// ```
   ///
   /// You might also be interested in:
   /// - [dmOr], which allows for commands in private messages to omit the prefix;
   /// - [mentionOr], which allows for commands to be executed with the client's mention (ping).
-  final String Function(IMessage) prefix;
+  // TODO: Make the default command type be `slashOnly` if prefix is not specified.
+  final FutureOr<Pattern> Function(IMessage)? prefix;
 
   final StreamController<CommandsException> _onCommandErrorController =
       StreamController.broadcast();
@@ -196,7 +200,9 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     client = nyxx;
 
     if (nyxx is INyxxWebsocket) {
-      nyxx.eventsWs.onMessageReceived.listen((event) => _processMessage(event.message));
+      if (prefix != null) {
+        nyxx.eventsWs.onMessageReceived.listen((event) => _processMessage(event.message));
+      }
 
       interactions = IInteractions.create(options.backend ?? WebsocketInteractionBackend(nyxx));
     } else {
@@ -233,11 +239,13 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
 
   Future<void> _processMessage(IMessage message) async {
     try {
-      String prefix = this.prefix(message);
+      Pattern prefix = await this.prefix!(message);
       StringView view = StringView(message.content);
 
-      if (view.skipString(prefix)) {
-        IChatContext context = await _messageChatContext(message, view, prefix);
+      Match? matchedPrefix = view.skipPattern(prefix);
+
+      if (matchedPrefix != null) {
+        IChatContext context = await _messageChatContext(message, view, matchedPrefix.group(0)!);
 
         if (message.author.bot && !context.command.resolvedOptions.acceptBotCommands!) {
           return;
