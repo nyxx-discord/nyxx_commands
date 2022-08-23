@@ -19,6 +19,7 @@ dependencies:
   nyxx_interactions: ^4.3.1
   random_string: ^2.3.1
   path: ^1.8.1
+  fuzzywuzzy: ^0.2.0
 
 dev_dependencies:
   build_runner: ^2.1.4

@@ -81,6 +81,7 @@ export 'src/converters/converter.dart'
         voiceGuildChannelConverter,
         registerDefaultConverters,
         parse;
+export 'src/converters/simple.dart' show SimpleConverter;
 export 'src/errors.dart'
     show
         AutocompleteFailedException,

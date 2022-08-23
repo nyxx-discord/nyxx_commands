@@ -170,7 +170,7 @@ abstract class ICommand<T extends ICommandContext> implements ICommandRegisterab
   /// This method might throw uncaught [CommandsException]s and should be handled with care. Thrown
   /// exceptions will not be added to [CommandsPlugin.onCommandError] unless called from within a
   /// "safe" context where uncuaght exceptions are caught anyways.
-  void invoke(T context);
+  Future<void> invoke(T context);
 }
 
 /// An entity that is part of a chat command tree.
