@@ -20,7 +20,7 @@ class InteractionCommandCheck extends Check {
   /// Create a new [InteractionChatCommandCheck].
   InteractionCommandCheck([String? name])
       : super(
-          (context) => context is IInteractionContextBaseData,
+          (context) => context is IInteractionContextData,
           name ?? 'Interaction check',
         );
 }

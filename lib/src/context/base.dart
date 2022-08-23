@@ -7,7 +7,7 @@ import '../commands/interfaces.dart';
 /// The base class for all contexts in nyxx_commands.
 ///
 /// Contains data that all contexts provide.
-abstract class IContextBaseData {
+abstract class IContextData {
   /// The user that triggered this context's creation.
   IUser get user;
 
@@ -27,7 +27,7 @@ abstract class IContextBaseData {
   INyxx get client;
 }
 
-class ContextBase implements IContextBaseData {
+class ContextBase implements IContextData {
   @override
   final IUser user;
   @override
@@ -52,7 +52,7 @@ class ContextBase implements IContextBaseData {
 }
 
 /// The base class for all contexts which execute a command.
-abstract class ICommandContextData implements IContextBaseData {
+abstract class ICommandContextData implements IContextData {
   /// The command that was executed or is being processed.
   ICommand<ICommandContext> get command;
 }
@@ -118,7 +118,7 @@ abstract class ICommandContext implements ICommandContextData {
 ///
 /// Contains data allowing access to the underlying interaction that triggered the context's
 /// creation.
-abstract class IInteractionContextBaseData implements IContextBaseData {
+abstract class IInteractionContextData implements IContextData {
   /// The interaction that triggered this context's creation.
   IInteraction get interaction;
 
@@ -127,7 +127,7 @@ abstract class IInteractionContextBaseData implements IContextBaseData {
 }
 
 /// The base class for all interaction-triggered contexts which execute a command.
-abstract class IInteractionCommandContextData implements IInteractionContextBaseData {
+abstract class IInteractionCommandContextData implements IInteractionContextData {
   @override
   ISlashCommandInteraction get interaction;
 
@@ -152,7 +152,7 @@ abstract class IInteractionCommandContext
   Future<void> acknowledge({bool? hidden});
 }
 
-mixin InteractionRespondMixin implements IInteractionCommandContext, IInteractionContextBaseData {
+mixin InteractionRespondMixin implements IInteractionCommandContext, IInteractionContextData {
   bool _hasCorrectlyAcked = false;
   late bool _originalAckHidden = commands.options.hideOriginalResponse;
 

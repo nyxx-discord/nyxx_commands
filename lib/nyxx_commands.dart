@@ -49,9 +49,9 @@ export 'src/context/base.dart'
     show
         ICommandContext,
         ICommandContextData,
-        IContextBaseData,
+        IContextData,
         IInteractionCommandContext,
-        IInteractionContextBaseData,
+        IInteractionContextData,
         IInteractionCommandContextData;
 export 'src/context/message_context.dart' show MessageContext;
 export 'src/context/user_context.dart' show UserContext;
