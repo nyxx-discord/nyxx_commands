@@ -126,14 +126,18 @@ abstract class IInteractionContextBaseData implements IContextBaseData {
   IInteractionEvent get interactionEvent;
 }
 
-/// The base class for all context which execute a command and originate from an interaction.
-abstract class IInteractionCommandContext implements IInteractionContextBaseData, ICommandContext {
+/// The base class for all interaction-triggered contexts which execute a command.
+abstract class IInteractionCommandContextData implements IInteractionContextBaseData {
   @override
   ISlashCommandInteraction get interaction;
 
   @override
   ISlashCommandInteractionEvent get interactionEvent;
+}
 
+/// The base class for all context which execute a command and originate from an interaction.
+abstract class IInteractionCommandContext
+    implements IInteractionCommandContextData, ICommandContext {
   @override
   Future<IMessage> respond(MessageBuilder builder, {bool private = false, bool? hidden});
 

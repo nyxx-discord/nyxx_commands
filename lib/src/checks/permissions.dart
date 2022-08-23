@@ -66,9 +66,10 @@ class PermissionsCheck extends Check {
             if (allowsOverrides) {
               ISlashCommand command;
 
-              if (context is IInteractionCommandContext) {
-                command = context.interactionEvent.interactions.commands
-                    .firstWhere((command) => command.id == context.interaction.commandId);
+              if (context is IInteractionCommandContextData) {
+                command = context.commands.interactions.commands.firstWhere((command) =>
+                    command.id ==
+                    (context as IInteractionCommandContextData).interaction.commandId);
               } else {
                 // If the invocation was not from a slash command, try to find a matching slash
                 // command and use the overrides from that.
