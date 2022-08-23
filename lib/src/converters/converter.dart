@@ -64,7 +64,7 @@ class Converter<T> {
   /// This function should not throw if parsing fails, it should instead return `null` to indicate
   /// failure. A [BadInputException] will then be added to [CommandsPlugin.onCommandError] where it
   /// can be handled appropriately.
-  final FutureOr<T?> Function(StringView view, IChatContext context) convert;
+  final FutureOr<T?> Function(StringView view, IChatContextData context) convert;
 
   /// The choices for this type.
   ///
@@ -131,7 +131,7 @@ class CombineConverter<R, T> implements Converter<T> {
   ///
   /// As with normal converters, this function should not throw but can return `null` to indicate
   /// parsing failure.
-  final FutureOr<T?> Function(R, IChatContext) process;
+  final FutureOr<T?> Function(R, IChatContextData) process;
 
   @override
   final Type output;
@@ -172,7 +172,7 @@ class CombineConverter<R, T> implements Converter<T> {
   CommandOptionType get type => _type ?? converter.type;
 
   @override
-  FutureOr<T?> Function(StringView view, IChatContext context) get convert =>
+  FutureOr<T?> Function(StringView view, IChatContextData context) get convert =>
       (view, context) async {
         R? ret = await converter.convert(view, context);
 
@@ -272,7 +272,7 @@ class FallbackConverter<T> implements Converter<T> {
   }
 
   @override
-  FutureOr<T?> Function(StringView view, IChatContext context) get convert =>
+  FutureOr<T?> Function(StringView view, IChatContextData context) get convert =>
       (view, context) async {
         StringView? used;
         T? ret = await converters.fold(Future.value(null), (previousValue, element) async {
@@ -299,7 +299,7 @@ class FallbackConverter<T> implements Converter<T> {
   String toString() => 'FallbackConverter<$T>[converters=${List.of(converters)}]';
 }
 
-String? convertString(StringView view, IChatContext context) => view.getQuotedWord();
+String? convertString(StringView view, IChatContextData context) => view.getQuotedWord();
 
 /// A [Converter] that converts input to a [String].
 ///
@@ -312,7 +312,7 @@ const Converter<String> stringConverter = Converter<String>(
   type: CommandOptionType.string,
 );
 
-int? convertInt(StringView view, IChatContext context) => int.tryParse(view.getQuotedWord());
+int? convertInt(StringView view, IChatContextData context) => int.tryParse(view.getQuotedWord());
 
 /// A converter that converts input to various types of numbers, possibly with a minimum or maximum
 /// value.
@@ -333,7 +333,7 @@ class NumConverter<T extends num> extends Converter<T> {
 
   /// Create a new [NumConverter].
   const NumConverter(
-    T? Function(StringView, IChatContext) convert, {
+    T? Function(StringView, IChatContextData) convert, {
     required CommandOptionType type,
     this.min,
     this.max,
@@ -374,7 +374,7 @@ class IntConverter extends NumConverter<int> {
 /// This converter has a Discord Slash Command Argument Type of [CommandOptionType.integer].
 const Converter<int> intConverter = IntConverter();
 
-double? convertDouble(StringView view, IChatContext context) =>
+double? convertDouble(StringView view, IChatContextData context) =>
     double.tryParse(view.getQuotedWord());
 
 /// A converter that converts input to [double]s, possibly with a minimum or maximum value.
@@ -406,7 +406,7 @@ class DoubleConverter extends NumConverter<double> {
 /// This converter has a Discord Slash Command Argument Type of [CommandOptionType.number].
 const Converter<double> doubleConverter = DoubleConverter();
 
-bool? convertBool(StringView view, IChatContext context) {
+bool? convertBool(StringView view, IChatContextData context) {
   String word = view.getQuotedWord();
 
   const Iterable<String> truthy = ['y', 'yes', '+', '1', 'true'];
@@ -438,7 +438,7 @@ const Converter<bool> boolConverter = Converter<bool>(
 
 final RegExp _snowflakePattern = RegExp(r'^(?:<(?:@(?:!|&)?|#)([0-9]{15,20})>|([0-9]{15,20}))$');
 
-Snowflake? convertSnowflake(StringView view, IChatContext context) {
+Snowflake? convertSnowflake(StringView view, IChatContextData context) {
   String word = view.getQuotedWord();
   if (!_snowflakePattern.hasMatch(word)) {
     return null;
@@ -458,7 +458,7 @@ const Converter<Snowflake> snowflakeConverter = Converter<Snowflake>(
   convertSnowflake,
 );
 
-Future<IMember?> snowflakeToMember(Snowflake snowflake, IChatContext context) async {
+Future<IMember?> snowflakeToMember(Snowflake snowflake, IChatContextData context) async {
   if (context.guild != null) {
     IMember? cached = context.guild!.members[snowflake];
     if (cached != null) {
@@ -474,7 +474,7 @@ Future<IMember?> snowflakeToMember(Snowflake snowflake, IChatContext context) as
   return null;
 }
 
-Future<IMember?> convertMember(StringView view, IChatContext context) async {
+Future<IMember?> convertMember(StringView view, IChatContextData context) async {
   String word = view.getQuotedWord();
 
   if (context.guild != null) {
@@ -547,7 +547,7 @@ const Converter<IMember> memberConverter = FallbackConverter<IMember>(
   type: CommandOptionType.user,
 );
 
-Future<IUser?> snowflakeToUser(Snowflake snowflake, IChatContext context) async {
+Future<IUser?> snowflakeToUser(Snowflake snowflake, IChatContextData context) async {
   IUser? cached = context.client.users[snowflake];
   if (cached != null) {
     return cached;
@@ -564,9 +564,10 @@ Future<IUser?> snowflakeToUser(Snowflake snowflake, IChatContext context) async 
   return null;
 }
 
-FutureOr<IUser?> memberToUser(IMember member, IChatContext context) => member.user.getOrDownload();
+FutureOr<IUser?> memberToUser(IMember member, IChatContextData context) =>
+    member.user.getOrDownload();
 
-FutureOr<IUser?> convertUser(StringView view, IChatContext context) {
+FutureOr<IUser?> convertUser(StringView view, IChatContextData context) {
   String word = view.getWord();
 
   if (context.channel.channelType == ChannelType.dm ||
@@ -617,7 +618,7 @@ const Converter<IUser> userConverter = FallbackConverter<IUser>(
   type: CommandOptionType.user,
 );
 
-IGuildChannel? snowflakeToGuildChannel(Snowflake snowflake, IChatContext context) {
+IGuildChannel? snowflakeToGuildChannel(Snowflake snowflake, IChatContextData context) {
   if (context.guild != null) {
     try {
       return context.guild!.channels.firstWhere((channel) => channel.id == snowflake);
@@ -629,7 +630,7 @@ IGuildChannel? snowflakeToGuildChannel(Snowflake snowflake, IChatContext context
   return null;
 }
 
-IGuildChannel? convertGuildChannel(StringView view, IChatContext context) {
+IGuildChannel? convertGuildChannel(StringView view, IChatContextData context) {
   if (context.guild != null) {
     String word = view.getQuotedWord();
 
@@ -693,7 +694,7 @@ class GuildChannelConverter<T extends IGuildChannel> implements Converter<T> {
   Iterable<ArgChoiceBuilder> get choices => [];
 
   @override
-  FutureOr<T?> Function(StringView, IChatContext) get convert => (view, context) async {
+  FutureOr<T?> Function(StringView, IChatContextData) get convert => (view, context) async {
         IGuildChannel? channel = await _internal.convert(view, context);
 
         if (channel is T) {
@@ -775,7 +776,7 @@ const GuildChannelConverter<IStageVoiceGuildChannel> stageVoiceChannelConverter 
   ChannelType.guildStage,
 ]);
 
-FutureOr<IRole?> snowflakeToRole(Snowflake snowflake, IChatContext context) {
+FutureOr<IRole?> snowflakeToRole(Snowflake snowflake, IChatContextData context) {
   if (context.guild != null) {
     IRole? cached = context.guild!.roles[snowflake];
     if (cached != null) {
@@ -792,7 +793,7 @@ FutureOr<IRole?> snowflakeToRole(Snowflake snowflake, IChatContext context) {
   return null;
 }
 
-FutureOr<IRole?> convertRole(StringView view, IChatContext context) async {
+FutureOr<IRole?> convertRole(StringView view, IChatContextData context) async {
   String word = view.getQuotedWord();
   if (context.guild != null) {
     Stream<IRole> roles = context.guild!.fetchRoles();
@@ -849,7 +850,7 @@ const Converter<Mentionable> mentionableConverter = FallbackConverter(
   type: CommandOptionType.mentionable,
 );
 
-IAttachment? snowflakeToAttachment(Snowflake id, IChatContext context) {
+IAttachment? snowflakeToAttachment(Snowflake id, IChatContextData context) {
   Iterable<IAttachment>? attachments;
   if (context is InteractionChatContext) {
     attachments = context.interaction.resolved?.attachments ?? [];
@@ -868,7 +869,7 @@ IAttachment? snowflakeToAttachment(Snowflake id, IChatContext context) {
   }
 }
 
-IAttachment? convertAttachment(StringView view, IChatContext context) {
+IAttachment? convertAttachment(StringView view, IChatContextData context) {
   String fileName = view.getQuotedWord();
 
   Iterable<IAttachment>? attachments;

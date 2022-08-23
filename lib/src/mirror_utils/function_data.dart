@@ -14,9 +14,10 @@
 
 import 'dart:async';
 
-import 'package:nyxx_commands/src/context/autocomplete_context.dart';
-import 'package:nyxx_commands/src/converters/converter.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+
+import '../context/autocomplete_context.dart';
+import '../converters/converter.dart';
 
 class FunctionData {
   final List<ParameterData> parametersData;

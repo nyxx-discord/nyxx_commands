@@ -44,9 +44,14 @@ export 'src/commands/options.dart' show CommandOptions;
 export 'src/commands/user_command.dart' show UserCommand;
 export 'src/context/autocomplete_context.dart' show AutocompleteContext;
 export 'src/context/chat_context.dart'
-    show IChatContext, InteractionChatContext, MessageChatContext;
-export 'src/context/context.dart' show IContext, IContextBase;
-export 'src/context/interaction_context.dart' show IInteractionContext, IInteractionContextBase;
+    show IChatContext, IChatContextData, InteractionChatContext, MessageChatContext;
+export 'src/context/base.dart'
+    show
+        ICommandContext,
+        ICommandContextData,
+        IContextBaseData,
+        IInteractionCommandContext,
+        IInteractionContextBaseData;
 export 'src/context/message_context.dart' show MessageContext;
 export 'src/context/user_context.dart' show UserContext;
 export 'src/converters/converter.dart'

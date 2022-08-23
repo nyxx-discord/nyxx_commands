@@ -17,7 +17,6 @@ import 'dart:async';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../checks/checks.dart';
-import '../context/context.dart';
 import '../context/message_context.dart';
 import '../errors.dart';
 import '../util/mixins.dart';
@@ -88,11 +87,7 @@ class MessageCommand
   }
 
   @override
-  Future<void> invoke(IContext context) async {
-    if (context is! MessageContext) {
-      return;
-    }
-
+  Future<void> invoke(MessageContext context) async {
     for (final check in checks) {
       if (!await check.check(context)) {
         throw CheckFailedException(check, context);

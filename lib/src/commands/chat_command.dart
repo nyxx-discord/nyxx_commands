@@ -19,7 +19,6 @@ import 'package:nyxx_interactions/nyxx_interactions.dart';
 import '../checks/checks.dart';
 import '../commands.dart';
 import '../context/chat_context.dart';
-import '../context/context.dart';
 import '../converters/converter.dart';
 import '../errors.dart';
 import '../mirror_utils/mirror_utils.dart';
@@ -417,11 +416,7 @@ class ChatCommand
   }
 
   @override
-  Future<void> invoke(IContext context) async {
-    if (context is! IChatContext) {
-      return;
-    }
-
+  Future<void> invoke(IChatContext context) async {
     List<dynamic> arguments = [];
 
     if (context is MessageChatContext) {

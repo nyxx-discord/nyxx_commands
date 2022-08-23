@@ -16,9 +16,9 @@ import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 import 'package:random_string/random_string.dart';
 
-import '../context/context.dart';
+import '../context/base.dart';
 
-mixin ComponentWrappersMixin implements IContext {
+mixin ComponentWrappersMixin implements ICommandContext {
   @override
   Future<IMultiselectInteractionEvent> getSelection(MultiselectBuilder selectionMenu,
           {bool authorOnly = true, Duration? timeout = const Duration(minutes: 12)}) =>

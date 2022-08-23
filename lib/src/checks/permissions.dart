@@ -13,10 +13,10 @@
 //  limitations under the License.
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/commands/interfaces.dart';
-import 'package:nyxx_commands/src/context/interaction_context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
+import '../commands/interfaces.dart';
+import '../context/base.dart';
 import 'checks.dart';
 
 /// A check that succeeds if the member invoking the command has a certain set of permissions.
@@ -66,7 +66,7 @@ class PermissionsCheck extends Check {
             if (allowsOverrides) {
               ISlashCommand command;
 
-              if (context is IInteractionContext) {
+              if (context is IInteractionCommandContext) {
                 command = context.interactionEvent.interactions.commands
                     .firstWhere((command) => command.id == context.interaction.commandId);
               } else {

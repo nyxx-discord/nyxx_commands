@@ -1,4 +1,4 @@
-import '../context/interaction_context.dart';
+import '../context/base.dart';
 import '../context/chat_context.dart';
 import '../context/message_context.dart';
 import '../context/user_context.dart';
@@ -20,7 +20,7 @@ class InteractionCommandCheck extends Check {
   /// Create a new [InteractionChatCommandCheck].
   InteractionCommandCheck([String? name])
       : super(
-          (context) => context is IInteractionContext,
+          (context) => context is IInteractionContextBaseData,
           name ?? 'Interaction check',
         );
 }

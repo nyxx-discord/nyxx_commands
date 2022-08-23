@@ -13,8 +13,9 @@
 //  limitations under the License.
 
 import 'package:nyxx_commands/nyxx_commands.dart';
-import 'package:nyxx_commands/src/mirror_utils/mirror_utils.dart';
-import 'package:nyxx_commands/src/util/util.dart';
+
+import '../util/util.dart';
+import 'mirror_utils.dart';
 
 Map<int, TypeData>? _typeTree;
 Map<Type, int>? _typeMappings;

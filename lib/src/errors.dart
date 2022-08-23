@@ -14,8 +14,8 @@
 
 import 'checks/checks.dart';
 import 'context/autocomplete_context.dart';
+import 'context/base.dart';
 import 'context/chat_context.dart';
-import 'context/context.dart';
 import 'util/view.dart';
 
 /// The base class for exceptions thrown by nyxx_commands.
@@ -44,7 +44,7 @@ class CommandsException implements Exception {
 /// An exception that occurred during the execution of a command.
 class CommandInvocationException extends CommandsException {
   /// The context in which the exception occurred.
-  final IContext context;
+  final ICommandContext context;
 
   /// Create a new [CommandInvocationException].
   CommandInvocationException(String message, this.context) : super(message);
@@ -83,7 +83,7 @@ class UncaughtException extends CommandInvocationException {
   final Exception exception;
 
   /// Create a new [UncaughtException].
-  UncaughtException(this.exception, IContext context) : super(exception.toString(), context);
+  UncaughtException(this.exception, ICommandContext context) : super(exception.toString(), context);
 }
 
 /// An exception that occurred due to an invalid input from the user.
@@ -112,7 +112,7 @@ class CheckFailedException extends CommandInvocationException {
   final AbstractCheck failed;
 
   /// Create a new [CheckFailedException].
-  CheckFailedException(this.failed, IContext context)
+  CheckFailedException(this.failed, ICommandContext context)
       : super('Check "${failed.name}" failed', context);
 }
 
