@@ -5,7 +5,10 @@ import '../commands/message_command.dart';
 import '../util/component_wrappers.dart';
 import 'base.dart';
 
-/// Represents a  context in which a [MessageCommand] was executed.
+/// A context in which a [MessageCommand] was executed.
+///
+/// You might also be interested in:
+/// - [IInteractionCommandContext], the base class for all commands executed from an interaction.
 class MessageContext extends ContextBase
     with InteractionRespondMixin, ComponentWrappersMixin
     implements IInteractionCommandContext {

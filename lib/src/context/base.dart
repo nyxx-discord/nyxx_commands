@@ -7,6 +7,9 @@ import '../commands/interfaces.dart';
 /// The base class for all contexts in nyxx_commands.
 ///
 /// Contains data that all contexts provide.
+///
+/// You might also be interested in:
+/// - [ICommandContextData], which contains data about contexts which execute a command.
 abstract class IContextData {
   /// The user that triggered this context's creation.
   IUser get user;
@@ -51,7 +54,11 @@ class ContextBase implements IContextData {
   });
 }
 
-/// The base class for all contexts which execute a command.
+/// Data about a context in which a command was executed.
+///
+/// You might also be interested in:
+/// - [ICommandContext], which exposes the functionality for interacting with this context.
+/// - [IContextData], the base class for all contexts.
 abstract class ICommandContextData implements IContextData {
   /// The command that was executed or is being processed.
   ICommand<ICommandContext> get command;
@@ -61,6 +68,11 @@ abstract class ICommandContextData implements IContextData {
 ///
 /// Contains data about how and where the command was executed, and provides a simple interfaces for
 /// responding to commands.
+///
+/// You might also be interested in:
+/// - [ICommandContextData], which exposes the data found in this context;
+/// - [IInteractionCommandContext], a context in which a command was executed from an interaction;
+/// - [MessageChatContext], a context in which a command was executed from a text message.
 abstract class ICommandContext implements ICommandContextData {
   /// Send a response to the command.
   ///
@@ -114,10 +126,12 @@ abstract class ICommandContext implements ICommandContextData {
       String denyMessage = 'No'});
 }
 
-/// The base class for all interaction-triggered contexts in nyxx_commands.
+/// Data about a context which was created by an interaction.
 ///
-/// Contains data allowing access to the underlying interaction that triggered the context's
-/// creation.
+/// You might also be interested in:
+/// - [IInteractionCommandContextData], data about a context in which a command was executed from an
+///   interaction;
+/// - [IContextData], the base class for all contexts.
 abstract class IInteractionContextData implements IContextData {
   /// The interaction that triggered this context's creation.
   IInteraction get interaction;
@@ -126,7 +140,11 @@ abstract class IInteractionContextData implements IContextData {
   IInteractionEvent get interactionEvent;
 }
 
-/// The base class for all interaction-triggered contexts which execute a command.
+/// Data about a context in which a command was executed from an interaction.
+///
+/// You might also be interested in:
+/// - [IInteractionCommandContext], which exposes functionality for interacting with this context;
+/// - [IInteractionContextData], the base class for all contexts created from interactions.
 abstract class IInteractionCommandContextData implements IInteractionContextData {
   @override
   ISlashCommandInteraction get interaction;
@@ -135,7 +153,14 @@ abstract class IInteractionCommandContextData implements IInteractionContextData
   ISlashCommandInteractionEvent get interactionEvent;
 }
 
-/// The base class for all context which execute a command and originate from an interaction.
+/// A context in which a command was executed from an interaction.
+///
+/// Contains data about how and where the command was executed, and provides a simple interfaces for
+/// responding to commands.
+///
+/// You might also be interested in:
+/// - [IInteractionCommandContextData], which exposes the data found in this context,
+/// - [ICommandContext], the base class for all contexts representing a command execution.
 abstract class IInteractionCommandContext
     implements IInteractionCommandContextData, ICommandContext {
   @override

@@ -5,17 +5,24 @@ import '../commands/chat_command.dart';
 import '../util/component_wrappers.dart';
 import 'base.dart';
 
-/// Represents a context in which a [ChatCommand] was invoked.
+/// Data about a context in which a [ChatCommand] was executed.
 ///
 /// You might also be interested in:
-/// - [MessageChatContext], for chat commands invoked from text messages;
-/// - [InteractionChatContext], for chat commands invoked from slash commands.
+/// - [IChatContext], which exposes functionality for interacting with this context;
+/// - [ICommandContextData], the base class for all contexts representing a command execution.
 abstract class IChatContextData implements ICommandContextData {
   @override
   ChatCommand get command;
 }
 
-/// Represents a context within a running [ChatCommand].
+/// A context in which a [ChatCommand] was executed.
+///
+/// Contains data about how and where the command was executed, and provides a simple interfaces for
+/// responding to commands.
+///
+/// You might also be interested in:
+/// - [MessageChatContext], a context in which a [ChatCommand] was executed from a text message;
+/// - [InteractionChatContext], a context in which a [ChatCommand] was executed from an interaction.
 abstract class IChatContext implements IChatContextData, ICommandContext {
   /// The arguments parsed from the user input.
   ///
@@ -54,10 +61,11 @@ abstract class ChatContext extends ContextBase implements IChatContext {
   });
 }
 
-/// Represents a context in which a [ChatCommand] was invoked from a text message.
+/// A context in which a [ChatCommand] was invoked from a text message.
 ///
 /// You might also be interested in:
-/// - [InteractionChatContext], for chat commands invoked from slash commands.
+/// - [InteractionChatContext], a context in which a [ChatCommand] was executed from an interaction;
+/// - [IChatContext], the base class for all context representing the execution of a [ChatCommand].
 class MessageChatContext extends ChatContext with ComponentWrappersMixin {
   /// The message that triggered this command.
   final IMessage message;
@@ -113,10 +121,11 @@ class MessageChatContext extends ChatContext with ComponentWrappersMixin {
   }
 }
 
-/// Represents a context in which a [ChatCommand] was invoked from an interaction.
+/// A context in which a [ChatCommand] was invoked from an interaction.
 ///
 /// You might also be interested in:
-/// - [MessageChatContext], for chat commands invoked from text messages.
+/// - [MessageChatContext], a context in which a [ChatCommand] was executed from a text message;
+/// - [IChatContext], the base class for all context representing the execution of a [ChatCommand].
 class InteractionChatContext extends ChatContext
     with InteractionRespondMixin, ComponentWrappersMixin
     implements IInteractionCommandContext {

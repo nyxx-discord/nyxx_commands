@@ -5,7 +5,10 @@ import '../commands/user_command.dart';
 import '../util/component_wrappers.dart';
 import 'base.dart';
 
-/// Represents a context in which a [UserCommand] was executed.
+/// A context in which a [UserCommand] was executed.
+///
+/// You might also be interested in:
+/// - [IInteractionCommandContext], the base class for all commands executed from an interaction.
 class UserContext extends ContextBase
     with InteractionRespondMixin, ComponentWrappersMixin
     implements IInteractionCommandContext {
