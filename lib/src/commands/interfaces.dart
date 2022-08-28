@@ -16,14 +16,14 @@ import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../checks/checks.dart';
 import '../commands.dart';
+import '../context/base.dart';
 import '../context/chat_context.dart';
-import '../context/context.dart';
 import '../errors.dart';
 import '../util/view.dart';
 import 'options.dart';
 
 /// Represents an entity which can handle command callback hooks.
-abstract class ICallHooked<T extends IContext> {
+abstract class ICallHooked<T extends ICommandContext> {
   /// A stream that emits contexts *before* the command callback is executed.
   ///
   /// This stream emits before the callback is executed, but after checks and argument parsing is
@@ -69,7 +69,7 @@ abstract class IOptions {
 ///
 /// You might also be interested in:
 /// - [ICommandGroup], the interface for groups that [ICommandRegisterable]s can be added to.
-abstract class ICommandRegisterable<T extends IContext>
+abstract class ICommandRegisterable<T extends ICommandContext>
     implements ICallHooked<T>, IChecked, IOptions {
   /// The name of this child.
   ///
@@ -82,11 +82,11 @@ abstract class ICommandRegisterable<T extends IContext>
   /// Once a parent is added to a group, that group is considered to be this child's parent and this
   /// child cannot be added to any more groups. Attempting to do so will result in a
   /// [CommandsError].
-  ICommandGroup<IContext>? get parent;
+  ICommandGroup<ICommandContext>? get parent;
 
   /// Set the parent of this child. Should not be used unless you are implementing your own command
   /// group.
-  set parent(ICommandGroup<IContext>? parent);
+  set parent(ICommandGroup<ICommandContext>? parent);
 
   /// Get the resolvec options for this child.
   ///
@@ -122,7 +122,8 @@ abstract class ICommandRegisterable<T extends IContext>
 /// You might also be interested in:
 /// - [ICommandRegisterable], the type that all children must implement;
 /// - [ICommand], the executable command type.
-abstract class ICommandGroup<T extends IContext> implements ICallHooked<T>, IChecked, IOptions {
+abstract class ICommandGroup<T extends ICommandContext>
+    implements ICallHooked<T>, IChecked, IOptions {
   /// A list of all the children of this group
   Iterable<ICommandRegisterable<T>> get children;
 
@@ -157,7 +158,7 @@ abstract class ICommandGroup<T extends IContext> implements ICallHooked<T>, IChe
 /// You might also be interested in:
 /// - [ChatCommand], [MessageCommand] and [UserCommand], the three types of commands nyxx_commands
 ///   supports.
-abstract class ICommand<T extends IContext> implements ICommandRegisterable<T> {
+abstract class ICommand<T extends ICommandContext> implements ICommandRegisterable<T> {
   /// The function called to execute this command.
   ///
   /// If any exception occurs while calling this function, it will be caught and added to

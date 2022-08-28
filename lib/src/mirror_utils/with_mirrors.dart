@@ -15,10 +15,11 @@
 import 'dart:async';
 import 'dart:mirrors';
 
-import 'package:nyxx_commands/src/commands.dart';
-import 'package:nyxx_commands/src/mirror_utils/mirror_utils.dart';
 import 'package:nyxx_commands/nyxx_commands.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+
+import '../commands.dart';
+import 'mirror_utils.dart';
 
 bool isAssignableTo(Type instance, Type target) =>
     instance == target || reflectType(instance).isSubtypeOf(reflectType(target));

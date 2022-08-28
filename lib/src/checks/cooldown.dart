@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
+import 'package:nyxx_commands/src/context/base.dart';
 
-import '../context/context.dart';
 import 'checks.dart';
 
 /// An enum that represents the different ways to sort contexts into buckets.
@@ -174,7 +174,7 @@ class CooldownCheck extends AbstractCheck {
   late DateTime _currentStart = DateTime.now();
 
   @override
-  FutureOr<bool> check(IContext context) {
+  FutureOr<bool> check(ICommandContextData context) {
     if (DateTime.now().isAfter(_currentStart.add(duration))) {
       _previousBucket = _currentBucket;
       _currentBucket = {};
@@ -215,7 +215,7 @@ class CooldownCheck extends AbstractCheck {
   ///
   /// You might also be interested in:
   /// - [type], which determines which values from [context] are combined to create a key.
-  int getKey(IContext context) {
+  int getKey(ICommandContextData context) {
     List<int> keys = [];
 
     if (CooldownType.applies(type, CooldownType.category)) {
@@ -267,7 +267,7 @@ class CooldownCheck extends AbstractCheck {
   ///
   /// You might also be interested in:
   /// - [getKey], for getting the ID of the bucket the context was sorted into.
-  Duration remaining(IContext context) {
+  Duration remaining(ICommandContextData context) {
     if (check(context) as bool) {
       return Duration.zero;
     }
@@ -291,7 +291,7 @@ class CooldownCheck extends AbstractCheck {
   }
 
   @override
-  late Iterable<void Function(IContext)> preCallHooks = [
+  late Iterable<void Function(ICommandContextData)> preCallHooks = [
     (context) {
       int key = getKey(context);
 
@@ -306,7 +306,7 @@ class CooldownCheck extends AbstractCheck {
   ];
 
   @override
-  Iterable<void Function(IContext p1)> get postCallHooks => [];
+  Iterable<void Function(ICommandContextData p1)> get postCallHooks => [];
 
   @override
   bool get allowsDm => true;

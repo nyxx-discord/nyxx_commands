@@ -13,20 +13,19 @@
 //  limitations under the License.
 
 import '../checks/checks.dart';
-import '../commands/chat_command.dart';
 import '../commands/interfaces.dart';
 import '../commands/options.dart';
-import '../context/context.dart';
+import '../context/base.dart';
 import '../errors.dart';
 
-mixin ParentMixin<T extends IContext> implements ICommandRegisterable<T> {
-  ICommandGroup<IContext>? _parent;
+mixin ParentMixin<T extends ICommandContext> implements ICommandRegisterable<T> {
+  ICommandGroup<ICommandContext>? _parent;
 
   @override
-  ICommandGroup<IContext>? get parent => _parent;
+  ICommandGroup<ICommandContext>? get parent => _parent;
 
   @override
-  set parent(ICommandGroup<IContext>? parent) {
+  set parent(ICommandGroup<ICommandContext>? parent) {
     if (_parent != null) {
       throw CommandRegistrationError('Cannot register command "$name" again');
     }
@@ -34,7 +33,7 @@ mixin ParentMixin<T extends IContext> implements ICommandRegisterable<T> {
   }
 }
 
-mixin CheckMixin<T extends IContext> on ICommandRegisterable<T> implements IChecked {
+mixin CheckMixin<T extends ICommandContext> on ICommandRegisterable<T> implements IChecked {
   final List<AbstractCheck> _checks = [];
 
   @override
@@ -54,7 +53,7 @@ mixin CheckMixin<T extends IContext> on ICommandRegisterable<T> implements IChec
   }
 }
 
-mixin OptionsMixin<T extends IContext> on ICommandRegisterable<T> implements IOptions {
+mixin OptionsMixin<T extends ICommandContext> on ICommandRegisterable<T> implements IOptions {
   @override
   CommandOptions get resolvedOptions {
     if (parent == null) {

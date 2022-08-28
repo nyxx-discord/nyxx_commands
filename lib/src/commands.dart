@@ -17,7 +17,6 @@ import 'dart:async';
 import 'package:logging/logging.dart';
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/src/context/context_manager.dart';
-import 'package:nyxx_commands/src/context/interaction_context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import 'checks/checks.dart';
@@ -26,9 +25,9 @@ import 'commands/chat_command.dart';
 import 'commands/interfaces.dart';
 import 'commands/message_command.dart';
 import 'commands/user_command.dart';
-import 'context/chat_context.dart';
 import 'context/autocomplete_context.dart';
-import 'context/context.dart';
+import 'context/base.dart';
+import 'context/chat_context.dart';
 import 'converters/converter.dart';
 import 'errors.dart';
 import 'mirror_utils/mirror_utils.dart';
@@ -74,7 +73,7 @@ final Logger logger = Logger('Commands');
 /// - [addCommand], for adding commands to your bot;
 /// - [check], for adding checks to your bot;
 /// - [MessageCommand] and [UserCommand], for creating Message and User Commands respectively.
-class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
+class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext> {
   /// A function called to determine the prefix for a specific message.
   ///
   /// This function should return a [Pattern] that should match the start of the message content if
@@ -100,8 +99,8 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
 
   final StreamController<CommandsException> _onCommandErrorController =
       StreamController.broadcast();
-  final StreamController<IContext> _onPreCallController = StreamController.broadcast();
-  final StreamController<IContext> _onPostCallController = StreamController.broadcast();
+  final StreamController<ICommandContext> _onPreCallController = StreamController.broadcast();
+  final StreamController<ICommandContext> _onPostCallController = StreamController.broadcast();
 
   /// A stream of [CommandsException]s that occur during a command's execution.
   ///
@@ -120,15 +119,15 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
   ///
   /// You might also be interested in:
   /// - [CommandsException], the class all exceptions in nyxx_commands subclass;
-  /// - [ICallHooked.onPostCall], a stream that emits [IContext]s once a command completes
+  /// - [ICallHooked.onPostCall], a stream that emits [ICommandContext]s once a command completes
   /// successfully.
   late final Stream<CommandsException> onCommandError = _onCommandErrorController.stream;
 
   @override
-  late final Stream<IContext> onPreCall = _onPreCallController.stream;
+  late final Stream<ICommandContext> onPreCall = _onPreCallController.stream;
 
   @override
-  late final Stream<IContext> onPostCall = _onPostCallController.stream;
+  late final Stream<ICommandContext> onPostCall = _onPostCallController.stream;
 
   final Map<Type, Converter<dynamic>> _converters = {};
 
@@ -269,7 +268,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     }
   }
 
-  Future<void> _processInteractionCommand(IInteractionContext context) async {
+  Future<void> _processInteractionCommand(IInteractionCommandContext context) async {
     try {
       if (context.command.resolvedOptions.autoAcknowledgeInteractions!) {
         Duration latency = Duration.zero;
@@ -425,7 +424,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     return builders;
   }
 
-  bool _shouldGenerateBuildersFor(ICommandRegisterable<IContext> child) {
+  bool _shouldGenerateBuildersFor(ICommandRegisterable<ICommandContext> child) {
     if (child is IChatCommandComponent) {
       if (child.hasSlashCommand) {
         return true;
@@ -550,7 +549,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
   }
 
   @override
-  void addCommand(ICommandRegisterable<IContext> command) {
+  void addCommand(ICommandRegisterable<ICommandContext> command) {
     if (command is IChatCommandComponent) {
       if (_chatCommands.containsKey(command.name)) {
         throw CommandRegistrationError('Command with name "${command.name}" already exists');

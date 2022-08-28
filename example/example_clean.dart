@@ -227,7 +227,7 @@ enum Dimension {
   threeD,
 }
 
-String? filterInput(String input, IContext context) {
+String? filterInput(String input, IChatContextData context) {
   if (input.isNotEmpty) {
     return input;
   }
