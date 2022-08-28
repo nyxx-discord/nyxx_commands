@@ -13,6 +13,8 @@
 //  limitations under the License.
 
 import '../checks/checks.dart';
+import '../commands.dart';
+import '../commands/chat_command.dart';
 import '../commands/interfaces.dart';
 import '../commands/options.dart';
 import '../context/base.dart';
@@ -64,13 +66,20 @@ mixin OptionsMixin<T extends ICommandContext> on ICommandRegisterable<T> impleme
         ? (parent as ICommandRegisterable).resolvedOptions
         : parent!.options;
 
+    CommandType? parentType = parentOptions.type;
+    if (parent is CommandsPlugin) {
+      if ((parent as CommandsPlugin).prefix == null && parentType == CommandType.all) {
+        parentType = CommandType.slashOnly;
+      }
+    }
+
     return CommandOptions(
       autoAcknowledgeInteractions:
           options.autoAcknowledgeInteractions ?? parentOptions.autoAcknowledgeInteractions,
       acceptBotCommands: options.acceptBotCommands ?? parentOptions.acceptBotCommands,
       acceptSelfCommands: options.acceptSelfCommands ?? parentOptions.acceptSelfCommands,
       hideOriginalResponse: options.hideOriginalResponse ?? parentOptions.hideOriginalResponse,
-      type: options.type ?? parentOptions.type,
+      type: options.type ?? parentType,
     );
   }
 }

@@ -38,6 +38,13 @@ class CommandsOptions implements CommandOptions {
   /// using the client the [CommandsPlugin] was added to as the client.
   final InteractionBackend? backend;
 
+  /// Whether to infer the default command type.
+  ///
+  /// If this is `true` and [type] is [CommandType.all], then the root command type used will be
+  /// [CommandType.slashOnly] if [CommandsPlugin.prefix] is not specified. If
+  /// [CommandsPlugin.prefix] is specified, the root command type will be left as-is.
+  final bool inferDefaultCommandType;
+
   @override
   final bool acceptBotCommands;
 
@@ -62,5 +69,6 @@ class CommandsOptions implements CommandOptions {
     this.backend,
     this.hideOriginalResponse = true,
     this.type = CommandType.all,
+    this.inferDefaultCommandType = true,
   });
 }

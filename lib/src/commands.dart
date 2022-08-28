@@ -94,7 +94,6 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
   /// You might also be interested in:
   /// - [dmOr], which allows for commands in private messages to omit the prefix;
   /// - [mentionOr], which allows for commands to be executed with the client's mention (ping).
-  // TODO: Make the default command type be `slashOnly` if prefix is not specified.
   final FutureOr<Pattern> Function(IMessage)? prefix;
 
   final StreamController<CommandsException> _onCommandErrorController =
