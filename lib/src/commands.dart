@@ -16,7 +16,6 @@ import 'dart:async';
 
 import 'package:logging/logging.dart';
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/context/context_manager.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import 'checks/checks.dart';
@@ -28,6 +27,7 @@ import 'commands/user_command.dart';
 import 'context/autocomplete_context.dart';
 import 'context/base.dart';
 import 'context/chat_context.dart';
+import 'context/context_manager.dart';
 import 'converters/converter.dart';
 import 'errors.dart';
 import 'mirror_utils/mirror_utils.dart';
