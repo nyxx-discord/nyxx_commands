@@ -54,25 +54,6 @@ abstract class AbstractCheck {
   /// [preCallHooks] and [postCallHooks] to update the check's state.
   FutureOr<bool> check(ICommandContextData context);
 
-  /// The set of [Discord Slash Command Permissions](https://discord.com/developers/docs/interactions/application-commands#permissions)
-  /// this check represents.
-  ///
-  /// Any [ICommand] (excluding text-only [ChatCommand]s) will have the permissions from all the
-  /// checks on that command applied through the Discord Slash Command API. This can allow users to
-  /// see whether a command is executable from within their Discord client, instead of nyxx_commands
-  /// rejecting the command once received.
-  ///
-  /// A [CommandPermissionBuilderAbstract] with a target ID of `0` will be considered to be the
-  /// default permission for this check.
-  ///
-  /// You might also be interested in:
-  /// - [CommandPermissionBuilderAbstract.role], for creating slash command permissions that apply
-  ///   to a given role;
-  /// - [CommandPermissionBuilderAbstract.user], for creating slash command permissions that apply
-  ///   to a given user.
-  @Deprecated('Use allowsDm and requiredPermissions instead')
-  final Future<Iterable<CommandPermissionBuilderAbstract>> permissions = Future.value([]);
-
   /// Whether this check will allow commands to be executed in DM channels.
   ///
   /// If this is `false`, users will be unable to execute slash commands in DM channels with the
