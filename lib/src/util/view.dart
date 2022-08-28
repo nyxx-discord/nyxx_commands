@@ -169,7 +169,7 @@ class StringView {
 
   /// Consume and return the next word in [buffer], disregarding quotes.
   ///
-  /// Developers should use [getQuotedWord] instead unless they specifically want the behaviour
+  /// Developers should use [getQuotedWord] instead unless they specifically want the behavior
   /// described below, as [getWord] can leave [remaining] with unbalanced quotes.
   ///
   /// A *word* is a sequence of non-whitespace characters, themselves surrounded by whitespace. The
@@ -179,7 +179,7 @@ class StringView {
   /// The word is escaped before it is returned.
   ///
   /// You might also be interested in:
-  /// - [escape], for escaping arbitrary postions of [buffer];
+  /// - [escape], for escaping arbitrary portions of [buffer];
   /// - [isWhitespace], for checking if the current character is considered whitespace.
   String getWord() {
     skipWhitespace();
@@ -195,9 +195,9 @@ class StringView {
 
   /// Consume and return the next word or quoted portion in [buffer].
   ///
-  /// See [getWord] for a description of wwhat is considered a *word*.
+  /// See [getWord] for a description of what is considered a *word*.
   ///
-  /// In addition to the behaviour of [getWord], [getQuotedWord] will return the portion of [buffer]
+  /// In addition to the behavior of [getWord], [getQuotedWord] will return the portion of [buffer]
   /// between an opening quote and a corresponding, non-escaped closing quote if the next word
   /// begins with a quote. The quotes are consumed but not returned.
   ///

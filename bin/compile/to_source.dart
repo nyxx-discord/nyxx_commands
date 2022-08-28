@@ -546,7 +546,7 @@ List<String>? toCollectionElementSource(CollectionElement item) {
       ...imports,
     ];
   } else if (item is ForElement) {
-    // Collection for statement: disallowed beecause it is not const
+    // Collection for statement: disallowed because it is not const
     throw CommandsException('Cannot reproduce for loops');
   } else if (item is MapLiteralEntry) {
     // In the case we have a map, we need to convert both the key and the value

@@ -142,10 +142,10 @@ class PermissionsCheck extends Check {
                 }
               }
 
-              Iterable<bool> prioritised = [def, channelDef, role, channel, user].whereType<bool>();
+              Iterable<bool> prioritized = [def, channelDef, role, channel, user].whereType<bool>();
 
-              if (prioritised.isNotEmpty) {
-                return prioritised.last;
+              if (prioritized.isNotEmpty) {
+                return prioritized.last;
               }
             }
 

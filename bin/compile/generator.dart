@@ -145,7 +145,7 @@ String generateOutput(
   logger.info('Generating output');
 
   // The base stub:
-  // - Imports the nyxx_commands runtime type data classes so we can instanciate them
+  // - Imports the nyxx_commands runtime type data classes so we can instantiate them
   // - Imports the specified program entrypoint so we can call it later
   // - Imports `dart:core` so we don't remove it from the global scope by importing it with an alias
   // - Adds a warning comment to the top of the file

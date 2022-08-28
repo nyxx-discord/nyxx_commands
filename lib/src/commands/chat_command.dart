@@ -186,8 +186,8 @@ mixin ChatGroupMixin implements IChatCommandComponent {
 
 /// Represents a [Subcommand Group](https://discord.com/developers/docs/interactions/application-commands#subcommands-and-subcommand-groups).
 ///
-/// [ChatGroup]s can be used to organise chat commands into groups of similar commands to avoid
-/// filling up a user's UI. Instead, commands are organised into a tree, with only the root of the
+/// [ChatGroup]s can be used to organize chat commands into groups of similar commands to avoid
+/// filling up a user's UI. Instead, commands are organized into a tree, with only the root of the
 /// tree being shown to the user until they select it.
 ///
 /// You might also be interested in:
@@ -297,9 +297,9 @@ class ChatCommand
   /// [CommandsPlugin.onCommandError], wrapped in an [UncaughtException].
   ///
   /// You might also be interested in:
-  /// - [Name], for explicitely setting an argument's name;
+  /// - [Name], for explicitly setting an argument's name;
   /// - [Description], for adding descriptions to arguments;
-  /// - [Choices], for specifiying the choices for an argument;
+  /// - [Choices], for specifying the choices for an argument;
   /// - [UseConverter], for overriding the [Converter] used for a specific argument.
   @override
   final Function execute;

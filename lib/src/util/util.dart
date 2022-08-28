@@ -311,7 +311,7 @@ String Function(IMessage) dmOr(String Function(IMessage) defaultPrefix) {
 
 /// A pattern all command and argument names should match.
 ///
-/// For more inforrmation on naming restrictions, check the
+/// For more information on naming restrictions, check the
 /// [Discord documentation](https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-naming).
 final RegExp commandNameRegexp = RegExp(
   r'^[-_\p{L}\p{N}\p{sc=Deva}\p{sc=Thai}]{1,32}$',
@@ -321,7 +321,7 @@ final RegExp commandNameRegexp = RegExp(
 final Map<Function, dynamic> idMap = {};
 
 /// A special function that can be wrapped around another function in order to tell nyxx_commands
-/// how to identify the funcion at compile time.
+/// how to identify the function at compile time.
 ///
 /// This function is used to identify a callback function so that compiled nyxx_commands can extract
 /// the type & annotation data for that function.

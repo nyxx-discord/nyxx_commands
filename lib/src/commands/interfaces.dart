@@ -58,7 +58,7 @@ abstract class IChecked {
 
 /// Represents an entity that supports command options.
 ///
-/// Command options can influence a command's behaviour and how it can be invoked. Options are
+/// Command options can influence a command's behavior and how it can be invoked. Options are
 /// inherited.
 abstract class IOptions {
   /// The options to use for this entity.
@@ -88,7 +88,7 @@ abstract class ICommandRegisterable<T extends ICommandContext>
   /// group.
   set parent(ICommandGroup<ICommandContext>? parent);
 
-  /// Get the resolvec options for this child.
+  /// Get the resolved options for this child.
   ///
   /// Since [ICommandRegisterable] implements [IOptions], any class implementing this interface can
   /// provide options. However, since options are designed to be inherited, this getter provides a
@@ -169,7 +169,7 @@ abstract class ICommand<T extends ICommandContext> implements ICommandRegisterab
   ///
   /// This method might throw uncaught [CommandsException]s and should be handled with care. Thrown
   /// exceptions will not be added to [CommandsPlugin.onCommandError] unless called from within a
-  /// "safe" context where uncuaght exceptions are caught anyways.
+  /// "safe" context where uncaught exceptions are caught anyways.
   Future<void> invoke(T context);
 }
 

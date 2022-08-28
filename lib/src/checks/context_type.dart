@@ -77,7 +77,7 @@ class ChatCommandCheck extends Check {
 /// See [Check.any] for an example of how to implement this.
 ///
 /// You might also be interested in:
-/// - [ChatCommandCheck], for checking that the command being exected is a [ChatCommand];
+/// - [ChatCommandCheck], for checking that the command being executed is a [ChatCommand];
 /// - [InteractionCommandCheck], for checking that a command was invoked from an interaction.
 class InteractionChatCommandCheck extends Check {
   /// Create a new [InteractionChatCommandCheck].
@@ -95,7 +95,7 @@ class InteractionChatCommandCheck extends Check {
 /// See [Check.any] for an example of how to implement this.
 ///
 /// You might also be interested in:
-/// - [ChatCommandCheck], for checking that the command being exected is a [ChatCommand].
+/// - [ChatCommandCheck], for checking that the command being executed is a [ChatCommand].
 class MessageChatCommandCheck extends Check {
   /// Create a new [MessageChatCommandCheck].
   MessageChatCommandCheck({super.name = 'Message chat command check'})

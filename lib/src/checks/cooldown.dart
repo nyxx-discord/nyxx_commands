@@ -7,7 +7,7 @@ import 'checks.dart';
 
 /// An enum that represents the different ways to sort contexts into buckets.
 ///
-/// Coolown types can be combined with the binary OR operator (`|`). For details on how this affects
+/// Cooldown types can be combined with the binary OR operator (`|`). For details on how this affects
 /// how contexts are sorted into buckets, see [CooldownCheck.getKey].
 ///
 /// You might also be interested in:
@@ -45,7 +45,7 @@ class CooldownType extends IEnum<int> {
 
   /// Create a new [CooldownType].
   ///
-  /// Using a [value] other than the predefined ones will not result in any new behaviour, so using
+  /// Using a [value] other than the predefined ones will not result in any new behavior, so using
   /// this constructor is discouraged.
   const CooldownType(int value) : super(value);
 
