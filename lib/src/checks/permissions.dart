@@ -51,8 +51,10 @@ class PermissionsCheck extends Check {
     this.allowsOverrides = true,
     this.requiresAll = false,
     String? name,
-    bool allowsDm = true,
+    super.allowsDm = true,
   }) : super(
+          name: name ?? 'Permissions check on $permissionsValue',
+          requiredPermissions: permissionsValue,
           (context) async {
             IMember? member = context.member;
 
@@ -156,9 +158,6 @@ class PermissionsCheck extends Check {
 
             return corresponding != 0;
           },
-          name ?? 'Permissions check on $permissionsValue',
-          allowsDm,
-          permissionsValue,
         );
 
   /// Create a [PermissionsCheck] that allows nobody to execute a command, unless configured

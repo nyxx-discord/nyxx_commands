@@ -156,7 +156,7 @@ class CooldownCheck extends AbstractCheck {
   ///
   /// [tokensPer] is optional and defaults to one, meaning a bucket can execute one before it is
   /// considered "on cooldown" for a given bucket.
-  CooldownCheck(this.type, this.duration, [this.tokensPer = 1, String? name])
+  CooldownCheck(this.type, this.duration, {this.tokensPer = 1, String? name})
       : super(name ?? 'Cooldown Check on $type');
 
   /// The number of times a bucket can execute commands before this check fails.

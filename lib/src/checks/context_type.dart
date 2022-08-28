@@ -18,11 +18,8 @@ import 'checks.dart';
 /// - [ChatCommandCheck], for checking that the command being invoked is a [ChatCommand].
 class InteractionCommandCheck extends Check {
   /// Create a new [InteractionChatCommandCheck].
-  InteractionCommandCheck([String? name])
-      : super(
-          (context) => context is IInteractionContextData,
-          name ?? 'Interaction check',
-        );
+  InteractionCommandCheck({super.name = 'Interaction check'})
+      : super((context) => context is IInteractionContextData);
 }
 
 /// A check that succeeds if the command being invoked is a [MessageCommand].
@@ -34,11 +31,8 @@ class InteractionCommandCheck extends Check {
 /// - [InteractionCommandCheck], for checking that a command was invoked from an interaction.
 class MessageCommandCheck extends Check {
   /// Create a new [MessageCommandCheck].
-  MessageCommandCheck([String? name])
-      : super(
-          (context) => context is MessageContext,
-          name ?? 'Message command check',
-        );
+  MessageCommandCheck({super.name = 'Message command check'})
+      : super((context) => context is MessageContext);
 }
 
 /// A check that succeeds if the command being invoked is a [UserCommand].
@@ -50,11 +44,8 @@ class MessageCommandCheck extends Check {
 /// - [InteractionCommandCheck], for checking that a command was invoked from an interaction.
 class UserCommandCheck extends Check {
   /// Create a new [UserCommandCheck].
-  UserCommandCheck([String? name])
-      : super(
-          (context) => context is UserContext,
-          name ?? 'User command check',
-        );
+  UserCommandCheck({super.name = 'User command check'})
+      : super((context) => context is UserContext);
 }
 
 /// A check that succeeds if the command being invoked is a [ChatCommand].
@@ -72,11 +63,8 @@ class UserCommandCheck extends Check {
 /// - [InteractionCommandCheck], for checking that a command was invoked from an interaction.
 class ChatCommandCheck extends Check {
   /// Create a new [ChatCommandCheck].
-  ChatCommandCheck([String? name])
-      : super(
-          (context) => context is IChatContext,
-          name ?? 'Chat command check',
-        );
+  ChatCommandCheck({super.name = 'Chat command check'})
+      : super((context) => context is IChatContext);
 }
 
 /// A check that succeeds if the command being invoked is a [ChatCommand] and that the context was
@@ -93,11 +81,8 @@ class ChatCommandCheck extends Check {
 /// - [InteractionCommandCheck], for checking that a command was invoked from an interaction.
 class InteractionChatCommandCheck extends Check {
   /// Create a new [InteractionChatCommandCheck].
-  InteractionChatCommandCheck([String? name])
-      : super(
-          (context) => context is InteractionChatContext,
-          name ?? 'Interaction chat command check',
-        );
+  InteractionChatCommandCheck({super.name = 'Interaction chat command check'})
+      : super((context) => context is InteractionChatContext);
 }
 
 /// A check that succeeds if the command being invoked is a [ChatCommand] and that the context was
@@ -113,12 +98,11 @@ class InteractionChatCommandCheck extends Check {
 /// - [ChatCommandCheck], for checking that the command being exected is a [ChatCommand].
 class MessageChatCommandCheck extends Check {
   /// Create a new [MessageChatCommandCheck].
-  MessageChatCommandCheck([String? name])
+  MessageChatCommandCheck({super.name = 'Message chat command check'})
       : super(
           (context) => context is MessageChatContext,
-          name ?? 'Message chat command check',
-          // Disallow command in both guilds and DMs (0 = disable for all members).
-          false,
-          0,
+          // Don't enable slash commands with this check either in DMs or in guilds.
+          allowsDm: false,
+          requiredPermissions: 0,
         );
 }
