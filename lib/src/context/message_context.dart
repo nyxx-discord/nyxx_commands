@@ -2,7 +2,6 @@ import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands/message_command.dart';
-import '../util/component_wrappers.dart';
 import 'base.dart';
 
 /// A context in which a [MessageCommand] was executed.
@@ -10,7 +9,7 @@ import 'base.dart';
 /// You might also be interested in:
 /// - [IInteractionCommandContext], the base class for all commands executed from an interaction.
 class MessageContext extends ContextBase
-    with InteractionRespondMixin, ComponentWrappersMixin
+    with InteractionRespondMixin
     implements IInteractionCommandContext {
   @override
   final MessageCommand command;

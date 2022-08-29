@@ -83,47 +83,6 @@ abstract class ICommandContext implements ICommandContextData {
   /// You might also be interested in:
   /// - [IInteractionContext.acknowledge], for acknowledging interactions without responding.
   Future<IMessage> respond(MessageBuilder builder, {bool private = false});
-
-  /// Wait for a user to make a selection from a multiselect menu, then return the result of that
-  /// interaction.
-  ///
-  /// If [authorOnly] is `true`, only events triggered by the author of this context will be
-  /// returned, but other interactions will still be acknowledged.
-  ///
-  /// If [timeout] is set, this method will complete with an error after [timeout].
-  Future<IMultiselectInteractionEvent> getSelection(MultiselectBuilder selectionMenu,
-      {bool authorOnly = true, Duration? timeout = const Duration(minutes: 12)});
-
-  /// Wait for a user to press on a button, then return the result of that interaction.
-  ///
-  /// This method specifically listens for interactions on items of [buttons], ignoring other button
-  /// presses.
-  ///
-  /// If [authorOnly] is `true`, only events triggered by the author of this context will be
-  /// returned, but other interactions will still be acknowledged.
-  ///
-  /// If [timeout] is set, this method will complete with an error after [timeout].
-  ///
-  /// You might also be interested in:
-  /// - [getConfirmation], a shortcut for getting user confirmation from buttons.
-  Future<IButtonInteractionEvent> getButtonPress(Iterable<ButtonBuilder> buttons,
-      {bool authorOnly = true, Duration? timeout = const Duration(minutes: 12)});
-
-  /// Send a message prompting a user for confirmation, then return whether the user accepted the
-  /// choice.
-  ///
-  /// If [authorOnly] is `true`, only events triggered by the author of this context will be
-  /// returned, but other interactions will still be acknowledged.
-  ///
-  /// If [timeout] is set, this method will complete with an error after [timeout].
-  ///
-  /// [confirmMessage] and [denyMessage] can be set to change the text displayed on the "confirm"
-  /// and "deny" buttons.
-  Future<bool> getConfirmation(MessageBuilder message,
-      {bool authorOnly = true,
-      Duration? timeout = const Duration(minutes: 12),
-      String confirmMessage = 'Yes',
-      String denyMessage = 'No'});
 }
 
 /// Data about a context which was created by an interaction.

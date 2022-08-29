@@ -2,7 +2,6 @@ import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands/chat_command.dart';
-import '../util/component_wrappers.dart';
 import 'base.dart';
 
 /// Data about a context in which a [ChatCommand] was executed.
@@ -66,7 +65,7 @@ abstract class ChatContext extends ContextBase implements IChatContext {
 /// You might also be interested in:
 /// - [InteractionChatContext], a context in which a [ChatCommand] was executed from an interaction;
 /// - [IChatContext], the base class for all context representing the execution of a [ChatCommand].
-class MessageChatContext extends ChatContext with ComponentWrappersMixin {
+class MessageChatContext extends ChatContext {
   /// The message that triggered this command.
   final IMessage message;
 
@@ -127,7 +126,7 @@ class MessageChatContext extends ChatContext with ComponentWrappersMixin {
 /// - [MessageChatContext], a context in which a [ChatCommand] was executed from a text message;
 /// - [IChatContext], the base class for all context representing the execution of a [ChatCommand].
 class InteractionChatContext extends ChatContext
-    with InteractionRespondMixin, ComponentWrappersMixin
+    with InteractionRespondMixin
     implements IInteractionCommandContext {
   @override
   final ISlashCommandInteraction interaction;
