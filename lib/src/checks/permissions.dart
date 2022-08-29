@@ -30,29 +30,30 @@ class PermissionsCheck extends Check {
   /// You might also be interested in:
   /// - [PermissionsConstants], for computing the value for this field;
   /// - [AbstractCheck.requiredPermissions], for setting permissions on any check.
-  // TODO: Rename to `permissions` once AbstractCheck.permissions is removed
-  final int permissionsValue;
+  final int permissions;
 
   /// Whether this check should allow server administrators to configure overrides that allow
   /// specific users or channels to execute this command regardless of permissions.
   final bool allowsOverrides;
 
   /// Whether this check requires the user invoking the command to have all of the permissions in
-  /// [permissionsValue] or only a single permission from [permissionsValue].
+  /// [permissions] or only a single permission from [permissions].
   ///
   /// If this is true, the member invoking the command must have all the permissions in
-  /// [permissionsValue] to execute the command. Otherwise, members need only have one of the
-  /// permissions in [permissionsValue] to execute the command.
+  /// [permissions] to execute the command. Otherwise, members need only have one of the
+  /// permissions in [permissions] to execute the command.
   final bool requiresAll;
 
   /// Create a new [PermissionsCheck].
   PermissionsCheck(
-    this.permissionsValue, {
+    this.permissions, {
     this.allowsOverrides = true,
     this.requiresAll = false,
     String? name,
-    bool allowsDm = true,
+    super.allowsDm = true,
   }) : super(
+          name: name ?? 'Permissions check on $permissions',
+          requiredPermissions: permissions,
           (context) async {
             IMember? member = context.member;
 
@@ -141,24 +142,21 @@ class PermissionsCheck extends Check {
                 }
               }
 
-              Iterable<bool> prioritised = [def, channelDef, role, channel, user].whereType<bool>();
+              Iterable<bool> prioritized = [def, channelDef, role, channel, user].whereType<bool>();
 
-              if (prioritised.isNotEmpty) {
-                return prioritised.last;
+              if (prioritized.isNotEmpty) {
+                return prioritized.last;
               }
             }
 
-            int corresponding = effectivePermissions.raw & permissionsValue;
+            int corresponding = effectivePermissions.raw & permissions;
 
             if (requiresAll) {
-              return corresponding == permissionsValue;
+              return corresponding == permissions;
             }
 
             return corresponding != 0;
           },
-          name ?? 'Permissions check on $permissionsValue',
-          allowsDm,
-          permissionsValue,
         );
 
   /// Create a [PermissionsCheck] that allows nobody to execute a command, unless configured

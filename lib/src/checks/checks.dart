@@ -16,7 +16,6 @@ import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/nyxx_commands.dart';
-import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands.dart';
 
@@ -53,25 +52,6 @@ abstract class AbstractCheck {
   /// This check's state should not be changed in [check]; instead, developers should use
   /// [preCallHooks] and [postCallHooks] to update the check's state.
   FutureOr<bool> check(ICommandContextData context);
-
-  /// The set of [Discord Slash Command Permissions](https://discord.com/developers/docs/interactions/application-commands#permissions)
-  /// this check represents.
-  ///
-  /// Any [ICommand] (excluding text-only [ChatCommand]s) will have the permissions from all the
-  /// checks on that command applied through the Discord Slash Command API. This can allow users to
-  /// see whether a command is executable from within their Discord client, instead of nyxx_commands
-  /// rejecting the command once received.
-  ///
-  /// A [CommandPermissionBuilderAbstract] with a target ID of `0` will be considered to be the
-  /// default permission for this check.
-  ///
-  /// You might also be interested in:
-  /// - [CommandPermissionBuilderAbstract.role], for creating slash command permissions that apply
-  ///   to a given role;
-  /// - [CommandPermissionBuilderAbstract.user], for creating slash command permissions that apply
-  ///   to a given user.
-  @Deprecated('Use allowsDm and requiredPermissions instead')
-  final Future<Iterable<CommandPermissionBuilderAbstract>> permissions = Future.value([]);
 
   /// Whether this check will allow commands to be executed in DM channels.
   ///
@@ -173,13 +153,12 @@ class Check extends AbstractCheck {
   /// failure respectively. [_check] should not throw to indicate failure.
   ///
   /// [name] can optionally be provided and will be used in error messages to identify this check.
-  // TODO: Use named parameters instead of positional parameters
   Check(
-    this._check, [
+    this._check, {
     String name = 'Check',
     this.allowsDm = true,
     this.requiredPermissions,
-  ]) : super(name);
+  }) : super(name);
 
   /// Creates a check that succeeds if any of [checks] succeeds.
   ///
@@ -228,14 +207,14 @@ class Check extends AbstractCheck {
   /// Note that [AbstractCheck.preCallHooks] and [AbstractCheck.postCallHooks] will therefore be executed if [check]
   /// *fails*, and not when [check] succeeds. Therefore, developers should take care that [check]
   /// does not assume it succeeded in its call hooks.
-  static AbstractCheck deny(AbstractCheck check, [String? name]) => _DenyCheck(check, name);
+  static AbstractCheck deny(AbstractCheck check, {String? name}) => _DenyCheck(check, name: name);
 
   /// Creates a check that succeeds if all of [checks] succeed.
   ///
   /// This can be used to group checks that are commonly used together into a single, reusable
   /// check.
-  static AbstractCheck all(Iterable<AbstractCheck> checks, [String? name]) =>
-      _GroupCheck(checks, name);
+  static AbstractCheck all(Iterable<AbstractCheck> checks, {String? name}) =>
+      _GroupCheck(checks, name: name);
 
   @override
   FutureOr<bool> check(ICommandContextData context) => _check(context);
@@ -250,7 +229,7 @@ class Check extends AbstractCheck {
 class _AnyCheck extends AbstractCheck {
   Iterable<AbstractCheck> checks;
 
-  final Expando<AbstractCheck> _succesfulChecks = Expando();
+  final Expando<AbstractCheck> _successfulChecks = Expando();
 
   _AnyCheck(this.checks, [String? name])
       : super(name ?? 'Any of [${checks.map((e) => e.name).join(', ')}]') {
@@ -265,10 +244,10 @@ class _AnyCheck extends AbstractCheck {
       FutureOr<bool> result = check.check(context);
 
       if (result is bool && result) {
-        _succesfulChecks[context] = check;
+        _successfulChecks[context] = check;
         return true;
       } else if (await result) {
-        _succesfulChecks[context] = check;
+        _successfulChecks[context] = check;
         return true;
       }
     }
@@ -278,7 +257,7 @@ class _AnyCheck extends AbstractCheck {
   @override
   Iterable<void Function(ICommandContextData)> get preCallHooks => [
         (context) {
-          AbstractCheck? actualCheck = _succesfulChecks[context];
+          AbstractCheck? actualCheck = _successfulChecks[context];
 
           if (actualCheck == null) {
             logger.warning("Context $context shouldn't have passed checks; actualCheck is null");
@@ -294,7 +273,7 @@ class _AnyCheck extends AbstractCheck {
   @override
   Iterable<void Function(ICommandContextData)> get postCallHooks => [
         (context) {
-          AbstractCheck? actualCheck = _succesfulChecks[context];
+          AbstractCheck? actualCheck = _successfulChecks[context];
 
           if (actualCheck == null) {
             logger.warning("Context $context shouldn't have passed checks; actualCheck is null");
@@ -339,8 +318,11 @@ class _AnyCheck extends AbstractCheck {
 class _DenyCheck extends Check {
   final AbstractCheck source;
 
-  _DenyCheck(this.source, [String? name])
-      : super((context) async => !(await source.check(context)), name ?? 'Denied ${source.name}');
+  _DenyCheck(this.source, {String? name})
+      : super(
+          name: name ?? 'Denied ${source.name}',
+          (context) async => !(await source.check(context)),
+        );
 
   // It may seem counterintuitive to call the success hooks if the source check failed, and this is
   // a situation where there is no proper solution. Here, we assume that the source check will
@@ -369,15 +351,19 @@ class _DenyCheck extends Check {
 class _GroupCheck extends Check {
   final Iterable<AbstractCheck> checks;
 
-  _GroupCheck(this.checks, [String? name])
-      : super((context) async {
-          Iterable<FutureOr<bool>> results = checks.map((e) => e.check(context));
+  _GroupCheck(this.checks, {String? name})
+      : super(
+          name: name ?? 'All of [${checks.map((e) => e.name).join(', ')}]',
+          (context) async {
+            Iterable<FutureOr<bool>> results = checks.map((e) => e.check(context));
 
-          Iterable<Future<bool>> asyncResults = results.whereType<Future<bool>>();
-          Iterable<bool> syncResults = results.whereType<bool>();
+            Iterable<Future<bool>> asyncResults = results.whereType<Future<bool>>();
+            Iterable<bool> syncResults = results.whereType<bool>();
 
-          return !syncResults.contains(false) && !(await Future.wait(asyncResults)).contains(false);
-        }, name ?? 'All of [${checks.map((e) => e.name).join(', ')}]');
+            return !syncResults.contains(false) &&
+                !(await Future.wait(asyncResults)).contains(false);
+          },
+        );
 
   @override
   Iterable<void Function(ICommandContextData)> get preCallHooks =>

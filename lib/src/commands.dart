@@ -16,7 +16,6 @@ import 'dart:async';
 
 import 'package:logging/logging.dart';
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/context/context_manager.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import 'checks/checks.dart';
@@ -28,6 +27,7 @@ import 'commands/user_command.dart';
 import 'context/autocomplete_context.dart';
 import 'context/base.dart';
 import 'context/chat_context.dart';
+import 'context/context_manager.dart';
 import 'converters/converter.dart';
 import 'errors.dart';
 import 'mirror_utils/mirror_utils.dart';
@@ -41,7 +41,7 @@ final Logger logger = Logger('Commands');
 ///
 /// Since nyxx 3.0.0, classes can extend [BasePlugin] and be registered as plugins to an existing
 /// nyxx client by calling [INyxx.registerPlugin]. nyxx_commands uses that interface, which avoids
-/// the need for a seperate wrapper class.
+/// the need for a separate wrapper class.
 ///
 /// Commands can be added to nyxx_commands with the [addCommand] method. Once you've added the
 /// [CommandsPlugin] to your nyxx client, these commands will automatically become available once
@@ -94,7 +94,6 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
   /// You might also be interested in:
   /// - [dmOr], which allows for commands in private messages to omit the prefix;
   /// - [mentionOr], which allows for commands to be executed with the client's mention (ping).
-  // TODO: Make the default command type be `slashOnly` if prefix is not specified.
   final FutureOr<Pattern> Function(IMessage)? prefix;
 
   final StreamController<CommandsException> _onCommandErrorController =
@@ -114,7 +113,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
   /// Exceptions thrown from within a command will be wrapped in an [UncaughtException], allowing
   /// you to access the context in which a command was thrown.
   ///
-  /// By default, nyxx_commands logs all exceptions added to this stream. This behaviour can be
+  /// By default, nyxx_commands logs all exceptions added to this stream. This behavior can be
   /// changed in [options].
   ///
   /// You might also be interested in:

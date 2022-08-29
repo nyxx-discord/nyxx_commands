@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/context/base.dart';
 
+import '../context/base.dart';
 import 'checks.dart';
 
 /// An enum that represents the different ways to sort contexts into buckets.
 ///
-/// Coolown types can be combined with the binary OR operator (`|`). For details on how this affects
+/// Cooldown types can be combined with the binary OR operator (`|`). For details on how this affects
 /// how contexts are sorted into buckets, see [CooldownCheck.getKey].
 ///
 /// You might also be interested in:
@@ -45,7 +45,7 @@ class CooldownType extends IEnum<int> {
 
   /// Create a new [CooldownType].
   ///
-  /// Using a [value] other than the predefined ones will not result in any new behaviour, so using
+  /// Using a [value] other than the predefined ones will not result in any new behavior, so using
   /// this constructor is discouraged.
   const CooldownType(int value) : super(value);
 
@@ -156,7 +156,7 @@ class CooldownCheck extends AbstractCheck {
   ///
   /// [tokensPer] is optional and defaults to one, meaning a bucket can execute one before it is
   /// considered "on cooldown" for a given bucket.
-  CooldownCheck(this.type, this.duration, [this.tokensPer = 1, String? name])
+  CooldownCheck(this.type, this.duration, {this.tokensPer = 1, String? name})
       : super(name ?? 'Cooldown Check on $type');
 
   /// The number of times a bucket can execute commands before this check fails.

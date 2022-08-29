@@ -29,7 +29,7 @@ class TypeBuilderVisitor extends EntireAstVisitor {
   void visitClassDeclaration(ClassDeclaration node) {
     types.add(node.declaredElement!.thisType);
 
-    logger.finest('Found class delcaration ${node.name}');
+    logger.finest('Found class declaration ${node.name}');
 
     super.visitClassDeclaration(node);
   }

@@ -179,7 +179,7 @@ Iterable<CompileTimeFunctionData> getFunctionData(
   return result;
 }
 
-/// Extract the object referenced or creatted by an annotation.
+/// Extract the object referenced or created by an annotation.
 DartObject getAnnotationData(ElementAnnotation annotation) {
   DartObject? result;
   if (annotation.element is ConstructorElement) {

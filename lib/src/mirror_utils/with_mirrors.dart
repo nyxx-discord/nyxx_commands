@@ -133,6 +133,6 @@ void loadData(
   Map<dynamic, FunctionData> functionData,
 ) {
   if (const bool.fromEnvironment('dart.library.mirrors')) {
-    logger.info('Loading compiled function data when `dart:mirrors` is availible is unneeded');
+    logger.info('Loading compiled function data when `dart:mirrors` is available is unneeded');
   }
 }

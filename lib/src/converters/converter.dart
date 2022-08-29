@@ -68,7 +68,7 @@ class Converter<T> {
 
   /// The choices for this type.
   ///
-  /// Choices will be the only options choosable in Slash Commands, however text commands might
+  /// Choices will be the only options selectable in Slash Commands, however text commands might
   /// still pass any content to this converter.
   final Iterable<ArgChoiceBuilder>? choices;
 
@@ -122,9 +122,9 @@ class Converter<T> {
 /// transform a [Snowflake] into a [IMember].
 ///
 /// You might also be interested in:
-/// - [FallbackConverter], a converter that tries multiple converters succesively.
+/// - [FallbackConverter], a converter that tries multiple converters successively.
 class CombineConverter<R, T> implements Converter<T> {
-  /// The converter used to parse the original input to the intermidate type.
+  /// The converter used to parse the original input to the intermediate type.
   final Converter<R> converter;
 
   /// The function that transforms the intermediate type into the output type.
@@ -303,7 +303,7 @@ String? convertString(StringView view, IChatContextData context) => view.getQuot
 
 /// A [Converter] that converts input to a [String].
 ///
-/// This converter returns the next space-seperated word in the input, or, if the next word in the
+/// This converter returns the next space-separated word in the input, or, if the next word in the
 /// input is quoted, the next quoted section of the input.
 ///
 /// This converter has a Discord Slash Command Argument Type of [CommandOptionType.string].
@@ -425,8 +425,8 @@ bool? convertBool(StringView view, IChatContextData context) {
 ///
 /// This converter will parse the input to `true` if the next word or quoted section of the input is
 /// one of `y`, `yes`, `+`, `1` or `true`. This comparison is case-insensitive.
-/// This converter will parse the input to `false` if the next work or quotetd section of the input
-/// is one of `n`, `no`, `-`, `0` or `false`. This comparison is case-insentive.
+/// This converter will parse the input to `false` if the next work or quoted section of the input
+/// is one of `n`, `no`, `-`, `0` or `false`. This comparison is case-insensitive.
 ///
 /// If the input is not one of the aforementioned words, this converter will fail.
 ///

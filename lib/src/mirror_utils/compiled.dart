@@ -30,9 +30,9 @@ bool isAssignableTo(Type instance, Type target) {
   int? targetId = _typeMappings?[target];
 
   if (instanceId == null) {
-    throw CommandsException('Couldnt find type data for type $instance');
+    throw CommandsException("Couldn't find type data for type $instance");
   } else if (targetId == null) {
-    throw CommandsException('Couldnt find type data for type $target');
+    throw CommandsException("Couldn't find type data for type $target");
   }
 
   return _isAAssignableToB(instanceId, targetId, _typeTree!);
