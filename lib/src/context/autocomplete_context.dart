@@ -1,11 +1,10 @@
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands/chat_command.dart';
-import '../context/chat_context.dart';
 import 'base.dart';
 
 /// Represents a context in which an autocomplete event was triggered.
-class AutocompleteContext extends ContextBase implements IInteractionContextData, IChatContextData {
+class AutocompleteContext extends ContextBase implements IInteractionContextData {
   @override
   final ISlashCommandInteraction interaction;
 
@@ -42,7 +41,6 @@ class AutocompleteContext extends ContextBase implements IInteractionContextData
   /// The values might contain partial data.
   late final Map<String, String?> arguments;
 
-  @override
   final ChatCommand command;
 
   AutocompleteContext({

@@ -616,7 +616,7 @@ enum Dimension {
 // ---------- Global functions ---------- //
 // -------------------------------------- //
 
-String? filterInput(String input, IChatContextData context) {
+String? filterInput(String input, IContextData context) {
   if (input.isNotEmpty) {
     return input;
   }
