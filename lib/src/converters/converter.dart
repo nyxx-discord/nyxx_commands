@@ -932,7 +932,7 @@ const Converter<IAttachment> attachmentConverter = FallbackConverter(
 /// - [ICommand.invoke], which parses multiple arguments and executes a command.
 Future<dynamic> parse(
   CommandsPlugin commands,
-  IChatContext context,
+  ICommandContext context,
   StringView toParse,
   Type expectedType, {
   Converter<dynamic>? converterOverride,

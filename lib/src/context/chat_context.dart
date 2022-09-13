@@ -1,4 +1,5 @@
 import 'package:nyxx/nyxx.dart';
+import 'package:nyxx_commands/src/util/mixins.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands/chat_command.dart';
@@ -42,7 +43,7 @@ abstract class IChatContext implements IChatContextData, ICommandContext {
   set arguments(List<dynamic> value);
 }
 
-abstract class ChatContext extends ContextBase implements IChatContext {
+abstract class ChatContext extends ContextBase with InteractiveMixin implements IChatContext {
   @override
   late final List<dynamic> arguments;
 

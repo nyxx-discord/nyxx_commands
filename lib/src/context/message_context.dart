@@ -1,4 +1,5 @@
 import 'package:nyxx/nyxx.dart';
+import 'package:nyxx_commands/src/util/mixins.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands/message_command.dart';
@@ -9,7 +10,7 @@ import 'base.dart';
 /// You might also be interested in:
 /// - [IInteractionCommandContext], the base class for all commands executed from an interaction.
 class MessageContext extends ContextBase
-    with InteractionRespondMixin
+    with InteractionRespondMixin, InteractiveMixin
     implements IInteractionCommandContext {
   @override
   final MessageCommand command;

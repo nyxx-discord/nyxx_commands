@@ -1,4 +1,6 @@
 import 'package:nyxx/nyxx.dart';
+import 'package:nyxx_commands/src/context/component_context.dart';
+import 'package:nyxx_commands/src/converters/converter.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands.dart';
@@ -64,16 +66,7 @@ abstract class ICommandContextData implements IContextData {
   ICommand<ICommandContext> get command;
 }
 
-/// A context in which a command was executed.
-///
-/// Contains data about how and where the command was executed, and provides a simple interfaces for
-/// responding to commands.
-///
-/// You might also be interested in:
-/// - [ICommandContextData], which exposes the data found in this context;
-/// - [IInteractionCommandContext], a context in which a command was executed from an interaction;
-/// - [MessageChatContext], a context in which a command was executed from a text message.
-abstract class ICommandContext implements ICommandContextData {
+abstract class IInteractiveContext {
   /// Send a response to the command.
   ///
   /// If [private] is set to `true`, then the response will only be made visible to the user that
@@ -83,7 +76,53 @@ abstract class ICommandContext implements ICommandContextData {
   /// You might also be interested in:
   /// - [IInteractionContext.acknowledge], for acknowledging interactions without responding.
   Future<IMessage> respond(MessageBuilder builder, {bool private = false});
+
+  Future<ButtonComponentContext> getButtonPress(
+    String componentId, {
+    Duration? timeout = const Duration(minutes: 10),
+    bool authorOnly = true,
+  });
+
+  Future<MultiselectComponentContext<T>> getSelection<T>(
+    String componentId, {
+    Duration? timeout = const Duration(minutes: 10),
+    bool authorOnly = true,
+    Converter<T>? converterOverride,
+  });
+
+  Future<MultiselectComponentContext<List<T>>> getMultiSelection<T>(
+    String componentId, {
+    Duration? timeout = const Duration(minutes: 10),
+    bool authorOnly = true,
+    Converter<T>? converterOverride,
+  });
 }
+
+abstract class IInteractionInteractiveContext implements IInteractiveContext {
+  @override
+  Future<IMessage> respond(MessageBuilder builder, {bool private = false, bool? hidden});
+
+  /// Acknowledge the underlying interaction without yet sending a response.
+  ///
+  /// While the `hidden` and `private` arguments are guaranteed to hide/show the resulting response,
+  /// slow commands might sometimes show strange behavior in their responses. Acknowledging the
+  /// interaction early with the correct value for [hidden] can prevent this behavior.
+  ///
+  /// You might also be interested in:
+  /// - [respond], for sending a full response.
+  Future<void> acknowledge({bool? hidden});
+}
+
+/// A context in which a command was executed.
+///
+/// Contains data about how and where the command was executed, and provides a simple interfaces for
+/// responding to commands.
+///
+/// You might also be interested in:
+/// - [ICommandContextData], which exposes the data found in this context;
+/// - [IInteractionCommandContext], a context in which a command was executed from an interaction;
+/// - [MessageChatContext], a context in which a command was executed from a text message.
+abstract class ICommandContext implements ICommandContextData, IInteractiveContext {}
 
 /// Data about a context which was created by an interaction.
 ///
@@ -121,24 +160,14 @@ abstract class IInteractionCommandContextData implements IInteractionContextData
 /// - [IInteractionCommandContextData], which exposes the data found in this context,
 /// - [ICommandContext], the base class for all contexts representing a command execution.
 abstract class IInteractionCommandContext
-    implements IInteractionCommandContextData, ICommandContext {
-  @override
-  Future<IMessage> respond(MessageBuilder builder, {bool private = false, bool? hidden});
+    implements IInteractionCommandContextData, ICommandContext, IInteractionInteractiveContext {}
 
-  /// Acknowledge the underlying interaction without yet sending a response.
-  ///
-  /// While the `hidden` and `private` arguments are guaranteed to hide/show the resulting response,
-  /// slow commands might sometimes show strange behavior in their responses. Acknowledging the
-  /// interaction early with the correct value for [hidden] can prevent this behavior.
-  ///
-  /// You might also be interested in:
-  /// - [respond], for sending a full response.
-  Future<void> acknowledge({bool? hidden});
-}
-
-mixin InteractionRespondMixin implements IInteractionCommandContext, IInteractionContextData {
+mixin InteractionRespondMixin implements IInteractionInteractiveContext, IInteractionContextData {
   bool _hasCorrectlyAcked = false;
   late bool _originalAckHidden = commands.options.hideOriginalResponse;
+
+  @override
+  IInteractionEventWithAcknowledge get interactionEvent;
 
   @override
   Future<IMessage> respond(MessageBuilder builder, {bool private = false, bool? hidden}) async {
