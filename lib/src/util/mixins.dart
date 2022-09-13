@@ -92,10 +92,14 @@ mixin OptionsMixin<T extends ICommandContext> on ICommandRegisterable<T> impleme
 
 mixin InteractiveMixin implements IInteractiveContext, IContextData {
   @override
-  InteractiveMixin? parent;
+  IInteractiveContext? get parent => _parent;
+
+  // Must narrow type to use [_nearestCommandContext].
+  InteractiveMixin? _parent;
 
   @override
-  IInteractiveContext? delegate;
+  IInteractiveContext? get delegate => _delegate;
+  IInteractiveContext? _delegate;
 
   ICommandContext get _nearestCommandContext {
     if (parent is ICommandContext) {
@@ -103,10 +107,15 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     }
 
     if (parent == null) {
-      throw CommandsError('Unreachable (context has no parent, but requested access to it)');
+      // This generally happens when a context is created directly from the plugin's context manager
+      // and not from an existing context inside a command, which messes with functionality like
+      // parsing which requires an ICommandContext to invoke converters.
+      throw CommandsError(
+        'Cannot use command functionality in a context created outside of a command',
+      );
     }
 
-    return parent!._nearestCommandContext;
+    return _parent!._nearestCommandContext;
   }
 
   Future<T> _getInteractionEvent<T extends IComponentInteractionEvent>(
@@ -153,8 +162,8 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
       authorOnly: authorOnly,
     ));
 
-    context.parent = this;
-    delegate = context;
+    context._parent = this;
+    _delegate = context;
 
     return context;
   }
@@ -194,8 +203,8 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
       await parse(commands, _nearestCommandContext, StringView(rawContext.selected), T) as T,
     );
 
-    context.parent = this;
-    delegate = context;
+    context._parent = this;
+    _delegate = context;
 
     return context;
   }
@@ -243,8 +252,8 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
       values,
     );
 
-    context.parent = this;
-    delegate = context;
+    context._parent = this;
+    _delegate = context;
 
     return context;
   }
