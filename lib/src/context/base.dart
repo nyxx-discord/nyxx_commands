@@ -67,6 +67,9 @@ abstract class ICommandContextData implements IContextData {
 }
 
 abstract class IInteractiveContext {
+  IInteractiveContext? get parent;
+  IInteractiveContext? get delegate;
+
   /// Send a response to the command.
   ///
   /// If [private] is set to `true`, then the response will only be made visible to the user that

@@ -91,6 +91,24 @@ mixin OptionsMixin<T extends ICommandContext> on ICommandRegisterable<T> impleme
 }
 
 mixin InteractiveMixin implements IInteractiveContext, IContextData {
+  @override
+  InteractiveMixin? parent;
+
+  @override
+  IInteractiveContext? delegate;
+
+  ICommandContext get _nearestCommandContext {
+    if (parent is ICommandContext) {
+      return parent as ICommandContext;
+    }
+
+    if (parent == null) {
+      throw CommandsError('Unreachable (context has no parent, but requested access to it)');
+    }
+
+    return parent!._nearestCommandContext;
+  }
+
   Future<T> _getInteractionEvent<T extends IComponentInteractionEvent>(
     Stream<T> stream, {
     required String componentId,
@@ -122,13 +140,24 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     String componentId, {
     Duration? timeout = const Duration(minutes: 10),
     bool authorOnly = true,
-  }) async =>
-      commands.contextManager.createButtonComponentContext(await _getInteractionEvent(
-        commands.interactions.events.onButtonEvent,
-        componentId: componentId,
-        timeout: timeout,
-        authorOnly: authorOnly,
-      ));
+  }) async {
+    if (delegate != null) {
+      return delegate!.getButtonPress(componentId, timeout: timeout, authorOnly: authorOnly);
+    }
+
+    ButtonComponentContext context =
+        await commands.contextManager.createButtonComponentContext(await _getInteractionEvent(
+      commands.interactions.events.onButtonEvent,
+      componentId: componentId,
+      timeout: timeout,
+      authorOnly: authorOnly,
+    ));
+
+    context.parent = this;
+    delegate = context;
+
+    return context;
+  }
 
   @override
   Future<MultiselectComponentContext<T>> getSelection<T>(
@@ -137,6 +166,15 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     bool authorOnly = true,
     Converter<T>? converterOverride,
   }) async {
+    if (delegate != null) {
+      return delegate!.getSelection(
+        componentId,
+        timeout: timeout,
+        authorOnly: authorOnly,
+        converterOverride: converterOverride,
+      );
+    }
+
     IMultiselectInteractionEvent event = await _getInteractionEvent(
       commands.interactions.events.onMultiselectEvent,
       componentId: componentId,
@@ -150,12 +188,16 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
       event.interaction.values.single,
     );
 
-    return commands.contextManager.createMultiselectComponentContext(
+    MultiselectComponentContext<T> context =
+        await commands.contextManager.createMultiselectComponentContext(
       event,
-      // This isn't correct, rawContext will never be an ICommandContext.
-      // TODO: Traverse tree to find nearest ICommandContext.
-      await parse(commands, rawContext as ICommandContext, StringView(rawContext.selected), T) as T,
+      await parse(commands, _nearestCommandContext, StringView(rawContext.selected), T) as T,
     );
+
+    context.parent = this;
+    delegate = context;
+
+    return context;
   }
 
   @override
@@ -165,6 +207,15 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     bool authorOnly = true,
     Converter<T>? converterOverride,
   }) async {
+    if (delegate != null) {
+      return delegate!.getMultiSelection(
+        componentId,
+        authorOnly: authorOnly,
+        converterOverride: converterOverride,
+        timeout: timeout,
+      );
+    }
+
     IMultiselectInteractionEvent event = await _getInteractionEvent(
       commands.interactions.events.onMultiselectEvent,
       componentId: componentId,
@@ -183,15 +234,18 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
 
     List<T> values = await Future.wait(rawContexts.map(
       (rawContext) =>
-          // This isn't correct, rawContext will never be an ICommandContext.
-          // TODO: Traverse tree to find nearest ICommandContext.
-          parse(commands, rawContext as ICommandContext, StringView(rawContext.selected), T)
-              as Future<T>,
+          parse(commands, _nearestCommandContext, StringView(rawContext.selected), T) as Future<T>,
     ));
 
-    return commands.contextManager.createMultiselectComponentContext(
+    MultiselectComponentContext<List<T>> context =
+        await commands.contextManager.createMultiselectComponentContext(
       event,
       values,
     );
+
+    context.parent = this;
+    delegate = context;
+
+    return context;
   }
 }
