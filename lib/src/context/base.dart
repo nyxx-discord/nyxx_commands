@@ -66,8 +66,32 @@ abstract class ICommandContextData implements IContextData {
   ICommand<ICommandContext> get command;
 }
 
+/// A context that can be interacted with.
+///
+/// You might also be interested in:
+/// - [IInteractionInteractiveContext], for contexts that originate from an interaction.
 abstract class IInteractiveContext {
+  /// The parent of this context.
+  ///
+  /// If this context was created by an operation on another context, this will be that context.
+  /// Otherwise, this is `null`.
+  ///
+  /// You might also be interested in:
+  /// - [getButtonPress], [getSelection] and [getMultiSelection], some of the methods that can
+  ///   create a child context;
+  /// - [delegate], the context that has this context as its parent.
   IInteractiveContext? get parent;
+
+  /// The delegate of this context.
+  ///
+  /// If this is set, most operations on this context will be forwarded to this context instead.
+  /// This prevents contexts from going stale when waiting for a user to interact and makes the
+  /// command flow more accurate in the Discord UI.
+  ///
+  /// You might also be interested in:
+  /// - [getButtonPress], [getSelection] and [getMultiSelection], some of the methods that can
+  ///   create a context to delegate to.
+  /// - [parent], the context of which this context is the delegate.
   IInteractiveContext? get delegate;
 
   /// Send a response to the command.
@@ -80,12 +104,31 @@ abstract class IInteractiveContext {
   /// - [IInteractionContext.acknowledge], for acknowledging interactions without responding.
   Future<IMessage> respond(MessageBuilder builder, {bool private = false});
 
+  /// Wait for a user to press a button and return a context representing that button press.
+  ///
+  /// If [timeout] is set, this method will complete with an error after [timeout] has passed.
+  ///
+  /// If [authorOnly] is set, only the author of this interaction will be able to interact with the
+  /// button.
+  ///
+  /// You might also be interested in:
+  /// - [getSelection] and [getMultiSelection], for getting a selection from a user.
   Future<ButtonComponentContext> getButtonPress(
     String componentId, {
     Duration? timeout = const Duration(minutes: 10),
     bool authorOnly = true,
   });
 
+  /// Wait for a user to select a single option from a multi-select menu and return a context
+  /// representing that selection.
+  ///
+  /// If [timeout] is set, this method will complete with an error after [timeout] has passed.
+  ///
+  /// If [authorOnly] is set, only the author of this interaction will be able to interact with the
+  /// selection menu.
+  ///
+  /// Will throw a [StateError] if more than one option is selected (for example, from a
+  /// multi-select menu allowing more than one choice).
   Future<MultiselectComponentContext<T>> getSelection<T>(
     String componentId, {
     Duration? timeout = const Duration(minutes: 10),
@@ -93,6 +136,13 @@ abstract class IInteractiveContext {
     Converter<T>? converterOverride,
   });
 
+  /// Wait for a user to select options from a multi-select menu and return a context
+  /// representing that selection.
+  ///
+  /// If [timeout] is set, this method will complete with an error after [timeout] has passed.
+  ///
+  /// If [authorOnly] is set, only the author of this interaction will be able to interact with the
+  /// selection menu.
   Future<MultiselectComponentContext<List<T>>> getMultiSelection<T>(
     String componentId, {
     Duration? timeout = const Duration(minutes: 10),
@@ -101,6 +151,10 @@ abstract class IInteractiveContext {
   });
 }
 
+/// A context that can be interacted with and originated from an interaction.
+///
+/// You might also be interested in:
+/// - [IInteractionContextData], which contains data about interactions.
 abstract class IInteractionInteractiveContext implements IInteractiveContext {
   @override
   Future<IMessage> respond(MessageBuilder builder, {bool private = false, bool? hidden});

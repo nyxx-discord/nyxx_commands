@@ -2,6 +2,10 @@ import 'package:nyxx_commands/src/context/base.dart';
 import 'package:nyxx_commands/src/util/mixins.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
+/// Data about a context in which a component was interacted with.
+///
+/// You might also be interested in:
+/// - [IComponentContext], which exposes the functionality for interacting with this context.
 abstract class IComponentContextData implements IInteractionContextData {
   @override
   IComponentInteractionEvent get interactionEvent;
@@ -9,11 +13,23 @@ abstract class IComponentContextData implements IInteractionContextData {
   @override
   IComponentInteraction get interaction;
 
+  /// The ID of the component that was interacted with.
   String get componentId;
 }
 
+/// A context in which a component was interacted with.
+///
+/// Contains data about which component was interacted with and exposes functionality to respond to
+/// that interaction.
+///
+/// You might also be interested in:
+/// - [IComponentContextData], which exposes the data found in this context.
 abstract class IComponentContext implements IComponentContextData, IInteractionInteractiveContext {}
 
+/// A context in which a button component was interacted with.
+///
+/// You might also be interested in:
+/// - [IComponentContext], the base class for all component contexts.
 class ButtonComponentContext extends ContextBase
     with InteractionRespondMixin, InteractiveMixin
     implements IComponentContext {
@@ -26,6 +42,7 @@ class ButtonComponentContext extends ContextBase
   @override
   String get componentId => interaction.customId;
 
+  /// Create a new [ButtonComponentContext].
   ButtonComponentContext({
     required super.user,
     required super.member,
@@ -38,6 +55,10 @@ class ButtonComponentContext extends ContextBase
   });
 }
 
+/// A context in which a multi-select component was interacted with.
+///
+/// You might also be interested in:
+/// - [IComponentContext], the base class for all component contexts.
 class MultiselectComponentContext<T> extends ContextBase
     with InteractionRespondMixin, InteractiveMixin
     implements IComponentContext {
@@ -50,8 +71,12 @@ class MultiselectComponentContext<T> extends ContextBase
   @override
   String get componentId => interaction.customId;
 
+  /// The item selected by the user.
+  ///
+  /// Will be a [List] if multiple items were selected.
   final T selected;
 
+  /// Create a new [MultiselectComponentContext].
   MultiselectComponentContext({
     required super.user,
     required super.member,
