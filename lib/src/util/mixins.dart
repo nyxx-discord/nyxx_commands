@@ -258,3 +258,79 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     return context;
   }
 }
+
+mixin InteractionRespondMixin
+    implements IInteractionInteractiveContext, IInteractionContextData, InteractiveMixin {
+  bool _hasCorrectlyAcked = false;
+  late bool _originalAckHidden = commands.options.hideOriginalResponse;
+
+  @override
+  IInteractionEventWithAcknowledge get interactionEvent;
+
+  @override
+  Future<IMessage> respond(MessageBuilder builder, {bool private = false, bool? hidden}) async {
+    if (_delegate != null) {
+      // TODO: Forward [hidden]
+      return _delegate!.respond(builder, private: private);
+    }
+
+    hidden ??= private;
+
+    if (_hasCorrectlyAcked) {
+      return interactionEvent.sendFollowup(builder, hidden: hidden);
+    } else {
+      _hasCorrectlyAcked = true;
+      try {
+        await interactionEvent.acknowledge(hidden: hidden);
+      } on AlreadyRespondedError {
+        // interaction was already ACKed by timeout or [acknowledge], hidden state of ACK might not
+        // be what we expect
+        if (_originalAckHidden != hidden) {
+          await interactionEvent
+              .sendFollowup(MessageBuilder.content(MessageBuilder.clearCharacter));
+          if (!_originalAckHidden) {
+            // If original response was hidden, we can't delete it
+            await interactionEvent.deleteOriginalResponse();
+          }
+        }
+      }
+      return interactionEvent.sendFollowup(builder, hidden: hidden);
+    }
+  }
+
+  @override
+  Future<void> acknowledge({bool? hidden}) async {
+    await interactionEvent.acknowledge(hidden: hidden ?? commands.options.hideOriginalResponse);
+    _originalAckHidden = hidden ?? commands.options.hideOriginalResponse;
+  }
+}
+
+mixin MessageRespondMixin implements InteractiveMixin {
+  IMessage get message;
+
+  @override
+  Future<IMessage> respond(
+    MessageBuilder builder, {
+    bool private = false,
+    bool mention = true,
+  }) async {
+    if (_delegate != null) {
+      // TODO: Forward [mention]
+      return _delegate!.respond(builder, private: private);
+    }
+
+    if (private) {
+      return user.sendMessage(builder);
+    } else {
+      return await channel.sendMessage(builder
+        ..replyBuilder = ReplyBuilder.fromMessage(message)
+        ..allowedMentions ??= (AllowedMentions()
+          ..allow(
+            reply: mention,
+            everyone: true,
+            roles: true,
+            users: true,
+          )));
+    }
+  }
+}
