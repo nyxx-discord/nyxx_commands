@@ -279,9 +279,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
 
         Timer(timeout, () async {
           try {
-            await context.interactionEvent.acknowledge(
-              hidden: context.command.resolvedOptions.hideOriginalResponse!,
-            );
+            await context.acknowledge();
           } on AlreadyRespondedError {
             // ignore: command has responded itself
           }

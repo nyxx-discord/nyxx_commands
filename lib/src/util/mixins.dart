@@ -84,7 +84,7 @@ mixin OptionsMixin<T extends ICommandContext> on ICommandRegisterable<T> impleme
           options.autoAcknowledgeInteractions ?? parentOptions.autoAcknowledgeInteractions,
       acceptBotCommands: options.acceptBotCommands ?? parentOptions.acceptBotCommands,
       acceptSelfCommands: options.acceptSelfCommands ?? parentOptions.acceptSelfCommands,
-      hideOriginalResponse: options.hideOriginalResponse ?? parentOptions.hideOriginalResponse,
+      defaultResponseLevel: options.defaultResponseLevel ?? parentOptions.defaultResponseLevel,
       type: options.type ?? parentType,
     );
   }
@@ -261,47 +261,48 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
 
 mixin InteractionRespondMixin
     implements IInteractionInteractiveContext, IInteractionContextData, InteractiveMixin {
-  bool _hasCorrectlyAcked = false;
-  late bool _originalAckHidden = commands.options.hideOriginalResponse;
-
   @override
   IInteractionEventWithAcknowledge get interactionEvent;
 
+  ResponseLevel? _responseLevel;
+  bool _hasResponded = false;
+
   @override
-  Future<IMessage> respond(MessageBuilder builder, {bool private = false, bool? hidden}) async {
+  Future<IMessage> respond(MessageBuilder builder, {ResponseLevel? level}) async {
     if (_delegate != null) {
-      // TODO: Forward [hidden]
-      return _delegate!.respond(builder, private: private);
+      return _delegate!.respond(builder, level: level);
     }
 
-    hidden ??= private;
+    level ??= _nearestCommandContext.command.resolvedOptions.defaultResponseLevel!;
 
-    if (_hasCorrectlyAcked) {
-      return interactionEvent.sendFollowup(builder, hidden: hidden);
-    } else {
-      _hasCorrectlyAcked = true;
-      try {
-        await interactionEvent.acknowledge(hidden: hidden);
-      } on AlreadyRespondedError {
-        // interaction was already ACKed by timeout or [acknowledge], hidden state of ACK might not
-        // be what we expect
-        if (_originalAckHidden != hidden) {
-          await interactionEvent
-              .sendFollowup(MessageBuilder.content(MessageBuilder.clearCharacter));
-          if (!_originalAckHidden) {
-            // If original response was hidden, we can't delete it
-            await interactionEvent.deleteOriginalResponse();
-          }
-        }
-      }
-      return interactionEvent.sendFollowup(builder, hidden: hidden);
+    if (_hasResponded) {
+      // We've already responded, just send a followup.
+      return interactionEvent.sendFollowup(builder, hidden: level.hideInteraction);
     }
+
+    _hasResponded = true;
+
+    if (_responseLevel != null && !_responseLevel!.hideInteraction != level.hideInteraction) {
+      // We acknowledged the interaction but our original acknowledgement doesn't correspond to
+      // what's being requested here.
+      // It's a bit ugly, but send an empty response and delete it to match [level].
+
+      await interactionEvent.respond(MessageBuilder.content(MessageBuilder.clearCharacter));
+      await interactionEvent.deleteOriginalResponse();
+
+      return interactionEvent.sendFollowup(builder, hidden: level.hideInteraction);
+    }
+
+    // If we haven't already, just respond and re-fetch the original response to return it.
+
+    await interactionEvent.respond(builder, hidden: level.hideInteraction);
+    return interactionEvent.getOriginalResponse();
   }
 
   @override
-  Future<void> acknowledge({bool? hidden}) async {
-    await interactionEvent.acknowledge(hidden: hidden ?? commands.options.hideOriginalResponse);
-    _originalAckHidden = hidden ?? commands.options.hideOriginalResponse;
+  Future<void> acknowledge({ResponseLevel? level}) async {
+    _responseLevel = level ??= _nearestCommandContext.command.resolvedOptions.defaultResponseLevel!;
+    await interactionEvent.acknowledge(hidden: level.hideInteraction);
   }
 }
 
@@ -309,28 +310,24 @@ mixin MessageRespondMixin implements InteractiveMixin {
   IMessage get message;
 
   @override
-  Future<IMessage> respond(
-    MessageBuilder builder, {
-    bool private = false,
-    bool mention = true,
-  }) async {
+  Future<IMessage> respond(MessageBuilder builder, {ResponseLevel? level}) async {
     if (_delegate != null) {
-      // TODO: Forward [mention]
-      return _delegate!.respond(builder, private: private);
+      return _delegate!.respond(builder, level: level);
     }
 
-    if (private) {
+    level ??= _nearestCommandContext.command.resolvedOptions.defaultResponseLevel!;
+
+    if (level.isDm) {
       return user.sendMessage(builder);
-    } else {
-      return await channel.sendMessage(builder
-        ..replyBuilder = ReplyBuilder.fromMessage(message)
-        ..allowedMentions ??= (AllowedMentions()
-          ..allow(
-            reply: mention,
-            everyone: true,
-            roles: true,
-            users: true,
-          )));
     }
+
+    if (builder.replyBuilder == null) {
+      builder.replyBuilder = ReplyBuilder.fromMessage(message);
+
+      builder.allowedMentions ??= client.options.allowedMentions ?? AllowedMentions();
+      builder.allowedMentions!.allow(reply: level.mention);
+    }
+
+    return channel.sendMessage(builder);
   }
 }

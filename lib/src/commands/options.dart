@@ -12,6 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+import 'package:nyxx_commands/src/context/base.dart';
+
 import 'chat_command.dart';
 
 /// Options that modify how a command behaves.
@@ -54,13 +56,7 @@ class CommandOptions {
   /// command loops.
   final bool? acceptSelfCommands;
 
-  /// Whether to hide the response from other users when the command is invoked from an interaction.
-  ///
-  /// This sets the EPHEMERAL flag on interactions responses when [IContext.respond] is used.
-  ///
-  /// You might also be interested in:
-  /// - [IInteractionContext.respond], which can override this setting by setting the `hidden` flag.
-  final bool? hideOriginalResponse;
+  final ResponseLevel? defaultResponseLevel;
 
   /// The type of [ChatCommand]s that are children of this entity.
   ///
@@ -75,7 +71,7 @@ class CommandOptions {
     this.autoAcknowledgeInteractions,
     this.acceptBotCommands,
     this.acceptSelfCommands,
-    this.hideOriginalResponse,
+    this.defaultResponseLevel,
     this.type,
   });
 }

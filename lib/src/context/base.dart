@@ -66,6 +66,31 @@ abstract class ICommandContextData implements IContextData {
   ICommand<ICommandContext> get command;
 }
 
+enum ResponseLevel {
+  // Private
+  private(hideInteraction: true, isDm: true, mention: null),
+
+  // Hint
+  quietHint(hideInteraction: true, isDm: false, mention: false),
+  hint(hideInteraction: true, isDm: false, mention: null),
+  loudHint(hideInteraction: true, isDm: false, mention: null),
+
+  // Public
+  quietPublic(hideInteraction: false, isDm: false, mention: false),
+  public(hideInteraction: false, isDm: false, mention: null),
+  loudPublic(hideInteraction: false, isDm: false, mention: true);
+
+  final bool hideInteraction;
+  final bool isDm;
+  final bool? mention;
+
+  const ResponseLevel({
+    required this.hideInteraction,
+    required this.isDm,
+    required this.mention,
+  });
+}
+
 /// A context that can be interacted with.
 ///
 /// You might also be interested in:
@@ -102,7 +127,7 @@ abstract class IInteractiveContext {
   ///
   /// You might also be interested in:
   /// - [IInteractionContext.acknowledge], for acknowledging interactions without responding.
-  Future<IMessage> respond(MessageBuilder builder, {bool private = false});
+  Future<IMessage> respond(MessageBuilder builder, {ResponseLevel? level});
 
   /// Wait for a user to press a button and return a context representing that button press.
   ///
@@ -157,7 +182,7 @@ abstract class IInteractiveContext {
 /// - [IInteractionContextData], which contains data about interactions.
 abstract class IInteractionInteractiveContext implements IInteractiveContext {
   @override
-  Future<IMessage> respond(MessageBuilder builder, {bool private = false, bool? hidden});
+  Future<IMessage> respond(MessageBuilder builder, {ResponseLevel? level});
 
   /// Acknowledge the underlying interaction without yet sending a response.
   ///
@@ -167,7 +192,7 @@ abstract class IInteractionInteractiveContext implements IInteractiveContext {
   ///
   /// You might also be interested in:
   /// - [respond], for sending a full response.
-  Future<void> acknowledge({bool? hidden});
+  Future<void> acknowledge({ResponseLevel? level});
 }
 
 /// A context in which a command was executed.

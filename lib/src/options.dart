@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+import 'package:nyxx_commands/src/context/base.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import 'commands/chat_command.dart';
@@ -55,7 +56,7 @@ class CommandsOptions implements CommandOptions {
   final bool autoAcknowledgeInteractions;
 
   @override
-  final bool hideOriginalResponse;
+  final ResponseLevel defaultResponseLevel;
 
   @override
   final CommandType type;
@@ -67,7 +68,7 @@ class CommandsOptions implements CommandOptions {
     this.acceptBotCommands = false,
     this.acceptSelfCommands = false,
     this.backend,
-    this.hideOriginalResponse = true,
+    this.defaultResponseLevel = ResponseLevel.loudHint,
     this.type = CommandType.all,
     this.inferDefaultCommandType = true,
   });
