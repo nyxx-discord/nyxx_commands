@@ -324,7 +324,10 @@ mixin MessageRespondMixin implements InteractiveMixin {
     if (builder.replyBuilder == null) {
       builder.replyBuilder = ReplyBuilder.fromMessage(message);
 
+      // Only update the allowed mentions if they weren't explicitly set.
       builder.allowedMentions ??= client.options.allowedMentions ?? AllowedMentions();
+      // Calling [AllowedMentions.allow] here will only change anything if [level.mention] is
+      // non-null, in which case we want to change it. Otherwise, this does nothing.
       builder.allowedMentions!.allow(reply: level.mention);
     }
 

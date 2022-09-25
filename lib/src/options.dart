@@ -68,7 +68,7 @@ class CommandsOptions implements CommandOptions {
     this.acceptBotCommands = false,
     this.acceptSelfCommands = false,
     this.backend,
-    this.defaultResponseLevel = ResponseLevel.loudHint,
+    this.defaultResponseLevel = ResponseLevel.public,
     this.type = CommandType.all,
     this.inferDefaultCommandType = true,
   });

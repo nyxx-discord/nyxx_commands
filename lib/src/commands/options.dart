@@ -32,7 +32,7 @@ class CommandOptions {
   /// Setting this to false means that you must acknowledge the interaction yourself.
   ///
   /// You might also be interested in:
-  /// - [IInteractionContext.acknowledge], for manually acknowledging interactions.
+  /// - [IInteractionInteractiveContext.acknowledge], for manually acknowledging interactions.
   final bool? autoAcknowledgeInteractions;
 
   /// Whether to accept messages sent by bot accounts as possible commands.
@@ -56,6 +56,9 @@ class CommandOptions {
   /// command loops.
   final bool? acceptSelfCommands;
 
+  /// The [ResponseLevel] to use in commands if not explicit.
+  ///
+  /// Defaults to [ResponseLevel.public].
   final ResponseLevel? defaultResponseLevel;
 
   /// The type of [ChatCommand]s that are children of this entity.

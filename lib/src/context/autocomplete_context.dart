@@ -41,8 +41,10 @@ class AutocompleteContext extends ContextBase implements IInteractionContextData
   /// The values might contain partial data.
   late final Map<String, String?> arguments;
 
+  /// The command for which arguments are being auto-completed.
   final ChatCommand command;
 
+  /// Create a new [AutocompleteContext].
   AutocompleteContext({
     required this.command,
     required this.interaction,

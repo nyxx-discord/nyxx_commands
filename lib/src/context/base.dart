@@ -66,24 +66,46 @@ abstract class ICommandContextData implements IContextData {
   ICommand<ICommandContext> get command;
 }
 
+/// Information about how a command should respond when using [IInteractiveContext.respond].
+///
+/// This class mainly determines the properties of the message that is sent in response to a
+/// command, such as whether it should be ephemeral or whether the user should be mentioned.
+///
+/// You can create an instance of this class yourself, or use one of the provided levels: [private],
+/// [hint], or [public].
 class ResponseLevel {
-  // Private
+  /// A private response.
+  ///
+  /// Interaction responses are hidden and message responses are sent via DMs.
   static const private = ResponseLevel(hideInteraction: true, isDm: true, mention: null);
 
-  // Hint
-  static const quietHint = ResponseLevel(hideInteraction: true, isDm: false, mention: false);
+  /// A response that follows how the user invoked the command.
+  ///
+  /// Interaction responses are hidden (as invoking a Slash Command is invisible to other users) and
+  /// message responses are shown in the channel.
   static const hint = ResponseLevel(hideInteraction: true, isDm: false, mention: null);
-  static const loudHint = ResponseLevel(hideInteraction: true, isDm: false, mention: null);
 
-  // Public
-  static const quietPublic = ResponseLevel(hideInteraction: false, isDm: false, mention: false);
+  /// A public responses.
+  ///
+  /// Both interaction and message responses are shown.
   static const public = ResponseLevel(hideInteraction: false, isDm: false, mention: null);
-  static const loudPublic = ResponseLevel(hideInteraction: false, isDm: false, mention: true);
 
+  /// Whether interaction responses sent at this level should be marked as ephemeral.
   final bool hideInteraction;
+
+  /// Whether message responses sent at this level should be sent via DM to the user.
   final bool isDm;
+
+  /// Whether message responses sent at this level should mention the user when replying to them.
+  ///
+  /// If set to `null`, inherits the behaviour of the message being sent, or the global allowed
+  /// mentions if the message builder does not set any.
   final bool? mention;
 
+  /// Construct a new response level.
+  ///
+  /// You might also be interested in:
+  /// - [private], [hint], and [public], pre-made levels for common use cases.
   const ResponseLevel({
     required this.hideInteraction,
     required this.isDm,
@@ -121,12 +143,12 @@ abstract class IInteractiveContext {
 
   /// Send a response to the command.
   ///
-  /// If [private] is set to `true`, then the response will only be made visible to the user that
-  /// invoked the command. In interactions, this is done by sending an ephemeral response, in text
-  /// commands this is handled by sending a Private Message to the user.
+  /// [level] can be set to change how the response is set. If is is not passed,
+  /// [CommandOptions.defaultResponseLevel] is used instead.
   ///
   /// You might also be interested in:
-  /// - [IInteractionContext.acknowledge], for acknowledging interactions without responding.
+  /// - [IInteractionInteractiveContext.acknowledge], for acknowledging interactions without
+  /// responding.
   Future<IMessage> respond(MessageBuilder builder, {ResponseLevel? level});
 
   /// Wait for a user to press a button and return a context representing that button press.
@@ -186,9 +208,7 @@ abstract class IInteractionInteractiveContext implements IInteractiveContext {
 
   /// Acknowledge the underlying interaction without yet sending a response.
   ///
-  /// While the `hidden` and `private` arguments are guaranteed to hide/show the resulting response,
-  /// slow commands might sometimes show strange behavior in their responses. Acknowledging the
-  /// interaction early with the correct value for [hidden] can prevent this behavior.
+  /// [level] can be used to change whether the response should be hidden or not.
   ///
   /// You might also be interested in:
   /// - [respond], for sending a full response.
