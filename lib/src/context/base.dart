@@ -66,19 +66,19 @@ abstract class ICommandContextData implements IContextData {
   ICommand<ICommandContext> get command;
 }
 
-enum ResponseLevel {
+class ResponseLevel {
   // Private
-  private(hideInteraction: true, isDm: true, mention: null),
+  static const private = ResponseLevel(hideInteraction: true, isDm: true, mention: null);
 
   // Hint
-  quietHint(hideInteraction: true, isDm: false, mention: false),
-  hint(hideInteraction: true, isDm: false, mention: null),
-  loudHint(hideInteraction: true, isDm: false, mention: null),
+  static const quietHint = ResponseLevel(hideInteraction: true, isDm: false, mention: false);
+  static const hint = ResponseLevel(hideInteraction: true, isDm: false, mention: null);
+  static const loudHint = ResponseLevel(hideInteraction: true, isDm: false, mention: null);
 
   // Public
-  quietPublic(hideInteraction: false, isDm: false, mention: false),
-  public(hideInteraction: false, isDm: false, mention: null),
-  loudPublic(hideInteraction: false, isDm: false, mention: true);
+  static const quietPublic = ResponseLevel(hideInteraction: false, isDm: false, mention: false);
+  static const public = ResponseLevel(hideInteraction: false, isDm: false, mention: null);
+  static const loudPublic = ResponseLevel(hideInteraction: false, isDm: false, mention: true);
 
   final bool hideInteraction;
   final bool isDm;
