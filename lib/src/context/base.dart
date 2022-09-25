@@ -77,18 +77,33 @@ class ResponseLevel {
   /// A private response.
   ///
   /// Interaction responses are hidden and message responses are sent via DMs.
-  static const private = ResponseLevel(hideInteraction: true, isDm: true, mention: null);
+  static const private = ResponseLevel(
+    hideInteraction: true,
+    isDm: true,
+    mention: null,
+    preserveComponentMessages: true,
+  );
 
   /// A response that follows how the user invoked the command.
   ///
   /// Interaction responses are hidden (as invoking a Slash Command is invisible to other users) and
   /// message responses are shown in the channel.
-  static const hint = ResponseLevel(hideInteraction: true, isDm: false, mention: null);
+  static const hint = ResponseLevel(
+    hideInteraction: true,
+    isDm: false,
+    mention: null,
+    preserveComponentMessages: true,
+  );
 
   /// A public responses.
   ///
   /// Both interaction and message responses are shown.
-  static const public = ResponseLevel(hideInteraction: false, isDm: false, mention: null);
+  static const public = ResponseLevel(
+    hideInteraction: false,
+    isDm: false,
+    mention: null,
+    preserveComponentMessages: true,
+  );
 
   /// Whether interaction responses sent at this level should be marked as ephemeral.
   final bool hideInteraction;
@@ -102,6 +117,10 @@ class ResponseLevel {
   /// mentions if the message builder does not set any.
   final bool? mention;
 
+  /// Whether to edit the message a component belongs to or create a new message when responding to
+  /// a component interaction.
+  final bool preserveComponentMessages;
+
   /// Construct a new response level.
   ///
   /// You might also be interested in:
@@ -110,6 +129,7 @@ class ResponseLevel {
     required this.hideInteraction,
     required this.isDm,
     required this.mention,
+    required this.preserveComponentMessages,
   });
 }
 
@@ -140,6 +160,11 @@ abstract class IInteractiveContext {
   ///   create a context to delegate to.
   /// - [parent], the context of which this context is the delegate.
   IInteractiveContext? get delegate;
+
+  /// The youngest context that handles all interactions.
+  ///
+  /// This is the same as repeatedly accessing [delegate] until it returns `null`.
+  IInteractiveContext get latestContext;
 
   /// Send a response to the command.
   ///

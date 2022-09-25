@@ -101,9 +101,12 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
   IInteractiveContext? get delegate => _delegate;
   IInteractiveContext? _delegate;
 
+  @override
+  IInteractiveContext get latestContext => delegate?.latestContext ?? this;
+
   ICommandContext get _nearestCommandContext {
-    if (parent is ICommandContext) {
-      return parent as ICommandContext;
+    if (this is ICommandContext) {
+      return this as ICommandContext;
     }
 
     if (parent == null) {
@@ -293,10 +296,22 @@ mixin InteractionRespondMixin
       return interactionEvent.sendFollowup(builder, hidden: level.hideInteraction);
     }
 
-    // If we haven't already, just respond and re-fetch the original response to return it.
+    // If we want to preserve the original message a component is attached to, we can just send a
+    // followup instead of a response.
+    // Also, if we are requested to hide interactions, also send a followup, or
+    // components will just edit the original message (making it public).
+    if (level.preserveComponentMessages ||
+        (level.hideInteraction == true && interaction is IComponentInteraction)) {
+      if (_responseLevel == null) {
+        // Need to acknowledge before we send a followup.
+        await acknowledge(level: level);
+      }
 
-    await interactionEvent.respond(builder, hidden: level.hideInteraction);
-    return interactionEvent.getOriginalResponse();
+      return interactionEvent.sendFollowup(builder, hidden: level.hideInteraction);
+    } else {
+      await interactionEvent.respond(builder, hidden: level.hideInteraction);
+      return interactionEvent.getOriginalResponse();
+    }
   }
 
   @override
