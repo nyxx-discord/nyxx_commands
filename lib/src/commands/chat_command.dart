@@ -317,7 +317,7 @@ class ChatCommand
   final List<AbstractCheck> singleChecks = [];
 
   /// The types of the required and positional arguments of [execute], in the order they appear.
-  final List<Type> argumentTypes = [];
+  final List<DartType<dynamic>> argumentTypes = [];
 
   @override
   final CommandOptions options;
@@ -357,16 +357,16 @@ class ChatCommand
       throw CommandRegistrationError('Invalid localized name for command "$name".');
     }
 
-    Type contextType;
+    DartType<IChatContext> contextType;
     switch (resolvedOptions.type) {
       case CommandType.textOnly:
-        contextType = MessageChatContext;
+        contextType = const DartType<MessageChatContext>();
         break;
       case CommandType.slashOnly:
-        contextType = InteractionChatContext;
+        contextType = const DartType<InteractionChatContext>();
         break;
       default:
-        contextType = IChatContext;
+        contextType = const DartType<IChatContext>();
     }
 
     _loadArguments(execute, contextType);
@@ -384,14 +384,14 @@ class ChatCommand
     }
   }
 
-  void _loadArguments(Function fn, Type contextType) {
+  void _loadArguments(Function fn, DartType<IChatContext> contextType) {
     _functionData = loadFunctionData(fn);
 
     if (_functionData.parametersData.isEmpty) {
       throw CommandRegistrationError('Command callback function must have a Context parameter');
     }
 
-    if (!isAssignableTo(contextType, _functionData.parametersData.first.type)) {
+    if (!contextType.isSupertypeOf(_functionData.parametersData.first.type)) {
       throw CommandRegistrationError(
           'The first parameter of a command callback must be of type $contextType');
     }
@@ -406,7 +406,7 @@ class ChatCommand
       }
 
       if (parameter.converterOverride != null) {
-        if (!isAssignableTo(parameter.converterOverride!.output, parameter.type)) {
+        if (!parameter.type.isSupertypeOf(parameter.converterOverride!.output)) {
           throw CommandRegistrationError('Invalid converter override');
         }
       }
@@ -450,11 +450,6 @@ class ChatCommand
         }
 
         dynamic rawArgument = context.rawArguments[kebabCaseName]!;
-
-        if (isAssignableTo(rawArgument.runtimeType, parameter.type)) {
-          arguments.add(rawArgument);
-          continue;
-        }
 
         arguments.add(await parse(
           context.commands,

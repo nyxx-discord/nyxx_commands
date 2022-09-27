@@ -5,6 +5,7 @@ import 'package:nyxx_interactions/src/models/command_option.dart';
 
 import '../context/autocomplete_context.dart';
 import '../context/chat_context.dart';
+import '../mirror_utils/mirror_utils.dart';
 import '../util/view.dart';
 import 'converter.dart';
 
@@ -54,12 +55,12 @@ abstract class SimpleConverter<T> implements Converter<T> {
   final int sensitivity;
 
   @override
-  final Type output;
+  DartType<T> get output => DartType<T>();
 
   @override
   CommandOptionType get type => CommandOptionType.string;
 
-  const SimpleConverter._({required this.sensitivity, required this.output, this.reviver});
+  const SimpleConverter._({required this.sensitivity, this.reviver});
 
   /// Create a new [SimpleConverter].
   ///
@@ -133,7 +134,7 @@ class _DynamicSimpleConverter<T> extends SimpleConverter<T> {
     required this.stringify,
     super.sensitivity = 50,
     super.reviver,
-  }) : super._(output: T);
+  }) : super._();
 }
 
 class _FixedSimpleConverter<T> extends SimpleConverter<T> {
@@ -147,7 +148,7 @@ class _FixedSimpleConverter<T> extends SimpleConverter<T> {
     required this.stringify,
     super.sensitivity = 50,
     super.reviver,
-  }) : super._(output: T);
+  }) : super._();
 
   @override
   Iterable<T> Function() get provider => () => elements;

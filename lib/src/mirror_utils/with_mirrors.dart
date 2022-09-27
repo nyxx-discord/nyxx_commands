@@ -21,11 +21,8 @@ import 'package:nyxx_interactions/nyxx_interactions.dart';
 import '../commands.dart';
 import 'mirror_utils.dart';
 
-bool isAssignableTo(Type instance, Type target) =>
-    instance == target || reflectType(instance).isSubtypeOf(reflectType(target));
-
 FunctionData loadFunctionData(Function fn) {
-  List<ParameterData> parametersData = [];
+  List<ParameterData<dynamic>> parametersData = [];
 
   MethodMirror fnMirror = (reflect(fn) as ClosureMirror).function;
 
@@ -57,8 +54,12 @@ FunctionData loadFunctionData(Function fn) {
     }
 
     // Get parameter type
-    Type type =
+    Type rawType =
         parameterMirror.type.hasReflectedType ? parameterMirror.type.reflectedType : dynamic;
+    DartType<dynamic> type = (reflectType(DartType, [rawType]) as ClassMirror).newInstance(
+      Symbol.empty,
+      [],
+    ).reflectee as DartType;
 
     // Get parameter description (if any)
 
@@ -127,11 +128,7 @@ FunctionData loadFunctionData(Function fn) {
   return FunctionData(parametersData);
 }
 
-void loadData(
-  Map<int, TypeData> typeTree,
-  Map<Type, int> typeMappings,
-  Map<dynamic, FunctionData> functionData,
-) {
+void loadData(Map<dynamic, FunctionData> functionData) {
   if (const bool.fromEnvironment('dart.library.mirrors')) {
     logger.info('Loading compiled function data when `dart:mirrors` is available is unneeded');
   }
