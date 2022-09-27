@@ -464,12 +464,12 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
   ) {
     Iterator<CommandOptionBuilder> builderIterator = options.iterator;
 
-    Iterable<ParameterData> parameters = loadFunctionData(command.execute)
+    Iterable<ParameterData<dynamic>> parameters = loadFunctionData(command.execute)
         .parametersData
         // Skip context parameter
         .skip(1);
 
-    Iterator<ParameterData> parameterIterator = parameters.iterator;
+    Iterator<ParameterData<dynamic>> parameterIterator = parameters.iterator;
 
     while (builderIterator.moveNext() && parameterIterator.moveNext()) {
       Converter<dynamic>? converter = parameterIterator.current.converterOverride ??
