@@ -28,9 +28,6 @@ import 'function_metadata/compile_time_function_data.dart';
 import 'function_metadata/metadata_builder_visitor.dart';
 import 'function_metadata/metadata_builder.dart';
 import 'to_source.dart';
-import 'type_tree/type_builder_visitor.dart';
-import 'type_tree/tree_builder.dart';
-import 'type_tree/type_data.dart';
 
 final Logger logger = Logger('Commands Compiler');
 
@@ -64,13 +61,10 @@ Future<void> generate(String path, String outPath, bool formatOutput, bool slow)
     throw CommandsException('No entry point was found for file "$path"');
   }
 
-  Map<int, TypeData> typeTree = await processTypes(result.element, context, slow);
-
   Iterable<CompileTimeFunctionData> functions =
       await processFunctions(result.element, context, slow);
 
   String output = generateOutput(
-    {...typeTree.values},
     functions,
     result.element.source.uri.toString(),
     result.element.entryPoint!.parameters.isNotEmpty,
@@ -82,27 +76,6 @@ Future<void> generate(String path, String outPath, bool formatOutput, bool slow)
   await File(outPath).writeAsString(output);
 
   logger.finest('Done');
-}
-
-/// Generates type metadata for [result] and all child units (includes imports, exports and parts).
-Future<Map<int, TypeData>> processTypes(
-  LibraryElement result,
-  AnalysisContext context,
-  bool slow,
-) async {
-  logger.info('Building type tree from AST');
-
-  final TypeBuilderVisitor typeBuilder = TypeBuilderVisitor(context, slow);
-
-  await typeBuilder.visitLibrary(result);
-
-  logger.fine('Found ${typeBuilder.types.length} type instances');
-
-  final Map<int, TypeData> typeTree = buildTree(typeBuilder.types);
-
-  logger.info('Finished building type tree with ${typeTree.length} entries');
-
-  return typeTree;
 }
 
 /// Generates function metadata for all creations of [id] invocations in [result] and child units.
@@ -136,13 +109,17 @@ Future<Iterable<CompileTimeFunctionData>> processFunctions(
 /// If [formatOutput] is set, the generated content will be passed through `dart format` before
 /// being returned.
 String generateOutput(
-  Iterable<TypeData> typeTree,
   Iterable<CompileTimeFunctionData> functionData,
   String pathToMainFile,
   bool hasArgsArgument,
   bool formatOutput,
 ) {
   logger.info('Generating output');
+
+  // Import directives that will be placed at the start of the file
+  // Other steps in the generation process can add items to this set in order to import types from
+  // other files
+  Set<String> imports = {};
 
   // The base stub:
   // - Imports the nyxx_commands runtime type data classes so we can instantiate them
@@ -157,54 +134,21 @@ String generateOutput(
   // Auto-generated file
   // DO NOT EDIT
 
-  // Type data
-
-  ''');
-
-  // Import directives that will be placed at the start of the file
-  // Other steps in the generation process can add items to this set in order to import types from
-  // other files
-  Set<String> imports = {};
-
-  typeTree = typeTree.toSet();
-
-  writeTypeMetadata(typeTree, result);
-
-  result.write('''
-  
-  // Nullable typedefs
-  
-  ''');
-
-  Set<int> successfulIds = writeTypeDefs(typeTree, result, imports);
-
-  result.write('''
-
-  // Type mappings
-
-  ''');
-
-  writeTypeMappings(successfulIds, result);
-
-  result.write('''
-
   // Function data
 
   ''');
 
-  writeFunctionData(functionData, result, imports, successfulIds);
+  writeFunctionData(functionData, result, imports);
 
   result.write('''
-  
-  // Main function wrapper
-  void main(List<String> args) {
-    loadData(typeTree, typeMappings, functionData);
 
-    _main.main(${hasArgsArgument ? 'args' : ''});
-  }
-  ''');
+// Main function wrapper
+void main(List<String> args) {
+  loadData(functionData);
 
-  logger.fine('Formatting output');
+  _main.main(${hasArgsArgument ? 'args' : ''});
+}
+''');
 
   result = StringBuffer(imports.join('\n'))..write(result.toString());
 
@@ -212,108 +156,9 @@ String generateOutput(
     return result.toString();
   }
 
+  logger.fine('Formatting output');
+
   return DartFormatter(lineEnding: '\n').format(result.toString());
-}
-
-/// Generates the content that represents the type metadata of a program from [typeTree] and writes
-/// it to [result].
-void writeTypeMetadata(Iterable<TypeData> typeTree, StringBuffer result) {
-  result.write('const Map<int, TypeData> typeTree = {');
-
-  // Special types
-  result.write('0: DynamicTypeData(),');
-  result.write('1: VoidTypeData(),');
-  result.write('2: NeverTypeData(),');
-
-  // Other types
-  for (final type in typeTree.whereType<InterfaceTypeData>()) {
-    result.write('''
-      ${type.id}: InterfaceTypeData(
-        name: r"${type.name}",
-        id: ${type.id},
-        strippedId: ${type.strippedId},
-        superClasses: [${type.superClasses.join(',')}],
-        typeArguments: [${type.typeArguments.join(',')}],
-        isNullable: ${type.isNullable},
-      ),
-    ''');
-  }
-
-  for (final type in typeTree.whereType<FunctionTypeData>()) {
-    result.write('''
-      ${type.id}: FunctionTypeData(
-        name: r"${type.name}",
-        id: ${type.id},
-        returnType: ${type.returnType},
-        positionalParameterTypes: [${type.positionalParameterTypes.join(',')}],
-        requiredPositionalParametersCount: ${type.requiredPositionalParametersCount},
-        requiredNamedParametersType: {${type.requiredNamedParametersType.entries.map((entry) => 'r"${entry.key}": ${entry.value}').join(',')}},
-        optionalNamedParametersType: {${type.optionalNamedParametersType.entries.map((entry) => 'r"${entry.key}": ${entry.value}').join(',')}},
-        isNullable: ${type.isNullable},
-      ),
-    ''');
-  }
-
-  result.write('};');
-}
-
-/// Generates a set of `typedef` statements that can be used as keys in maps to represent types, and
-/// writes them to [result].
-///
-/// Imports needed to create the typedefs are added to [imports].
-///
-/// This method is needed as nullable type literals are interpreted as ternary statements in some
-/// cases, and can lead to errors. Creating a typedef that reflects the same type and using that
-/// instead of a type literal avoids this issue.
-Set<int> writeTypeDefs(Iterable<TypeData> typeTree, StringBuffer result, Set<String> imports) {
-  Set<int> successfulIds = {};
-
-  for (final type in typeTree) {
-    if (type is DynamicTypeData || type is VoidTypeData || type is NeverTypeData) {
-      result.write('typedef t_${type.id} = ');
-
-      if (type is DynamicTypeData) {
-        result.write('dynamic');
-      } else if (type is VoidTypeData) {
-        result.write('void');
-      } else {
-        result.write('Never');
-      }
-
-      result.write(';');
-
-      successfulIds.add(type.id);
-      continue;
-    }
-
-    List<String>? typeSourceRepresentation = toTypeSource(type.source);
-
-    if (typeSourceRepresentation == null) {
-      logger.fine('Excluding type $type as data for type was not resolved');
-      continue;
-    }
-
-    successfulIds.add(type.id);
-
-    imports.addAll(typeSourceRepresentation.skip(2));
-
-    result.write(
-        'typedef t_${type.id}${typeSourceRepresentation.first} = ${typeSourceRepresentation[1]};\n');
-  }
-
-  return successfulIds;
-}
-
-/// Generates a map literal that maps runtime [Type] instances to an ID that can be used to look up
-/// their metadata, and writes the result to [result].
-void writeTypeMappings(Iterable<int> ids, StringBuffer result) {
-  result.write('const Map<Type, int> typeMappings = {');
-
-  for (final id in ids) {
-    result.write('t_$id: $id,');
-  }
-
-  result.write('};');
 }
 
 /// Generates a map literal that maps [id] ids to function metadata that can be used to look up
@@ -326,7 +171,6 @@ void writeFunctionData(
   Iterable<CompileTimeFunctionData> functionData,
   StringBuffer result,
   Set<String> imports,
-  Set<int> loadedTypeIds,
 ) {
   Set<String> loadedIds = {};
 
@@ -352,11 +196,6 @@ void writeFunctionData(
         imports.addAll(converterOverrideData.skip(1));
 
         converterSource = converterOverrideData.first;
-      }
-
-      if (!loadedTypeIds.contains(getId(parameter.type))) {
-        logger.shout('Parameter ${parameter.name} has an unresolved type, skipping function');
-        continue outerLoop;
       }
 
       String? defaultValueSource;
@@ -403,7 +242,7 @@ void writeFunctionData(
           // case where an autocomplete override is specified is when the @Autocomplete annotation
           // is explicitly used
           logger.shout(
-            'Unable to resolve converter override for parameter ${parameter.name}, skipping function',
+            'Unable to resolve autocomplete override for parameter ${parameter.name}, skipping function',
           );
           continue outerLoop;
         }
@@ -448,10 +287,23 @@ void writeFunctionData(
         localizedDescriptionsSource = localizedDescriptionsData.first;
       }
 
+      List<String>? type = toTypeSource(parameter.type);
+      if (type == null) {
+        logger.shout('Parameter ${parameter.name} has an unresolved type, skipping function');
+        continue outerLoop;
+      }
+
+      if (type.first.isNotEmpty) {
+        logger.shout('Parameter ${parameter.name} uses a type argument which is disallowed.');
+        continue outerLoop;
+      }
+
+      imports.addAll(type.skip(2));
+
       parameterDataSource += '''
         ParameterData(
           name: "${parameter.name}",
-          type: t_${getId(parameter.type)},
+          type: const DartType<${type[1]}>(),
           isOptional: ${parameter.isOptional},
           description: ${parameter.description == null ? 'null' : '"${parameter.description}"'},
           defaultValue: $defaultValueSource,
