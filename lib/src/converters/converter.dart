@@ -22,6 +22,7 @@ import '../commands.dart';
 import '../context/autocomplete_context.dart';
 import '../context/chat_context.dart';
 import '../errors.dart';
+import '../mirror_utils/mirror_utils.dart';
 import '../util/view.dart';
 
 /// Contains metadata and parsing capabilities for a given type.
@@ -83,7 +84,7 @@ class Converter<T> {
   /// The type that this converter parses.
   ///
   /// Used by [CommandsPlugin.getConverter] to construct assembled converters.
-  final Type output;
+  DartType<T> get output => DartType<T>();
 
   /// A callback called with the [CommandOptionBuilder] created for an option using this converter.
   ///
@@ -110,7 +111,7 @@ class Converter<T> {
     this.processOptionCallback,
     this.autocompleteCallback,
     this.type = CommandOptionType.string,
-  }) : output = T;
+  });
 
   @override
   String toString() => 'Converter<$T>';
@@ -135,7 +136,7 @@ class CombineConverter<R, T> implements Converter<T> {
   final FutureOr<T?> Function(R, IContextData) process;
 
   @override
-  final Type output;
+  DartType<T> get output => DartType<T>();
 
   final void Function(CommandOptionBuilder)? _customProcessOptionCallback;
 
@@ -162,7 +163,6 @@ class CombineConverter<R, T> implements Converter<T> {
     FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autocompleteCallback,
   })  : _choices = choices,
         _type = type,
-        output = T,
         _customProcessOptionCallback = processOptionCallback,
         _autocompleteCallback = autocompleteCallback;
 
@@ -210,7 +210,7 @@ class FallbackConverter<T> implements Converter<T> {
   final CommandOptionType? _type;
 
   @override
-  final Type output;
+  DartType<T> get output => DartType<T>();
 
   /// Create a new [FallbackConverter].
   const FallbackConverter(
@@ -220,8 +220,7 @@ class FallbackConverter<T> implements Converter<T> {
     this.processOptionCallback,
     this.autocompleteCallback,
   })  : _choices = choices,
-        _type = type,
-        output = T;
+        _type = type;
 
   @override
   Iterable<ArgChoiceBuilder>? get choices {
@@ -713,7 +712,7 @@ class GuildChannelConverter<T extends IGuildChannel> implements Converter<T> {
       null;
 
   @override
-  Type get output => T;
+  DartType<T> get output => DartType<T>();
 
   @override
   CommandOptionType get type => CommandOptionType.channel;
@@ -930,20 +929,20 @@ const Converter<IAttachment> attachmentConverter = FallbackConverter(
 ///
 /// You might also be interested in:
 /// - [ICommand.invoke], which parses multiple arguments and executes a command.
-Future<dynamic> parse(
+Future<T> parse<T>(
   CommandsPlugin commands,
   ICommandContext context,
   StringView toParse,
-  Type expectedType, {
-  Converter<dynamic>? converterOverride,
+  DartType<T> expectedType, {
+  Converter<T>? converterOverride,
 }) async {
-  Converter<dynamic>? converter = converterOverride ?? commands.getConverter(expectedType);
+  Converter<T>? converter = converterOverride ?? commands.getConverter(expectedType);
   if (converter == null) {
     throw NoConverterException(expectedType, context);
   }
 
   try {
-    dynamic parsed = await converter.convert(toParse, context);
+    T? parsed = await converter.convert(toParse, context);
 
     if (parsed == null) {
       throw BadInputException('Could not parse input $context to type "$expectedType"', context);
