@@ -1,5 +1,4 @@
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/context/component_context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands.dart';
@@ -10,6 +9,7 @@ import '../errors.dart';
 import '../util/view.dart';
 import 'autocomplete_context.dart';
 import 'chat_context.dart';
+import 'component_context.dart';
 import 'message_context.dart';
 import 'user_context.dart';
 

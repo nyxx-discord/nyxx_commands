@@ -1,8 +1,8 @@
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/util/mixins.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands/user_command.dart';
+import '../util/mixins.dart';
 import 'base.dart';
 
 /// A context in which a [UserCommand] was executed.

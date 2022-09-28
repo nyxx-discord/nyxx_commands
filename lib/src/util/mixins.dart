@@ -13,9 +13,6 @@
 //  limitations under the License.
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/context/component_context.dart';
-import 'package:nyxx_commands/src/converters/converter.dart';
-import 'package:nyxx_commands/src/util/view.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../checks/checks.dart';
@@ -24,7 +21,11 @@ import '../commands/chat_command.dart';
 import '../commands/interfaces.dart';
 import '../commands/options.dart';
 import '../context/base.dart';
+import '../context/component_context.dart';
+import '../converters/converter.dart';
 import '../errors.dart';
+import '../mirror_utils/mirror_utils.dart';
+import '../util/view.dart';
 
 mixin ParentMixin<T extends ICommandContext> implements ICommandRegisterable<T> {
   ICommandGroup<ICommandContext>? _parent;
@@ -203,7 +204,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     MultiselectComponentContext<T> context =
         await commands.contextManager.createMultiselectComponentContext(
       event,
-      await parse(commands, _nearestCommandContext, StringView(rawContext.selected), T) as T,
+      await parse(commands, _nearestCommandContext, StringView(rawContext.selected), DartType<T>()),
     );
 
     context._parent = this;
@@ -246,7 +247,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
 
     List<T> values = await Future.wait(rawContexts.map(
       (rawContext) =>
-          parse(commands, _nearestCommandContext, StringView(rawContext.selected), T) as Future<T>,
+          parse(commands, _nearestCommandContext, StringView(rawContext.selected), DartType<T>()),
     ));
 
     MultiselectComponentContext<List<T>> context =

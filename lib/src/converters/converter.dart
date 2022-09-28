@@ -15,11 +15,11 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/context/base.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands.dart';
 import '../context/autocomplete_context.dart';
+import '../context/base.dart';
 import '../context/chat_context.dart';
 import '../errors.dart';
 import '../mirror_utils/mirror_utils.dart';

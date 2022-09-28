@@ -1,10 +1,10 @@
 import 'package:fuzzywuzzy/fuzzywuzzy.dart' as fuzzy;
-import 'package:nyxx_commands/src/context/base.dart';
 import 'package:nyxx_interactions/src/builders/arg_choice_builder.dart';
 import 'package:nyxx_interactions/src/builders/command_option_builder.dart';
 import 'package:nyxx_interactions/src/models/command_option.dart';
 
 import '../context/autocomplete_context.dart';
+import '../context/base.dart';
 import '../mirror_utils/mirror_utils.dart';
 import '../util/view.dart';
 import 'converter.dart';
