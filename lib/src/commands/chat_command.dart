@@ -333,8 +333,9 @@ class ChatCommand
   /// Create a new [ChatCommand].
   ///
   /// You might also be interested in:
-  /// - [ChatCommand.slashOnly], for creating [ChatCommand]s with type [CommandType.slashOnly];
-  /// - [ChatCommand.textOnly], for creating [ChatCommand]s with type [CommandType.textOnly].
+  /// - [MessageCommand], for creating message commands;
+  /// - [UserCommand], for creating user commands;
+  /// - [CommandOptions.type], for changing how a command can be executed.
   ChatCommand(
     this.name,
     this.description,

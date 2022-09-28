@@ -1,4 +1,6 @@
 import 'package:nyxx/nyxx.dart';
+import 'package:nyxx_commands/src/context/component_context.dart';
+import 'package:nyxx_commands/src/converters/converter.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands.dart';
@@ -64,6 +66,180 @@ abstract class ICommandContextData implements IContextData {
   ICommand<ICommandContext> get command;
 }
 
+/// Information about how a command should respond when using [IInteractiveContext.respond].
+///
+/// This class mainly determines the properties of the message that is sent in response to a
+/// command, such as whether it should be ephemeral or whether the user should be mentioned.
+///
+/// You can create an instance of this class yourself, or use one of the provided levels: [private],
+/// [hint], or [public].
+class ResponseLevel {
+  /// A private response.
+  ///
+  /// Interaction responses are hidden and message responses are sent via DMs.
+  static const private = ResponseLevel(
+    hideInteraction: true,
+    isDm: true,
+    mention: null,
+    preserveComponentMessages: true,
+  );
+
+  /// A response that follows how the user invoked the command.
+  ///
+  /// Interaction responses are hidden (as invoking a Slash Command is invisible to other users) and
+  /// message responses are shown in the channel.
+  static const hint = ResponseLevel(
+    hideInteraction: true,
+    isDm: false,
+    mention: null,
+    preserveComponentMessages: true,
+  );
+
+  /// A public responses.
+  ///
+  /// Both interaction and message responses are shown.
+  static const public = ResponseLevel(
+    hideInteraction: false,
+    isDm: false,
+    mention: null,
+    preserveComponentMessages: true,
+  );
+
+  /// Whether interaction responses sent at this level should be marked as ephemeral.
+  final bool hideInteraction;
+
+  /// Whether message responses sent at this level should be sent via DM to the user.
+  final bool isDm;
+
+  /// Whether message responses sent at this level should mention the user when replying to them.
+  ///
+  /// If set to `null`, inherits the behaviour of the message being sent, or the global allowed
+  /// mentions if the message builder does not set any.
+  final bool? mention;
+
+  /// Whether to edit the message a component belongs to or create a new message when responding to
+  /// a component interaction.
+  final bool preserveComponentMessages;
+
+  /// Construct a new response level.
+  ///
+  /// You might also be interested in:
+  /// - [private], [hint], and [public], pre-made levels for common use cases.
+  const ResponseLevel({
+    required this.hideInteraction,
+    required this.isDm,
+    required this.mention,
+    required this.preserveComponentMessages,
+  });
+}
+
+/// A context that can be interacted with.
+///
+/// You might also be interested in:
+/// - [IInteractionInteractiveContext], for contexts that originate from an interaction.
+abstract class IInteractiveContext {
+  /// The parent of this context.
+  ///
+  /// If this context was created by an operation on another context, this will be that context.
+  /// Otherwise, this is `null`.
+  ///
+  /// You might also be interested in:
+  /// - [getButtonPress], [getSelection] and [getMultiSelection], some of the methods that can
+  ///   create a child context;
+  /// - [delegate], the context that has this context as its parent.
+  IInteractiveContext? get parent;
+
+  /// The delegate of this context.
+  ///
+  /// If this is set, most operations on this context will be forwarded to this context instead.
+  /// This prevents contexts from going stale when waiting for a user to interact and makes the
+  /// command flow more accurate in the Discord UI.
+  ///
+  /// You might also be interested in:
+  /// - [getButtonPress], [getSelection] and [getMultiSelection], some of the methods that can
+  ///   create a context to delegate to.
+  /// - [parent], the context of which this context is the delegate.
+  IInteractiveContext? get delegate;
+
+  /// The youngest context that handles all interactions.
+  ///
+  /// This is the same as repeatedly accessing [delegate] until it returns `null`.
+  IInteractiveContext get latestContext;
+
+  /// Send a response to the command.
+  ///
+  /// [level] can be set to change how the response is set. If is is not passed,
+  /// [CommandOptions.defaultResponseLevel] is used instead.
+  ///
+  /// You might also be interested in:
+  /// - [IInteractionInteractiveContext.acknowledge], for acknowledging interactions without
+  /// responding.
+  Future<IMessage> respond(MessageBuilder builder, {ResponseLevel? level});
+
+  /// Wait for a user to press a button and return a context representing that button press.
+  ///
+  /// If [timeout] is set, this method will complete with an error after [timeout] has passed.
+  ///
+  /// If [authorOnly] is set, only the author of this interaction will be able to interact with the
+  /// button.
+  ///
+  /// You might also be interested in:
+  /// - [getSelection] and [getMultiSelection], for getting a selection from a user.
+  Future<ButtonComponentContext> getButtonPress(
+    String componentId, {
+    Duration? timeout,
+    bool authorOnly = true,
+  });
+
+  /// Wait for a user to select a single option from a multi-select menu and return a context
+  /// representing that selection.
+  ///
+  /// If [timeout] is set, this method will complete with an error after [timeout] has passed.
+  ///
+  /// If [authorOnly] is set, only the author of this interaction will be able to interact with the
+  /// selection menu.
+  ///
+  /// Will throw a [StateError] if more than one option is selected (for example, from a
+  /// multi-select menu allowing more than one choice).
+  Future<MultiselectComponentContext<T>> getSelection<T>(
+    String componentId, {
+    Duration? timeout,
+    bool authorOnly = true,
+    Converter<T>? converterOverride,
+  });
+
+  /// Wait for a user to select options from a multi-select menu and return a context
+  /// representing that selection.
+  ///
+  /// If [timeout] is set, this method will complete with an error after [timeout] has passed.
+  ///
+  /// If [authorOnly] is set, only the author of this interaction will be able to interact with the
+  /// selection menu.
+  Future<MultiselectComponentContext<List<T>>> getMultiSelection<T>(
+    String componentId, {
+    Duration? timeout,
+    bool authorOnly = true,
+    Converter<T>? converterOverride,
+  });
+}
+
+/// A context that can be interacted with and originated from an interaction.
+///
+/// You might also be interested in:
+/// - [IInteractionContextData], which contains data about interactions.
+abstract class IInteractionInteractiveContext implements IInteractiveContext {
+  @override
+  Future<IMessage> respond(MessageBuilder builder, {ResponseLevel? level});
+
+  /// Acknowledge the underlying interaction without yet sending a response.
+  ///
+  /// [level] can be used to change whether the response should be hidden or not.
+  ///
+  /// You might also be interested in:
+  /// - [respond], for sending a full response.
+  Future<void> acknowledge({ResponseLevel? level});
+}
+
 /// A context in which a command was executed.
 ///
 /// Contains data about how and where the command was executed, and provides a simple interfaces for
@@ -73,58 +249,7 @@ abstract class ICommandContextData implements IContextData {
 /// - [ICommandContextData], which exposes the data found in this context;
 /// - [IInteractionCommandContext], a context in which a command was executed from an interaction;
 /// - [MessageChatContext], a context in which a command was executed from a text message.
-abstract class ICommandContext implements ICommandContextData {
-  /// Send a response to the command.
-  ///
-  /// If [private] is set to `true`, then the response will only be made visible to the user that
-  /// invoked the command. In interactions, this is done by sending an ephemeral response, in text
-  /// commands this is handled by sending a Private Message to the user.
-  ///
-  /// You might also be interested in:
-  /// - [IInteractionContext.acknowledge], for acknowledging interactions without responding.
-  Future<IMessage> respond(MessageBuilder builder, {bool private = false});
-
-  /// Wait for a user to make a selection from a multiselect menu, then return the result of that
-  /// interaction.
-  ///
-  /// If [authorOnly] is `true`, only events triggered by the author of this context will be
-  /// returned, but other interactions will still be acknowledged.
-  ///
-  /// If [timeout] is set, this method will complete with an error after [timeout].
-  Future<IMultiselectInteractionEvent> getSelection(MultiselectBuilder selectionMenu,
-      {bool authorOnly = true, Duration? timeout = const Duration(minutes: 12)});
-
-  /// Wait for a user to press on a button, then return the result of that interaction.
-  ///
-  /// This method specifically listens for interactions on items of [buttons], ignoring other button
-  /// presses.
-  ///
-  /// If [authorOnly] is `true`, only events triggered by the author of this context will be
-  /// returned, but other interactions will still be acknowledged.
-  ///
-  /// If [timeout] is set, this method will complete with an error after [timeout].
-  ///
-  /// You might also be interested in:
-  /// - [getConfirmation], a shortcut for getting user confirmation from buttons.
-  Future<IButtonInteractionEvent> getButtonPress(Iterable<ButtonBuilder> buttons,
-      {bool authorOnly = true, Duration? timeout = const Duration(minutes: 12)});
-
-  /// Send a message prompting a user for confirmation, then return whether the user accepted the
-  /// choice.
-  ///
-  /// If [authorOnly] is `true`, only events triggered by the author of this context will be
-  /// returned, but other interactions will still be acknowledged.
-  ///
-  /// If [timeout] is set, this method will complete with an error after [timeout].
-  ///
-  /// [confirmMessage] and [denyMessage] can be set to change the text displayed on the "confirm"
-  /// and "deny" buttons.
-  Future<bool> getConfirmation(MessageBuilder message,
-      {bool authorOnly = true,
-      Duration? timeout = const Duration(minutes: 12),
-      String confirmMessage = 'Yes',
-      String denyMessage = 'No'});
-}
+abstract class ICommandContext implements ICommandContextData, IInteractiveContext {}
 
 /// Data about a context which was created by an interaction.
 ///
@@ -162,54 +287,4 @@ abstract class IInteractionCommandContextData implements IInteractionContextData
 /// - [IInteractionCommandContextData], which exposes the data found in this context,
 /// - [ICommandContext], the base class for all contexts representing a command execution.
 abstract class IInteractionCommandContext
-    implements IInteractionCommandContextData, ICommandContext {
-  @override
-  Future<IMessage> respond(MessageBuilder builder, {bool private = false, bool? hidden});
-
-  /// Acknowledge the underlying interaction without yet sending a response.
-  ///
-  /// While the `hidden` and `private` arguments are guaranteed to hide/show the resulting response,
-  /// slow commands might sometimes show strange behavior in their responses. Acknowledging the
-  /// interaction early with the correct value for [hidden] can prevent this behavior.
-  ///
-  /// You might also be interested in:
-  /// - [respond], for sending a full response.
-  Future<void> acknowledge({bool? hidden});
-}
-
-mixin InteractionRespondMixin implements IInteractionCommandContext, IInteractionContextData {
-  bool _hasCorrectlyAcked = false;
-  late bool _originalAckHidden = commands.options.hideOriginalResponse;
-
-  @override
-  Future<IMessage> respond(MessageBuilder builder, {bool private = false, bool? hidden}) async {
-    hidden ??= private;
-
-    if (_hasCorrectlyAcked) {
-      return interactionEvent.sendFollowup(builder, hidden: hidden);
-    } else {
-      _hasCorrectlyAcked = true;
-      try {
-        await interactionEvent.acknowledge(hidden: hidden);
-      } on AlreadyRespondedError {
-        // interaction was already ACKed by timeout or [acknowledge], hidden state of ACK might not
-        // be what we expect
-        if (_originalAckHidden != hidden) {
-          await interactionEvent
-              .sendFollowup(MessageBuilder.content(MessageBuilder.clearCharacter));
-          if (!_originalAckHidden) {
-            // If original response was hidden, we can't delete it
-            await interactionEvent.deleteOriginalResponse();
-          }
-        }
-      }
-      return interactionEvent.sendFollowup(builder, hidden: hidden);
-    }
-  }
-
-  @override
-  Future<void> acknowledge({bool? hidden}) async {
-    await interactionEvent.acknowledge(hidden: hidden ?? commands.options.hideOriginalResponse);
-    _originalAckHidden = hidden ?? commands.options.hideOriginalResponse;
-  }
-}
+    implements IInteractionCommandContextData, ICommandContext, IInteractionInteractiveContext {}

@@ -1,4 +1,5 @@
 import 'package:nyxx/nyxx.dart';
+import 'package:nyxx_commands/src/context/component_context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands.dart';
@@ -218,6 +219,65 @@ class ContextManager {
       interactionEvent: interactionEvent,
       option: interactionEvent.focusedOption,
       currentValue: interactionEvent.focusedOption.value.toString(),
+    );
+  }
+
+  /// Create a [ButtonComponentContext] from an [IButtonInteractionEvent].
+  ///
+  /// [interactionEvent] is the interaction event that triggered this context's creation.
+  Future<ButtonComponentContext> createButtonComponentContext(
+    IButtonInteractionEvent interactionEvent,
+  ) async {
+    IButtonInteraction interaction = interactionEvent.interaction;
+
+    IMember? member = interaction.memberAuthor;
+    IUser user;
+    if (member != null) {
+      user = await member.user.getOrDownload();
+    } else {
+      user = interaction.userAuthor!;
+    }
+
+    return ButtonComponentContext(
+      user: user,
+      member: member,
+      guild: await interaction.guild?.getOrDownload(),
+      channel: await interaction.channel.getOrDownload(),
+      commands: commands,
+      client: commands.client!,
+      interaction: interaction,
+      interactionEvent: interactionEvent,
+    );
+  }
+
+  /// Create a [MultiselectComponentContext] from an [IMultiselectInteractionEvent].
+  ///
+  /// [interactionEvent] is the interaction event that triggered this context's creation and
+  /// [selected] is the value(s) that were selected by the user.
+  Future<MultiselectComponentContext<T>> createMultiselectComponentContext<T>(
+    IMultiselectInteractionEvent interactionEvent,
+    T selected,
+  ) async {
+    IMultiselectInteraction interaction = interactionEvent.interaction;
+
+    IMember? member = interaction.memberAuthor;
+    IUser user;
+    if (member != null) {
+      user = await member.user.getOrDownload();
+    } else {
+      user = interaction.userAuthor!;
+    }
+
+    return MultiselectComponentContext(
+      user: user,
+      member: member,
+      guild: await interaction.guild?.getOrDownload(),
+      channel: await interaction.channel.getOrDownload(),
+      commands: commands,
+      client: commands.client!,
+      interaction: interaction,
+      interactionEvent: interactionEvent,
+      selected: selected,
     );
   }
 }

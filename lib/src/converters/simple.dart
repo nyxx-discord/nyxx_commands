@@ -1,10 +1,10 @@
 import 'package:fuzzywuzzy/fuzzywuzzy.dart' as fuzzy;
+import 'package:nyxx_commands/src/context/base.dart';
 import 'package:nyxx_interactions/src/builders/arg_choice_builder.dart';
 import 'package:nyxx_interactions/src/builders/command_option_builder.dart';
 import 'package:nyxx_interactions/src/models/command_option.dart';
 
 import '../context/autocomplete_context.dart';
-import '../context/chat_context.dart';
 import '../util/view.dart';
 import 'converter.dart';
 
@@ -41,7 +41,7 @@ abstract class SimpleConverter<T> implements Converter<T> {
   /// You can provide additional logic here to convert inputs that would otherwise fail. When this
   /// function is called, it can either return an instance of `T` which will be returned from this
   /// converter or `null`, in which case the converter will fail.
-  final T? Function(StringView, IChatContextData)? reviver;
+  final T? Function(StringView, IContextData)? reviver;
 
   /// The sensitivity of this converter.
   ///
@@ -70,7 +70,7 @@ abstract class SimpleConverter<T> implements Converter<T> {
     required Iterable<T> Function() provider,
     required String Function(T) stringify,
     int sensitivity,
-    T? Function(StringView, IChatContextData) reviver,
+    T? Function(StringView, IContextData) reviver,
   }) = _DynamicSimpleConverter;
 
   /// Create a new [SimpleConverter] which converts an unchanging number of elements.
@@ -82,7 +82,7 @@ abstract class SimpleConverter<T> implements Converter<T> {
     required List<T> elements,
     required String Function(T) stringify,
     int sensitivity,
-    T? Function(StringView, IChatContextData) reviver,
+    T? Function(StringView, IContextData) reviver,
   }) = _FixedSimpleConverter;
 
   @override
@@ -97,7 +97,7 @@ abstract class SimpleConverter<T> implements Converter<T> {
           .map((e) => ArgChoiceBuilder(e.choice, e.choice));
 
   @override
-  T? Function(StringView view, IChatContextData context) get convert => (view, context) {
+  T? Function(StringView view, IContextData context) get convert => (view, context) {
         try {
           return fuzzy
               .extractOne(

@@ -47,7 +47,7 @@ class CommandInvocationException extends CommandsException {
   final ICommandContext context;
 
   /// Create a new [CommandInvocationException].
-  CommandInvocationException(String message, this.context) : super(message);
+  CommandInvocationException(super.message, this.context);
 }
 
 /// A wrapper class for an exception that caused an autocomplete event to fail.
@@ -91,7 +91,7 @@ class UncaughtException extends CommandInvocationException {
 /// This generally indicates that nyxx_commands was unable to parse the user's input.
 class BadInputException extends CommandInvocationException {
   /// Create a new [BadInputException].
-  BadInputException(String message, IChatContext context) : super(message, context);
+  BadInputException(super.message, super.context);
 }
 
 /// An exception thrown when the end of user input is encountered before all the required arguments
@@ -125,7 +125,7 @@ class NoConverterException extends CommandInvocationException {
   final Type expectedType;
 
   /// Create a new [NoConverterException].
-  NoConverterException(this.expectedType, IChatContext context)
+  NoConverterException(this.expectedType, ICommandContext context)
       : super('No converter found for type "$expectedType"', context);
 }
 
@@ -173,5 +173,5 @@ class CommandsError extends Error {
 /// An error that occurred during registration of a command.
 class CommandRegistrationError extends CommandsError {
   /// Create a new [CommandRegistrationError].
-  CommandRegistrationError(String message) : super(message);
+  CommandRegistrationError(super.message);
 }

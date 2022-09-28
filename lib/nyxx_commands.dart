@@ -52,7 +52,10 @@ export 'src/context/base.dart'
         IContextData,
         IInteractionCommandContext,
         IInteractionContextData,
-        IInteractionCommandContextData;
+        IInteractionCommandContextData,
+        IInteractionInteractiveContext,
+        IInteractiveContext,
+        ResponseLevel;
 export 'src/context/message_context.dart' show MessageContext;
 export 'src/context/user_context.dart' show UserContext;
 export 'src/converters/converter.dart'

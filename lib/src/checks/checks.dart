@@ -105,7 +105,8 @@ abstract class AbstractCheck {
 ///
 /// See [AbstractCheck] for a description of what a *check* is.
 ///
-/// A [Check] is a simple check with no state, which validates [IContext]s with a single callback.
+/// A [Check] is a simple check with no state, which validates [ICommandContext]s with a single
+/// callback.
 /// The check succeeds if the callback returns `true` and fails if the callback returns `false`.
 ///
 /// For example, to only allow users with "evrything" in their name to execute a command:

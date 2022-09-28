@@ -139,50 +139,50 @@ void main() {
 
   commands.addConverter(dimensionConverter);
 
-  ChatCommand favouriteShape = ChatCommand(
-    'favourite-shape',
-    'Outputs your favourite shape',
-    id('favourite-shape', (IChatContext context, Shape shape, Dimension dimension) {
-      String favourite;
+  ChatCommand favoriteShape = ChatCommand(
+    'favorite-shape',
+    'Outputs your favorite shape',
+    id('favorite-shape', (IChatContext context, Shape shape, Dimension dimension) {
+      String favorite;
 
       switch (shape) {
         case Shape.triangle:
           if (dimension == Dimension.twoD) {
-            favourite = 'triangle';
+            favorite = 'triangle';
           } else {
-            favourite = 'pyramid';
+            favorite = 'pyramid';
           }
           break;
         case Shape.square:
           if (dimension == Dimension.twoD) {
-            favourite = 'square';
+            favorite = 'square';
           } else {
-            favourite = 'cube';
+            favorite = 'cube';
           }
           break;
         case Shape.pentagon:
           if (dimension == Dimension.twoD) {
-            favourite = 'pentagon';
+            favorite = 'pentagon';
           } else {
-            favourite = 'pentagonal prism';
+            favorite = 'pentagonal prism';
           }
       }
 
-      context.respond(MessageBuilder.content('Your favourite shape is $favourite!'));
+      context.respond(MessageBuilder.content('Your favorite shape is $favorite!'));
     }),
   );
 
-  commands.addCommand(favouriteShape);
+  commands.addCommand(favoriteShape);
 
-  ChatCommand favouriteFruit = ChatCommand(
-    'favourite-fruit',
-    'Outputs your favourite fruit',
-    id('favourite-fruit', (IChatContext context, [String favourite = 'apple']) {
-      context.respond(MessageBuilder.content('Your favourite fruit is $favourite!'));
+  ChatCommand favoriteFruit = ChatCommand(
+    'favorite-fruit',
+    'Outputs your favorite fruit',
+    id('favorite-fruit', (IChatContext context, [String favorite = 'apple']) {
+      context.respond(MessageBuilder.content('Your favorite fruit is $favorite!'));
     }),
   );
 
-  commands.addCommand(favouriteFruit);
+  commands.addCommand(favoriteFruit);
 
   ChatCommand alphabet = ChatCommand(
     'alphabet',
@@ -227,7 +227,7 @@ enum Dimension {
   threeD,
 }
 
-String? filterInput(String input, IChatContextData context) {
+String? filterInput(String input, IContextData context) {
   if (input.isNotEmpty) {
     return input;
   }

@@ -1,8 +1,8 @@
 import 'package:nyxx/nyxx.dart';
+import 'package:nyxx_commands/src/util/mixins.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands/chat_command.dart';
-import '../util/component_wrappers.dart';
 import 'base.dart';
 
 /// Data about a context in which a [ChatCommand] was executed.
@@ -43,7 +43,7 @@ abstract class IChatContext implements IChatContextData, ICommandContext {
   set arguments(List<dynamic> value);
 }
 
-abstract class ChatContext extends ContextBase implements IChatContext {
+abstract class ChatContext extends ContextBase with InteractiveMixin implements IChatContext {
   @override
   late final List<dynamic> arguments;
 
@@ -66,8 +66,9 @@ abstract class ChatContext extends ContextBase implements IChatContext {
 /// You might also be interested in:
 /// - [InteractionChatContext], a context in which a [ChatCommand] was executed from an interaction;
 /// - [IChatContext], the base class for all context representing the execution of a [ChatCommand].
-class MessageChatContext extends ChatContext with ComponentWrappersMixin {
+class MessageChatContext extends ChatContext with MessageRespondMixin {
   /// The message that triggered this command.
+  @override
   final IMessage message;
 
   /// The prefix that was used to invoke this command.
@@ -98,27 +99,6 @@ class MessageChatContext extends ChatContext with ComponentWrappersMixin {
     required super.commands,
     required super.client,
   });
-
-  @override
-  Future<IMessage> respond(
-    MessageBuilder builder, {
-    bool private = false,
-    bool mention = true,
-  }) async {
-    if (private) {
-      return user.sendMessage(builder);
-    } else {
-      return await channel.sendMessage(builder
-        ..replyBuilder = ReplyBuilder.fromMessage(message)
-        ..allowedMentions ??= (AllowedMentions()
-          ..allow(
-            reply: mention,
-            everyone: true,
-            roles: true,
-            users: true,
-          )));
-    }
-  }
 }
 
 /// A context in which a [ChatCommand] was invoked from an interaction.
@@ -127,7 +107,7 @@ class MessageChatContext extends ChatContext with ComponentWrappersMixin {
 /// - [MessageChatContext], a context in which a [ChatCommand] was executed from a text message;
 /// - [IChatContext], the base class for all context representing the execution of a [ChatCommand].
 class InteractionChatContext extends ChatContext
-    with InteractionRespondMixin, ComponentWrappersMixin
+    with InteractionRespondMixin
     implements IInteractionCommandContext {
   @override
   final ISlashCommandInteraction interaction;
