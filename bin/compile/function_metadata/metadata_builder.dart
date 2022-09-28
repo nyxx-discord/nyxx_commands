@@ -16,10 +16,9 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/constant/value.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/src/dart/element/element.dart';
-import 'package:nyxx_commands/nyxx_commands.dart';
+import 'package:nyxx_commands/nyxx_commands.dart' show CommandsError;
 
 import '../generator.dart';
-import '../type_tree/tree_builder.dart';
 import 'compile_time_function_data.dart';
 
 /// Convert [idCreations] into function metadata.
@@ -66,36 +65,37 @@ Iterable<CompileTimeFunctionData> getFunctionData(
       }
 
       /// Extracts all the annotations on a parameter that have a type with the type id [type].
-      Iterable<Annotation> annotationsWithType(int type) {
-        Iterable<Annotation> constructorAnnotations = parameter.metadata
-            .where((node) => node.elementAnnotation?.element is ConstructorElement)
-            .where((node) =>
-                getId((node.elementAnnotation!.element as ConstructorElement)
-                    .enclosingElement
-                    .thisType) ==
-                type);
+      Iterable<Annotation> annotationsWithType(String source) {
+        return parameter.metadata.where((element) {
+          ElementAnnotation? annotation = element.elementAnnotation;
+          if (annotation == null) {
+            return false;
+          }
 
-        Iterable<Annotation> constVariableAnnotations = parameter.metadata
-            .where((node) => (node.elementAnnotation?.element is ConstVariableElement))
-            .where((node) =>
-                getId((node.elementAnnotation!.element as ConstVariableElement)
-                    .evaluationResult!
-                    .value!
-                    .type) ==
-                type);
+          DartObject? result = annotation.computeConstantValue();
+          if (annotation.constantEvaluationErrors?.isEmpty != true || result == null) {
+            return false;
+          }
 
-        return constructorAnnotations.followedBy(constVariableAnnotations);
+          return result.type?.element?.location?.encoding == source;
+        });
       }
 
-      Iterable<Annotation> nameAnnotations = annotationsWithType(nameId);
-
-      Iterable<Annotation> descriptionAnnotations = annotationsWithType(descriptionId);
-
-      Iterable<Annotation> choicesAnnotations = annotationsWithType(choicesId);
-
-      Iterable<Annotation> useConverterAnnotations = annotationsWithType(useConverterId);
-
-      Iterable<Annotation> autocompleteAnnotations = annotationsWithType(autocompleteId);
+      Iterable<Annotation> nameAnnotations = annotationsWithType(
+        'package:nyxx_commands/src/util/util.dart;package:nyxx_commands/src/util/util.dart;Name',
+      );
+      Iterable<Annotation> descriptionAnnotations = annotationsWithType(
+        'package:nyxx_commands/src/util/util.dart;package:nyxx_commands/src/util/util.dart;Description',
+      );
+      Iterable<Annotation> choicesAnnotations = annotationsWithType(
+        'package:nyxx_commands/src/util/util.dart;package:nyxx_commands/src/util/util.dart;Choices',
+      );
+      Iterable<Annotation> useConverterAnnotations = annotationsWithType(
+        'package:nyxx_commands/src/util/util.dart;package:nyxx_commands/src/util/util.dart;UseConverter',
+      );
+      Iterable<Annotation> autocompleteAnnotations = annotationsWithType(
+        'package:nyxx_commands/src/util/util.dart;package:nyxx_commands/src/util/util.dart;Autocomplete',
+      );
 
       if ([
         nameAnnotations,

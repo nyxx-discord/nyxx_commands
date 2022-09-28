@@ -18,21 +18,22 @@ import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../context/autocomplete_context.dart';
 import '../converters/converter.dart';
+import 'mirror_utils.dart';
 
 class FunctionData {
-  final List<ParameterData> parametersData;
+  final List<ParameterData<dynamic>> parametersData;
 
   int get requiredParameters => parametersData.takeWhile((value) => !value.isOptional).length;
 
   const FunctionData(this.parametersData);
 }
 
-class ParameterData {
+class ParameterData<T> {
   final String name;
 
   final Map<Locale, String>? localizedNames;
 
-  final Type type;
+  final DartType<T> type;
 
   final bool isOptional;
 

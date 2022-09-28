@@ -85,6 +85,7 @@ export 'src/converters/converter.dart'
         registerDefaultConverters,
         parse;
 export 'src/converters/simple.dart' show SimpleConverter;
+export 'src/mirror_utils/mirror_utils.dart' show DartType;
 export 'src/errors.dart'
     show
         AutocompleteFailedException,

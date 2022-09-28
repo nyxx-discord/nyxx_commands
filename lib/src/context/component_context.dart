@@ -1,6 +1,7 @@
-import 'package:nyxx_commands/src/context/base.dart';
-import 'package:nyxx_commands/src/util/mixins.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+
+import '../util/mixins.dart';
+import 'base.dart';
 
 /// Data about a context in which a component was interacted with.
 ///

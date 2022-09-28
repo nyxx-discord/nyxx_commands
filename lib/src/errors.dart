@@ -16,6 +16,7 @@ import 'checks/checks.dart';
 import 'context/autocomplete_context.dart';
 import 'context/base.dart';
 import 'context/chat_context.dart';
+import 'mirror_utils/mirror_utils.dart';
 import 'util/view.dart';
 
 /// The base class for exceptions thrown by nyxx_commands.
@@ -122,7 +123,7 @@ class CheckFailedException extends CommandInvocationException {
 /// - [CommandsPlugin.addConverter], for adding your own [Converter]s to your bot.
 class NoConverterException extends CommandInvocationException {
   /// The type that the converter was requested for.
-  final Type expectedType;
+  final DartType<dynamic> expectedType;
 
   /// Create a new [NoConverterException].
   NoConverterException(this.expectedType, ICommandContext context)

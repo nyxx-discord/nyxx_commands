@@ -12,8 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-import 'package:nyxx_commands/src/context/base.dart';
-
+import '../context/base.dart';
 import 'chat_command.dart';
 
 /// Options that modify how a command behaves.

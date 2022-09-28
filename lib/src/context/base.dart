@@ -1,10 +1,10 @@
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/context/component_context.dart';
-import 'package:nyxx_commands/src/converters/converter.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands.dart';
 import '../commands/interfaces.dart';
+import '../converters/converter.dart';
+import 'component_context.dart';
 
 /// The base class for all contexts in nyxx_commands.
 ///

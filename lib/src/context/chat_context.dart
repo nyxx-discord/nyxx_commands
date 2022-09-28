@@ -1,8 +1,8 @@
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/util/mixins.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands/chat_command.dart';
+import '../util/mixins.dart';
 import 'base.dart';
 
 /// Data about a context in which a [ChatCommand] was executed.
