@@ -187,7 +187,7 @@ abstract class IInteractiveContext {
   /// - [getSelection] and [getMultiSelection], for getting a selection from a user.
   Future<ButtonComponentContext> getButtonPress(
     String componentId, {
-    Duration? timeout = const Duration(minutes: 10),
+    Duration? timeout,
     bool authorOnly = true,
   });
 
@@ -203,7 +203,7 @@ abstract class IInteractiveContext {
   /// multi-select menu allowing more than one choice).
   Future<MultiselectComponentContext<T>> getSelection<T>(
     String componentId, {
-    Duration? timeout = const Duration(minutes: 10),
+    Duration? timeout,
     bool authorOnly = true,
     Converter<T>? converterOverride,
   });
@@ -217,7 +217,7 @@ abstract class IInteractiveContext {
   /// selection menu.
   Future<MultiselectComponentContext<List<T>>> getMultiSelection<T>(
     String componentId, {
-    Duration? timeout = const Duration(minutes: 10),
+    Duration? timeout,
     bool authorOnly = true,
     Converter<T>? converterOverride,
   });

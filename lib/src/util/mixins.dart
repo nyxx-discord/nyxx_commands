@@ -150,7 +150,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
   @override
   Future<ButtonComponentContext> getButtonPress(
     String componentId, {
-    Duration? timeout = const Duration(minutes: 10),
+    Duration? timeout,
     bool authorOnly = true,
   }) async {
     if (delegate != null) {
@@ -174,7 +174,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
   @override
   Future<MultiselectComponentContext<T>> getSelection<T>(
     String componentId, {
-    Duration? timeout = const Duration(minutes: 10),
+    Duration? timeout,
     bool authorOnly = true,
     Converter<T>? converterOverride,
   }) async {
@@ -215,7 +215,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
   @override
   Future<MultiselectComponentContext<List<T>>> getMultiSelection<T>(
     String componentId, {
-    Duration? timeout = const Duration(minutes: 10),
+    Duration? timeout,
     bool authorOnly = true,
     Converter<T>? converterOverride,
   }) async {
