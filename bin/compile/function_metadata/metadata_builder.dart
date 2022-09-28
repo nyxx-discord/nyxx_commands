@@ -79,25 +79,6 @@ Iterable<CompileTimeFunctionData> getFunctionData(
 
           return result.type?.element?.location?.encoding == source;
         });
-
-        // Iterable<Annotation> constructorAnnotations = parameter.metadata
-        //     .where((node) => node.elementAnnotation?.element is ConstructorElement)
-        //     .where((node) =>
-        //         getId((node.elementAnnotation!.element as ConstructorElement)
-        //             .enclosingElement
-        //             .thisType) ==
-        //         type);
-
-        // Iterable<Annotation> constVariableAnnotations = parameter.metadata
-        //     .where((node) => (node.elementAnnotation?.element is ConstVariableElement))
-        //     .where((node) =>
-        //         getId((node.elementAnnotation!.element as ConstVariableElement)
-        //             .evaluationResult!
-        //             .value!
-        //             .type) ==
-        //         type);
-
-        // return constructorAnnotations.followedBy(constVariableAnnotations);
       }
 
       Iterable<Annotation> nameAnnotations = annotationsWithType(
