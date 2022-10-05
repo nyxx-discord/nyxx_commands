@@ -87,6 +87,8 @@ mixin OptionsMixin<T extends ICommandContext> on ICommandRegisterable<T> impleme
       acceptSelfCommands: options.acceptSelfCommands ?? parentOptions.acceptSelfCommands,
       defaultResponseLevel: options.defaultResponseLevel ?? parentOptions.defaultResponseLevel,
       type: options.type ?? parentType,
+      autoAcknowledgeDuration:
+          options.autoAcknowledgeDuration ?? parentOptions.autoAcknowledgeDuration,
     );
   }
 }

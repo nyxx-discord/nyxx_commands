@@ -31,8 +31,19 @@ class CommandOptions {
   /// Setting this to false means that you must acknowledge the interaction yourself.
   ///
   /// You might also be interested in:
+  /// - [autoAcknowledgeDuration], for setting the time after which interactions will be
+  ///   acknowledged.
   /// - [IInteractionInteractiveContext.acknowledge], for manually acknowledging interactions.
   final bool? autoAcknowledgeInteractions;
+
+  /// The duration after which to automatically acknowledge interactions.
+  ///
+  /// Has no effect if [autoAcknowledgeInteractions] is `false`.
+  ///
+  /// If this is `null`, the timeout for interactions is calculated based on the bot's latency. On
+  /// unstable networks, this might result in some interactions not being acknowledged, in which
+  /// case setting this option might help.
+  final Duration? autoAcknowledgeDuration;
 
   /// Whether to accept messages sent by bot accounts as possible commands.
   ///
@@ -71,6 +82,7 @@ class CommandOptions {
   /// Options set to `null` will be inherited from the parent.
   const CommandOptions({
     this.autoAcknowledgeInteractions,
+    this.autoAcknowledgeDuration,
     this.acceptBotCommands,
     this.acceptSelfCommands,
     this.defaultResponseLevel,
