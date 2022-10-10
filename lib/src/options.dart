@@ -64,10 +64,14 @@ class CommandsOptions implements CommandOptions {
   @override
   final bool caseInsensitiveCommands;
 
+  @override
+  final Duration? autoAcknowledgeDuration;
+
   /// Create a new set of [CommandsOptions].
   const CommandsOptions({
     this.logErrors = true,
     this.autoAcknowledgeInteractions = true,
+    this.autoAcknowledgeDuration,
     this.acceptBotCommands = false,
     this.acceptSelfCommands = false,
     this.backend,

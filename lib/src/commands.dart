@@ -270,12 +270,16 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
   Future<void> _processInteractionCommand(IInteractionCommandContext context) async {
     try {
       if (context.command.resolvedOptions.autoAcknowledgeInteractions!) {
-        Duration latency = Duration.zero;
-        if (client is INyxxWebsocket) {
-          latency = (client as INyxxWebsocket).shardManager.gatewayLatency;
-        }
+        Duration? timeout = context.command.resolvedOptions.autoAcknowledgeDuration;
 
-        Duration timeout = Duration(seconds: 3) - latency * 2;
+        if (timeout == null) {
+          Duration latency = const Duration(seconds: 1);
+          if (client is INyxxWebsocket) {
+            latency = (client as INyxxWebsocket).shardManager.gatewayLatency;
+          }
+
+          timeout = const Duration(seconds: 3) - latency * 2;
+        }
 
         Timer(timeout, () async {
           try {
