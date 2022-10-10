@@ -61,6 +61,9 @@ class CommandsOptions implements CommandOptions {
   @override
   final CommandType type;
 
+  @override
+  final bool caseInsensitiveCommands;
+
   /// Create a new set of [CommandsOptions].
   const CommandsOptions({
     this.logErrors = true,
@@ -71,5 +74,6 @@ class CommandsOptions implements CommandOptions {
     this.defaultResponseLevel = ResponseLevel.public,
     this.type = CommandType.all,
     this.inferDefaultCommandType = true,
+    this.caseInsensitiveCommands = true,
   });
 }

@@ -17,6 +17,8 @@ import 'dart:async';
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
+import '../commands/chat_command.dart';
+import '../commands/interfaces.dart';
 import '../context/autocomplete_context.dart';
 import '../converters/converter.dart';
 import 'view.dart';
@@ -333,4 +335,37 @@ T id<T extends Function>(dynamic id, T fn) {
   idMap[fn] = id;
 
   return fn;
+}
+
+ChatCommand? getCommandHelper(StringView view, Map<String, IChatCommandComponent> children) {
+  String name = view.getWord();
+  String lowerCaseName = name.toLowerCase();
+
+  try {
+    IChatCommandComponent child = children.entries.singleWhere((childEntry) {
+      bool isCaseInsensitive = childEntry.value.resolvedOptions.caseInsensitiveCommands!;
+
+      if (isCaseInsensitive) {
+        return lowerCaseName == childEntry.key.toLowerCase();
+      }
+
+      return name == childEntry.key;
+    }).value;
+
+    ChatCommand? found = child.getCommand(view);
+
+    // If no command further down the tree was found, return the child if it is a chat command
+    // that can be invoked from a text message (not slash only).
+    if (found == null &&
+        child is ChatCommand &&
+        child.resolvedOptions.type != CommandType.slashOnly) {
+      return child;
+    }
+
+    return found;
+  } on StateError {
+    // Don't consume any input if no command was found.
+    view.undo();
+    return null;
+  }
 }

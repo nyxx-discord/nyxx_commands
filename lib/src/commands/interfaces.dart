@@ -16,6 +16,7 @@ import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../checks/checks.dart';
 import '../commands.dart';
+import '../commands/chat_command.dart';
 import '../context/base.dart';
 import '../context/chat_context.dart';
 import '../errors.dart';
@@ -244,4 +245,13 @@ abstract class IChatCommandComponent
 
   /// Return the [CommandOptionBuilder]s that represent this entity for slash command registration.
   Iterable<CommandOptionBuilder> getOptions(CommandsPlugin commands);
+
+  @override
+  ChatCommand? getCommand(StringView view);
+
+  @override
+  Iterable<ChatCommand> walkCommands();
+
+  @override
+  Iterable<IChatCommandComponent> get children;
 }
