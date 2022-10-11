@@ -108,7 +108,7 @@ class BadInputException extends ContextualException {
 
 /// An exception thrown when the end of user input is encountered before all the required arguments
 /// of a [ChatCommand] have been parsed.
-class NotEnoughArgumentsException extends BadInputException {
+class NotEnoughArgumentsException extends CommandInvocationException implements BadInputException {
   /// Create a new [NotEnoughArgumentsException].
   NotEnoughArgumentsException(MessageChatContext context)
       : super(
