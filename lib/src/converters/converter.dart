@@ -931,14 +931,14 @@ const Converter<IAttachment> attachmentConverter = FallbackConverter(
 /// - [ICommand.invoke], which parses multiple arguments and executes a command.
 Future<T> parse<T>(
   CommandsPlugin commands,
-  ICommandContext context,
+  IContextData context,
   StringView toParse,
   DartType<T> expectedType, {
   Converter<T>? converterOverride,
 }) async {
   Converter<T>? converter = converterOverride ?? commands.getConverter(expectedType);
   if (converter == null) {
-    throw NoConverterException(expectedType, context);
+    throw NoConverterException(expectedType);
   }
 
   try {
