@@ -352,17 +352,17 @@ ChatCommand? getCommandHelper(StringView view, Map<String, IChatCommandComponent
       return name == childEntry.key;
     }).value;
 
-    ChatCommand? found = child.getCommand(view);
+    ChatCommand? commandFromChild = child.getCommand(view);
 
     // If no command further down the tree was found, return the child if it is a chat command
     // that can be invoked from a text message (not slash only).
-    if (found == null &&
+    if (commandFromChild == null &&
         child is ChatCommand &&
         child.resolvedOptions.type != CommandType.slashOnly) {
       return child;
     }
 
-    return found;
+    return commandFromChild;
   } on StateError {
     // Don't consume any input if no command was found.
     view.undo();
