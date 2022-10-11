@@ -62,6 +62,9 @@ class CommandsOptions implements CommandOptions {
   final CommandType type;
 
   @override
+  final bool caseInsensitiveCommands;
+
+  @override
   final Duration? autoAcknowledgeDuration;
 
   /// Create a new set of [CommandsOptions].
@@ -75,5 +78,6 @@ class CommandsOptions implements CommandOptions {
     this.defaultResponseLevel = ResponseLevel.public,
     this.type = CommandType.all,
     this.inferDefaultCommandType = true,
+    this.caseInsensitiveCommands = true,
   });
 }

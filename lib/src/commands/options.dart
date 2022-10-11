@@ -77,6 +77,15 @@ class CommandOptions {
   /// commands executable only through Slash Commands, or only through text messages.
   final CommandType? type;
 
+  /// Whether command fetching should be case insensitive.
+  ///
+  /// If this is `true`, [ChatCommand]s may be invoked by users without the command name matching
+  /// the case of the input.
+  ///
+  /// You might also be interested in:
+  /// - [IChatCommandComponent.aliases], for invoking a single command from multiple names.
+  final bool? caseInsensitiveCommands;
+
   /// Create a set of command options.
   ///
   /// Options set to `null` will be inherited from the parent.
@@ -87,5 +96,6 @@ class CommandOptions {
     this.acceptSelfCommands,
     this.defaultResponseLevel,
     this.type,
+    this.caseInsensitiveCommands,
   });
 }

@@ -114,33 +114,12 @@ mixin ChatGroupMixin implements IChatCommandComponent {
     }
 
     for (final child in children) {
-      yield* child.walkCommands() as Iterable<ChatCommand>;
+      yield* child.walkCommands();
     }
   }
 
   @override
-  ChatCommand? getCommand(StringView view) {
-    String name = view.getWord();
-
-    if (_childrenMap.containsKey(name)) {
-      IChatCommandComponent child = _childrenMap[name]!;
-
-      if (child is ChatCommand && child.resolvedOptions.type != CommandType.slashOnly) {
-        ChatCommand? found = child.getCommand(view);
-
-        if (found == null) {
-          return child;
-        }
-
-        return found;
-      } else {
-        return child.getCommand(view) as ChatCommand?;
-      }
-    }
-
-    view.undo();
-    return null;
-  }
+  ChatCommand? getCommand(StringView view) => getCommandHelper(view, _childrenMap);
 
   @override
   String get fullName =>

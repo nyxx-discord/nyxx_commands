@@ -618,28 +618,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
   }
 
   @override
-  ChatCommand? getCommand(StringView view) {
-    String name = view.getWord();
-
-    if (_chatCommands.containsKey(name)) {
-      IChatCommandComponent child = _chatCommands[name]!;
-
-      if (child is ChatCommand && child.resolvedOptions.type != CommandType.slashOnly) {
-        ChatCommand? found = child.getCommand(view);
-
-        if (found == null) {
-          return child;
-        }
-
-        return found;
-      } else {
-        return child.getCommand(view) as ChatCommand?;
-      }
-    }
-
-    view.undo();
-    return null;
-  }
+  ChatCommand? getCommand(StringView view) => getCommandHelper(view, _chatCommands);
 
   @override
   Iterable<ICommand> walkCommands() sync* {
