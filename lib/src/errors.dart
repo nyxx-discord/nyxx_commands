@@ -42,9 +42,20 @@ class CommandsException implements Exception {
   String toString() => 'Command Exception: $message';
 }
 
-/// An exception that occurred during the execution of a command.
-class CommandInvocationException extends CommandsException {
+/// An exception that can be attached to a known context.
+///
+/// Subclasses of this exception are generally thrown during the processing of [context].
+class ContextualException extends CommandsException {
   /// The context in which the exception occurred.
+  final IContextData context;
+
+  /// Create a new [ContextualException].
+  ContextualException(super.message, this.context);
+}
+
+/// An exception that occurred during the execution of a command.
+class CommandInvocationException extends CommandsException implements ContextualException {
+  @override
   final ICommandContext context;
 
   /// Create a new [CommandInvocationException].
@@ -90,14 +101,14 @@ class UncaughtException extends CommandInvocationException {
 /// An exception that occurred due to an invalid input from the user.
 ///
 /// This generally indicates that nyxx_commands was unable to parse the user's input.
-class BadInputException extends CommandInvocationException {
+class BadInputException extends ContextualException {
   /// Create a new [BadInputException].
   BadInputException(super.message, super.context);
 }
 
 /// An exception thrown when the end of user input is encountered before all the required arguments
 /// of a [ChatCommand] have been parsed.
-class NotEnoughArgumentsException extends BadInputException {
+class NotEnoughArgumentsException extends CommandInvocationException implements BadInputException {
   /// Create a new [NotEnoughArgumentsException].
   NotEnoughArgumentsException(MessageChatContext context)
       : super(
@@ -121,13 +132,12 @@ class CheckFailedException extends CommandInvocationException {
 ///
 /// You might also be interested in:
 /// - [CommandsPlugin.addConverter], for adding your own [Converter]s to your bot.
-class NoConverterException extends CommandInvocationException {
+class NoConverterException extends CommandsException {
   /// The type that the converter was requested for.
   final DartType<dynamic> expectedType;
 
   /// Create a new [NoConverterException].
-  NoConverterException(this.expectedType, ICommandContext context)
-      : super('No converter found for type "$expectedType"', context);
+  NoConverterException(this.expectedType) : super('No converter found for type "$expectedType"');
 }
 
 /// An exception thrown when a message command matching [CommandsPlugin.prefix] is found, but no

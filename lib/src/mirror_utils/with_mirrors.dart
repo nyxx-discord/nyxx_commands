@@ -21,7 +21,13 @@ import 'package:nyxx_interactions/nyxx_interactions.dart';
 import '../commands.dart';
 import 'mirror_utils.dart';
 
+final Map<Function, FunctionData> _cache = {};
+
 FunctionData loadFunctionData(Function fn) {
+  if (_cache.containsKey(fn)) {
+    return _cache[fn]!;
+  }
+
   List<ParameterData<dynamic>> parametersData = [];
 
   MethodMirror fnMirror = (reflect(fn) as ClosureMirror).function;
@@ -125,7 +131,7 @@ FunctionData loadFunctionData(Function fn) {
     ));
   }
 
-  return FunctionData(parametersData);
+  return _cache[fn] = FunctionData(parametersData);
 }
 
 void loadData(Map<dynamic, FunctionData> functionData) {
