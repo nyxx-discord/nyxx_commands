@@ -89,6 +89,8 @@ mixin OptionsMixin<T extends ICommandContext> on ICommandRegisterable<T> impleme
       type: options.type ?? parentType,
       autoAcknowledgeDuration:
           options.autoAcknowledgeDuration ?? parentOptions.autoAcknowledgeDuration,
+      caseInsensitiveCommands:
+          options.caseInsensitiveCommands ?? parentOptions.caseInsensitiveCommands,
     );
   }
 }
