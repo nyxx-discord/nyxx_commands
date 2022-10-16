@@ -144,7 +144,7 @@ abstract class IInteractiveContext {
   /// Otherwise, this is `null`.
   ///
   /// You might also be interested in:
-  /// - [getButtonPress], [getSelection] and [getMultiSelection], some of the methods that can
+  /// - [awaitButtonPress], [awaitSelection] and [awaitMultiSelection], some of the methods that can
   ///   create a child context;
   /// - [delegate], the context that has this context as its parent.
   IInteractiveContext? get parent;
@@ -156,7 +156,7 @@ abstract class IInteractiveContext {
   /// command flow more accurate in the Discord UI.
   ///
   /// You might also be interested in:
-  /// - [getButtonPress], [getSelection] and [getMultiSelection], some of the methods that can
+  /// - [awaitButtonPress], [awaitSelection] and [awaitMultiSelection], some of the methods that can
   ///   create a context to delegate to.
   /// - [parent], the context of which this context is the delegate.
   IInteractiveContext? get delegate;
@@ -184,8 +184,8 @@ abstract class IInteractiveContext {
   /// button.
   ///
   /// You might also be interested in:
-  /// - [getSelection] and [getMultiSelection], for getting a selection from a user.
-  Future<ButtonComponentContext> getButtonPress(
+  /// - [awaitSelection] and [awaitMultiSelection], for getting a selection from a user.
+  Future<ButtonComponentContext> awaitButtonPress(
     String componentId, {
     Duration? timeout,
     bool authorOnly = true,
@@ -201,7 +201,7 @@ abstract class IInteractiveContext {
   ///
   /// Will throw a [StateError] if more than one option is selected (for example, from a
   /// multi-select menu allowing more than one choice).
-  Future<MultiselectComponentContext<T>> getSelection<T>(
+  Future<MultiselectComponentContext<T>> awaitSelection<T>(
     String componentId, {
     Duration? timeout,
     bool authorOnly = true,
@@ -215,7 +215,7 @@ abstract class IInteractiveContext {
   ///
   /// If [authorOnly] is set, only the author of this interaction will be able to interact with the
   /// selection menu.
-  Future<MultiselectComponentContext<List<T>>> getMultiSelection<T>(
+  Future<MultiselectComponentContext<List<T>>> awaitMultiSelection<T>(
     String componentId, {
     Duration? timeout,
     bool authorOnly = true,

@@ -153,13 +153,13 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
   }
 
   @override
-  Future<ButtonComponentContext> getButtonPress(
+  Future<ButtonComponentContext> awaitButtonPress(
     String componentId, {
     Duration? timeout,
     bool authorOnly = true,
   }) async {
     if (delegate != null) {
-      return delegate!.getButtonPress(componentId, timeout: timeout, authorOnly: authorOnly);
+      return delegate!.awaitButtonPress(componentId, timeout: timeout, authorOnly: authorOnly);
     }
 
     ButtonComponentContext context =
@@ -177,14 +177,14 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
   }
 
   @override
-  Future<MultiselectComponentContext<T>> getSelection<T>(
+  Future<MultiselectComponentContext<T>> awaitSelection<T>(
     String componentId, {
     Duration? timeout,
     bool authorOnly = true,
     Converter<T>? converterOverride,
   }) async {
     if (delegate != null) {
-      return delegate!.getSelection(
+      return delegate!.awaitSelection(
         componentId,
         timeout: timeout,
         authorOnly: authorOnly,
@@ -218,14 +218,14 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
   }
 
   @override
-  Future<MultiselectComponentContext<List<T>>> getMultiSelection<T>(
+  Future<MultiselectComponentContext<List<T>>> awaitMultiSelection<T>(
     String componentId, {
     Duration? timeout,
     bool authorOnly = true,
     Converter<T>? converterOverride,
   }) async {
     if (delegate != null) {
-      return delegate!.getMultiSelection(
+      return delegate!.awaitMultiSelection(
         componentId,
         authorOnly: authorOnly,
         converterOverride: converterOverride,
