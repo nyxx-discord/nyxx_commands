@@ -98,6 +98,16 @@ class UncaughtException extends CommandInvocationException {
   UncaughtException(this.exception, ICommandContext context) : super(exception.toString(), context);
 }
 
+/// An exception thrown by nyxx_commands to indicate misuse of the library.
+class UncaughtCommandsException extends UncaughtException {
+  /// Create a new [UncaughtCommandsException].
+  UncaughtCommandsException(String message, ICommandContext context)
+      : super(
+          CommandsException(message),
+          context,
+        );
+}
+
 /// An exception that occurred due to an invalid input from the user.
 ///
 /// This generally indicates that nyxx_commands was unable to parse the user's input.

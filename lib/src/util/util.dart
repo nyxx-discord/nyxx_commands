@@ -369,3 +369,26 @@ ChatCommand? getCommandHelper(StringView view, Map<String, IChatCommandComponent
     return null;
   }
 }
+
+final int _start = DateTime.now().millisecondsSinceEpoch;
+int _increment = 0;
+
+/// Create a unique ID for components.
+String createId() => 'nyxx_commands-$_start-${++_increment}';
+
+/// Convert any [MessageBuilder] to a [ComponentMessageBuilder].
+ComponentMessageBuilder builderToComponentBuilder(MessageBuilder builder) {
+  if (builder is ComponentMessageBuilder) {
+    return builder;
+  }
+
+  return ComponentMessageBuilder()
+    ..allowedMentions = builder.allowedMentions
+    ..attachments = builder.attachments
+    ..content = builder.content
+    ..embeds = builder.embeds
+    ..files = builder.files
+    ..nonce = builder.nonce
+    ..replyBuilder = builder.replyBuilder
+    ..tts = builder.tts;
+}

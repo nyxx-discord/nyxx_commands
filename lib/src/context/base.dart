@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
@@ -221,6 +223,126 @@ abstract class IInteractiveContext {
     bool authorOnly = true,
     Converter<T>? converterOverride,
   });
+
+  /// Wait for a user to press on any button on aa given message and return a context representing
+  /// the button press.
+  ///
+  /// If [timeout] is set, this method will complete with an error after [timeout] has passed.
+  ///
+  /// If [authorOnly] is set, only the author of this interaction will be able to interact with a
+  /// button.
+  ///
+  /// You might also be interested in:
+  /// - [awaitButtonPress], for getting a press from a single button;
+  /// - [getButtonSelection], for getting a value from a button selection;
+  /// - [getSelection], for getting a selection from a multi-select menu.
+  Future<ButtonComponentContext> getButtonPress(
+    IMessage message, {
+    bool authorOnly = true,
+    ResponseLevel? level,
+    Duration? timeout,
+  });
+
+  /// Get a selection from a user, presenting the options as an array of buttons.
+  ///
+  /// If [styles] is set, the style of a button presenting a given option will depend on the value
+  /// set in the map.
+  ///
+  /// If [timeout] is set, this method will complete with an error after [timeout] has passed.
+  ///
+  /// If [authorOnly] is set, only the author of this interaction will be able to interact with a
+  /// button.
+  ///
+  /// [level] will change the level at which the message is sent, similarly to [respond].
+  ///
+  /// [toButton] and [converterOverride] can be set to change how each value is converted to a
+  /// button. At most one of them may be set, and the default is to use [Converter.toButton] on the
+  /// default conversion for `T`.
+  ///
+  /// You might also be interested in:
+  /// - [getButtonPress], for getting a button press from any button on a message;
+  /// - [getSelection], for getting a selection from a multi-select menu;
+  /// - [getConfirmation], for getting a basic `true`/`false` selection from the user.
+  Future<T> getButtonSelection<T>(
+    List<T> values,
+    MessageBuilder builder, {
+    Map<T, ButtonStyle>? styles,
+    bool authorOnly = true,
+    ResponseLevel? level,
+    Duration? timeout,
+    FutureOr<ButtonBuilder> Function(T)? toButton,
+    Converter<T>? converterOverride,
+  });
+
+  /// Present the user with two options and return whether the positive one was clicked.
+  ///
+  /// If [styles] is set, the style of a button presenting a given option will depend on the value
+  /// set in the map. [values] can also be set to change the text displayed on each button.
+  ///
+  /// If [timeout] is set, this method will complete with an error after [timeout] has passed.
+  ///
+  /// If [authorOnly] is set, only the author of this interaction will be able to interact with a
+  /// button.
+  ///
+  /// [level] will change the level at which the message is sent, similarly to [respond].
+  Future<bool> getConfirmation(
+    MessageBuilder builder, {
+    Map<bool, String> values = const {true: 'Yes', false: 'No'},
+    Map<bool, ButtonStyle> styles = const {true: ButtonStyle.success, false: ButtonStyle.danger},
+    bool authorOnly = true,
+    ResponseLevel? level,
+    Duration? timeout,
+  });
+
+  /// Present the user with a drop-down menu of choices and return the selected choice.
+  ///
+  /// If [timeout] is set, this method will complete with an error after [timeout] has passed.
+  ///
+  /// If [authorOnly] is set, only the author of this interaction will be able to interact with a
+  /// button.
+  ///
+  /// [level] will change the level at which the message is sent, similarly to [respond].
+  ///
+  /// [converterOverride] can be set to change how each value is converted to a multi-select option.
+  /// The default is to use [Converter.toMultiselectOption] on the default converter for `T`.
+  ///
+  /// You might also be interested in:
+  /// - [getMultiSelection], for getting multiple selection;
+  /// - [getButtonSelection], for getting a selection from a button;
+  /// - [awaitSelection], for getting a selection from a pre-existing selection menu.
+  Future<T> getSelection<T>(
+    List<T> choices,
+    MessageBuilder builder, {
+    ResponseLevel? level,
+    Duration? timeout,
+    bool authorOnly = true,
+    Converter<T>? converterOverride,
+  });
+
+  /// Present the user with a drop-down menu of choices and return the selected choices.
+  ///
+  /// If [timeout] is set, this method will complete with an error after [timeout] has passed.
+  ///
+  /// If [authorOnly] is set, only the author of this interaction will be able to interact with a
+  /// button.
+  ///
+  /// [level] will change the level at which the message is sent, similarly to [respond].
+  ///
+  /// [converterOverride] can be set to change how each value is converted to a multi-select option.
+  /// The default is to use [Converter.toMultiselectOption] on the default converter for `T`.
+  ///
+  /// You might also be interested in:
+  /// - [getSelection], for getting a single selection;
+  /// - [getButtonSelection], for getting a selection from a button;
+  /// - [awaitSelection], for getting a selection from a pre-existing selection menu.
+  Future<List<T>> getMultiSelection<T>(
+    List<T> choices,
+    MessageBuilder builder, {
+    ResponseLevel? level,
+    Duration? timeout,
+    bool authorOnly = true,
+    Converter<T>? converterOverride,
+  });
 }
 
 /// A context that can be interacted with and originated from an interaction.
@@ -228,9 +350,6 @@ abstract class IInteractiveContext {
 /// You might also be interested in:
 /// - [IInteractionContextData], which contains data about interactions.
 abstract class IInteractionInteractiveContext implements IInteractiveContext {
-  @override
-  Future<IMessage> respond(MessageBuilder builder, {ResponseLevel? level});
-
   /// Acknowledge the underlying interaction without yet sending a response.
   ///
   /// [level] can be used to change whether the response should be hidden or not.

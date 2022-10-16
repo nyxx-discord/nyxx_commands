@@ -12,6 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+import 'dart:async';
+import 'dart:math';
+
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
@@ -25,6 +28,7 @@ import '../context/component_context.dart';
 import '../converters/converter.dart';
 import '../errors.dart';
 import '../mirror_utils/mirror_utils.dart';
+import '../util/util.dart';
 import '../util/view.dart';
 
 mixin ParentMixin<T extends ICommandContext> implements ICommandRegisterable<T> {
@@ -128,11 +132,23 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
 
   Future<T> _getInteractionEvent<T extends IComponentInteractionEvent>(
     Stream<T> stream, {
-    required String componentId,
+    List<String>? componentIds,
+    List<Snowflake>? messageIds,
     required Duration? timeout,
     required bool authorOnly,
   }) async {
-    stream = stream.where((event) => event.interaction.customId == componentId);
+    assert(
+      (componentIds == null) ^ (messageIds == null),
+      'Exactly one of componentIds or messageIds must be set',
+    );
+
+    if (componentIds != null) {
+      stream = stream.where((event) => componentIds.contains(event.interaction.customId));
+    }
+
+    if (messageIds != null) {
+      stream = stream.where((event) => messageIds.contains(event.interaction.message?.id));
+    }
 
     if (authorOnly) {
       stream = stream.where((event) {
@@ -165,7 +181,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     ButtonComponentContext context =
         await commands.contextManager.createButtonComponentContext(await _getInteractionEvent(
       commands.interactions.events.onButtonEvent,
-      componentId: componentId,
+      componentIds: [componentId],
       timeout: timeout,
       authorOnly: authorOnly,
     ));
@@ -194,7 +210,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
 
     IMultiselectInteractionEvent event = await _getInteractionEvent(
       commands.interactions.events.onMultiselectEvent,
-      componentId: componentId,
+      componentIds: [componentId],
       timeout: timeout,
       authorOnly: authorOnly,
     );
@@ -235,7 +251,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
 
     IMultiselectInteractionEvent event = await _getInteractionEvent(
       commands.interactions.events.onMultiselectEvent,
-      componentId: componentId,
+      componentIds: [componentId],
       timeout: timeout,
       authorOnly: authorOnly,
     );
@@ -264,6 +280,291 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     _delegate = context;
 
     return context;
+  }
+
+  @override
+  Future<ButtonComponentContext> getButtonPress(
+    IMessage message, {
+    bool authorOnly = true,
+    ResponseLevel? level,
+    Duration? timeout,
+  }) async {
+    if (_delegate != null) {
+      return _delegate!.getButtonPress(message, authorOnly: authorOnly, level: level);
+    }
+
+    ButtonComponentContext context = await commands.contextManager.createButtonComponentContext(
+      await _getInteractionEvent(
+        commands.interactions.events.onButtonEvent,
+        messageIds: [message.id],
+        timeout: timeout,
+        authorOnly: authorOnly,
+      ),
+    );
+
+    context._parent = this;
+    _delegate = context;
+
+    return context;
+  }
+
+  @override
+  Future<T> getButtonSelection<T>(
+    List<T> values,
+    MessageBuilder builder, {
+    Map<T, ButtonStyle>? styles,
+    bool authorOnly = true,
+    ResponseLevel? level,
+    Duration? timeout,
+    FutureOr<ButtonBuilder> Function(T)? toButton,
+    Converter<T>? converterOverride,
+  }) async {
+    if (_delegate != null) {
+      return _delegate!.getButtonSelection(
+        values,
+        builder,
+        authorOnly: authorOnly,
+        converterOverride: converterOverride,
+        level: level,
+        styles: styles,
+        timeout: timeout,
+        toButton: toButton,
+      );
+    }
+
+    assert(
+      toButton == null || converterOverride == null,
+      'Cannot specify both toButton and converterOverride.',
+    );
+
+    toButton ??= converterOverride?.toButton;
+    toButton ??= commands.getConverter(DartType<T>())?.toButton;
+
+    if (toButton == null) {
+      throw UncaughtCommandsException(
+        'No suitable method found for converting $T to ButtonBuilder.',
+        _nearestCommandContext,
+      );
+    }
+
+    Map<String, T> idToValue = {};
+
+    List<ButtonBuilder> buttons = await Future.wait(values.map((value) async {
+      ButtonBuilder builder = await toButton!(value);
+      ButtonStyle? style = styles?[value];
+      String id = createId();
+
+      // We have to copy since the fields on ButtonBuilder are final.
+      return ButtonBuilder(
+        builder.label,
+        id,
+        style ?? builder.style,
+      )
+        ..disabled = builder.disabled
+        ..emoji = builder.emoji;
+    }));
+
+    builder = builderToComponentBuilder(builder);
+
+    while (buttons.isNotEmpty) {
+      // Max 5 buttons per row
+      int lastIndex = min(5, buttons.length);
+
+      ComponentRowBuilder row = ComponentRowBuilder();
+
+      for (final button in buttons.take(lastIndex)) {
+        row.addComponent(button);
+      }
+
+      (builder as ComponentMessageBuilder).addComponentRow(row);
+      buttons.removeRange(0, lastIndex);
+    }
+
+    await respond(builder, level: level);
+
+    ButtonComponentContext context = await commands.contextManager.createButtonComponentContext(
+      await _getInteractionEvent(
+        commands.interactions.events.onButtonEvent,
+        componentIds: idToValue.keys.toList(),
+        timeout: timeout,
+        authorOnly: authorOnly,
+      ),
+    );
+
+    context._parent = this;
+    _delegate = context;
+
+    return idToValue[context.componentId]!;
+  }
+
+  @override
+  Future<bool> getConfirmation(
+    MessageBuilder builder, {
+    Map<bool, String> values = const {true: 'Yes', false: 'No'},
+    Map<bool, ButtonStyle> styles = const {true: ButtonStyle.success, false: ButtonStyle.danger},
+    bool authorOnly = true,
+    ResponseLevel? level,
+    Duration? timeout,
+  }) =>
+      getButtonSelection(
+        [true, false],
+        builder,
+        toButton: (value) => ButtonBuilder(
+          values[value] ?? (value ? 'Yes' : 'No'),
+          '',
+          ButtonStyle.primary,
+        ),
+        styles: styles,
+        authorOnly: authorOnly,
+        level: level,
+        timeout: timeout,
+      );
+
+  @override
+  Future<T> getSelection<T>(
+    List<T> choices,
+    MessageBuilder builder, {
+    ResponseLevel? level,
+    Duration? timeout,
+    bool authorOnly = true,
+    Converter<T>? converterOverride,
+  }) async {
+    if (_delegate != null) {
+      return _delegate!.getSelection(
+        choices,
+        builder,
+        authorOnly: authorOnly,
+        converterOverride: converterOverride,
+        level: level,
+        timeout: timeout,
+      );
+    }
+
+    FutureOr<MultiselectOptionBuilder> Function(T)? toOption =
+        converterOverride?.toMultiselectOption;
+    toOption ??= commands.getConverter(DartType<T>())?.toMultiselectOption;
+
+    if (toOption == null) {
+      throw NoConverterException(DartType<T>());
+    }
+
+    List<MultiselectOptionBuilder> options = await Future.wait(choices.map(
+      (value) async => toOption!(value),
+    ));
+
+    MultiselectOptionBuilder prevPageOption = MultiselectOptionBuilder(
+      'Previous page',
+      createId(),
+    );
+
+    MultiselectOptionBuilder nextPageOption = MultiselectOptionBuilder(
+      'Next page',
+      createId(),
+    );
+
+    builder = builderToComponentBuilder(builder);
+
+    MultiselectComponentContext<String>? context;
+    int currentOffset = 0;
+
+    do {
+      bool hasPreviousPage = currentOffset != 0;
+      int itemsPerPage = hasPreviousPage ? 24 : 25;
+      bool hasNextPage = currentOffset + itemsPerPage < options.length;
+
+      if (hasNextPage) {
+        itemsPerPage -= 1;
+      }
+
+      MultiselectBuilder menu = MultiselectBuilder(createId(), [
+        if (hasPreviousPage) prevPageOption,
+        ...options.skip(currentOffset).take(itemsPerPage),
+        if (hasNextPage) nextPageOption,
+      ]);
+
+      ComponentRowBuilder row = ComponentRowBuilder()..addComponent(menu);
+      if (context == null) {
+        // This is the first time we're sending a message, just append the component row.
+        (builder as ComponentMessageBuilder).addComponentRow(row);
+      } else {
+        // On later iterations, replace the last row with our newly created one.
+        List<ComponentRowBuilder> rows = (builder as ComponentMessageBuilder).componentRows!;
+
+        rows[rows.length - 1] = row;
+      }
+
+      await respond(builder, level: level);
+
+      context = await awaitSelection(
+        menu.customId,
+        authorOnly: authorOnly,
+        timeout: timeout,
+      );
+
+      if (context.selected == nextPageOption.value) {
+        currentOffset += itemsPerPage;
+      } else if (context.selected == prevPageOption.value) {
+        currentOffset -= itemsPerPage;
+      }
+    } while (context.selected == nextPageOption.value || context.selected == prevPageOption.value);
+
+    return parse(
+      commands,
+      context,
+      StringView(context.selected, isRestBlock: true),
+      DartType<T>(),
+      converterOverride: converterOverride,
+    );
+  }
+
+  @override
+  Future<List<T>> getMultiSelection<T>(
+    List<T> choices,
+    MessageBuilder builder, {
+    ResponseLevel? level,
+    Duration? timeout,
+    bool authorOnly = true,
+    Converter<T>? converterOverride,
+  }) async {
+    if (_delegate != null) {
+      return _delegate!.getMultiSelection(
+        choices,
+        builder,
+        authorOnly: authorOnly,
+        converterOverride: converterOverride,
+        level: level,
+        timeout: timeout,
+      );
+    }
+
+    FutureOr<MultiselectOptionBuilder> Function(T)? toOption =
+        converterOverride?.toMultiselectOption;
+    toOption ??= commands.getConverter(DartType<T>())?.toMultiselectOption;
+
+    if (toOption == null) {
+      throw NoConverterException(DartType<T>());
+    }
+
+    List<MultiselectOptionBuilder> options = await Future.wait(choices.map(
+      (value) async => toOption!(value),
+    ));
+
+    builder = builderToComponentBuilder(builder);
+
+    MultiselectBuilder menu = MultiselectBuilder(createId(), options);
+    ComponentRowBuilder row = ComponentRowBuilder()..addComponent(menu);
+
+    (builder as ComponentMessageBuilder).addComponentRow(row);
+
+    await respond(builder, level: level);
+
+    return (await awaitMultiSelection(
+      menu.customId,
+      authorOnly: authorOnly,
+      converterOverride: converterOverride,
+      timeout: timeout,
+    ))
+        .selected;
   }
 }
 
