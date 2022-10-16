@@ -335,9 +335,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
       try {
         Iterable<ArgChoiceBuilder>? choices = await callback(context);
 
-        if (choices != null) {
-          interactionEvent.respond(choices.toList());
-        }
+        interactionEvent.respond(choices?.toList() ?? []);
       } on Exception catch (e) {
         throw AutocompleteFailedException(e, context);
       }
