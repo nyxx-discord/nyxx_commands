@@ -23,16 +23,7 @@ import '../context/base.dart';
 import '../errors.dart';
 import '../mirror_utils/mirror_utils.dart';
 import '../util/view.dart';
-import 'built_in/attachment.dart';
-import 'built_in/bool.dart';
-import 'built_in/guild_channel.dart';
-import 'built_in/member.dart';
-import 'built_in/mentionable.dart';
-import 'built_in/number.dart';
-import 'built_in/role.dart';
-import 'built_in/snowflake.dart';
-import 'built_in/string.dart';
-import 'built_in/user.dart';
+import 'built_in.dart';
 
 /// Contains metadata and parsing capabilities for a given type.
 ///
