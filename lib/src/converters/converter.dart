@@ -47,7 +47,8 @@ import '../util/view.dart';
 /// - [voiceGuildChannelConverter], which converts [IVoiceGuildChannel]s;
 /// - [stageVoiceChannelConverter], which converts [IStageVoiceGuildChannel]s;
 /// - [roleConverter], which converts [IRole]s;
-/// - [mentionableConverter], which converts [Mentionable]s.
+/// - [mentionableConverter], which converts [Mentionable]s;
+/// - [attachmentConverter], which converts [IAttachment]s.
 ///
 /// You can override these default implementations with your own by calling
 /// [CommandsPlugin.addConverter] with your own converter for one of the types mentioned above.
@@ -55,7 +56,8 @@ import '../util/view.dart';
 /// You might also be interested in:
 /// - [CommandsPlugin.addConverter], for adding your own converters to your bot;
 /// - [FallbackConverter], for successively trying converters until one succeeds;
-/// - [CombineConverter], for piping the output of one converter into another.
+/// - [CombineConverter], for piping the output of one converter into another;
+/// - [SimpleConverter], for creating simple converters.
 class Converter<T> {
   /// The function called to perform the conversion.
   ///
@@ -101,6 +103,26 @@ class Converter<T> {
   /// This function should return at most 25 results and should not throw.
   final FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autocompleteCallback;
 
+  /// A function called to provide [MultiselectOptionBuilder]s that can be used to represent an
+  /// element converted by this converter.
+  ///
+  /// The builder returned by this function should have a value that this converter will be able to
+  /// convert.
+  ///
+  /// You might also be interested in:
+  /// - [IInteractiveContext.getSelection] and [IInteractiveContext.getMultiSelection], which make
+  ///   use of this function;
+  /// - [toButton], similar to this function but for [ButtonBuilder]s.
+  final FutureOr<MultiselectOptionBuilder> Function(T)? toMultiselectOption;
+
+  /// A function called to provide [ButtonBuilder]s that can be used to represent an element
+  /// converted by this converter.
+  ///
+  /// You might also be interested in:
+  /// - [IInteractiveContext.getButtonSelection], which makes use of this function;
+  /// - [toMultiselectOption], similar to this function but for [MultiselectOptionBuilder]s.
+  final FutureOr<ButtonBuilder> Function(T)? toButton;
+
   /// Create a new converter.
   ///
   /// Strongly typing converter variables is recommended (i.e use `Converter<String>(...)` instead
@@ -111,6 +133,8 @@ class Converter<T> {
     this.processOptionCallback,
     this.autocompleteCallback,
     this.type = CommandOptionType.string,
+    this.toMultiselectOption,
+    this.toButton,
   });
 
   @override
@@ -150,6 +174,12 @@ class CombineConverter<R, T> implements Converter<T> {
   FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? get autocompleteCallback =>
       _autocompleteCallback ?? converter.autocompleteCallback;
 
+  @override
+  final FutureOr<MultiselectOptionBuilder> Function(T)? toMultiselectOption;
+
+  @override
+  final FutureOr<ButtonBuilder> Function(T)? toButton;
+
   final Iterable<ArgChoiceBuilder>? _choices;
   final CommandOptionType? _type;
 
@@ -161,6 +191,8 @@ class CombineConverter<R, T> implements Converter<T> {
     CommandOptionType? type,
     void Function(CommandOptionBuilder)? processOptionCallback,
     FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autocompleteCallback,
+    this.toMultiselectOption,
+    this.toButton,
   })  : _choices = choices,
         _type = type,
         _customProcessOptionCallback = processOptionCallback,
@@ -209,6 +241,10 @@ class FallbackConverter<T> implements Converter<T> {
   final Iterable<ArgChoiceBuilder>? _choices;
   final CommandOptionType? _type;
 
+  final FutureOr<MultiselectOptionBuilder> Function(T)? _toMultiselectOption;
+
+  final FutureOr<ButtonBuilder> Function(T)? _toButton;
+
   @override
   DartType<T> get output => DartType<T>();
 
@@ -219,8 +255,12 @@ class FallbackConverter<T> implements Converter<T> {
     CommandOptionType? type,
     this.processOptionCallback,
     this.autocompleteCallback,
+    FutureOr<MultiselectOptionBuilder> Function(T)? toMultiselectOption,
+    FutureOr<ButtonBuilder> Function(T)? toButton,
   })  : _choices = choices,
-        _type = type;
+        _type = type,
+        _toMultiselectOption = toMultiselectOption,
+        _toButton = toButton;
 
   @override
   Iterable<ArgChoiceBuilder>? get choices {
@@ -296,10 +336,43 @@ class FallbackConverter<T> implements Converter<T> {
       };
 
   @override
+  FutureOr<MultiselectOptionBuilder> Function(T)? get toMultiselectOption {
+    if (_toMultiselectOption != null) {
+      return _toMultiselectOption;
+    }
+
+    for (final converter in converters) {
+      if (converter.toMultiselectOption != null) {
+        return converter.toMultiselectOption;
+      }
+    }
+
+    return null;
+  }
+
+  @override
+  FutureOr<ButtonBuilder> Function(T)? get toButton {
+    if (_toButton != null) {
+      return _toButton;
+    }
+
+    for (final converter in converters) {
+      if (converter.toButton != null) {
+        return converter.toButton;
+      }
+    }
+
+    return null;
+  }
+
+  @override
   String toString() => 'FallbackConverter<$T>[converters=${List.of(converters)}]';
 }
 
 String? convertString(StringView view, IContextData context) => view.getQuotedWord();
+MultiselectOptionBuilder stringToMultiselectOption(String value) =>
+    MultiselectOptionBuilder(value, value);
+ButtonBuilder stringToButton(String value) => ButtonBuilder(value, '', ButtonStyle.primary);
 
 /// A [Converter] that converts input to a [String].
 ///
@@ -310,9 +383,9 @@ String? convertString(StringView view, IContextData context) => view.getQuotedWo
 const Converter<String> stringConverter = Converter<String>(
   convertString,
   type: CommandOptionType.string,
+  toMultiselectOption: stringToMultiselectOption,
+  toButton: stringToButton,
 );
-
-int? convertInt(StringView view, IContextData context) => int.tryParse(view.getQuotedWord());
 
 /// A converter that converts input to various types of numbers, possibly with a minimum or maximum
 /// value.
@@ -344,7 +417,22 @@ class NumConverter<T extends num> extends Converter<T> {
         builder.min = min;
         builder.max = max;
       };
+
+  @override
+  MultiselectOptionBuilder Function(T) get toMultiselectOption => (n) => MultiselectOptionBuilder(
+        n.toString(),
+        n.toString(),
+      );
+
+  @override
+  ButtonBuilder Function(T) get toButton => (n) => ButtonBuilder(
+        n.toString(),
+        '',
+        ButtonStyle.primary,
+      );
 }
+
+int? convertInt(StringView view, IContextData context) => int.tryParse(view.getQuotedWord());
 
 /// A converter that converts input to [int]s, possibly with a minimum or maximum value.
 ///
@@ -421,6 +509,17 @@ bool? convertBool(StringView view, IContextData context) {
   return null;
 }
 
+MultiselectOptionBuilder boolToMultiselectOption(bool value) => MultiselectOptionBuilder(
+      value ? 'True' : 'False',
+      value.toString(),
+    );
+
+ButtonBuilder boolToButton(bool value) => ButtonBuilder(
+      value ? 'True' : 'False',
+      '',
+      ButtonStyle.primary,
+    );
+
 /// A [Converter] that converts input to a [bool].
 ///
 /// This converter will parse the input to `true` if the next word or quoted section of the input is
@@ -434,6 +533,8 @@ bool? convertBool(StringView view, IContextData context) {
 const Converter<bool> boolConverter = Converter<bool>(
   convertBool,
   type: CommandOptionType.boolean,
+  toMultiselectOption: boolToMultiselectOption,
+  toButton: boolToButton,
 );
 
 final RegExp _snowflakePattern = RegExp(r'^(?:<(?:@(?:!|&)?|#)([0-9]{15,20})>|([0-9]{15,20}))$');
@@ -450,12 +551,26 @@ Snowflake? convertSnowflake(StringView view, IContextData context) {
   return Snowflake(match.group(1) ?? match.group(2));
 }
 
+MultiselectOptionBuilder snowflakeToMultiselectOption(Snowflake snowflake) =>
+    MultiselectOptionBuilder(
+      snowflake.toString(),
+      snowflake.toString(),
+    );
+
+ButtonBuilder snowflakeToButton(Snowflake snowflake) => ButtonBuilder(
+      snowflake.toString(),
+      '',
+      ButtonStyle.primary,
+    );
+
 /// A converter that converts input to a [Snowflake].
 ///
 /// This converter will parse user mentions, member mentions, channel mentions or raw integers as
 /// snowflakes.
 const Converter<Snowflake> snowflakeConverter = Converter<Snowflake>(
   convertSnowflake,
+  toMultiselectOption: snowflakeToMultiselectOption,
+  toButton: snowflakeToButton,
 );
 
 Future<IMember?> snowflakeToMember(Snowflake snowflake, IContextData context) async {
@@ -531,6 +646,29 @@ Future<IMember?> convertMember(StringView view, IContextData context) async {
   return null;
 }
 
+Future<MultiselectOptionBuilder> memberToMultiselectOption(IMember member) async {
+  IUser user = await member.user.getOrDownload();
+  String name = member.nickname ?? user.username;
+  String discriminator = user.formattedDiscriminator;
+
+  return MultiselectOptionBuilder(
+    '$name#$discriminator',
+    member.id.toString(),
+  );
+}
+
+Future<ButtonBuilder> memberToButton(IMember member) async {
+  IUser user = await member.user.getOrDownload();
+  String name = member.nickname ?? user.username;
+  String discriminator = user.formattedDiscriminator;
+
+  return ButtonBuilder(
+    '$name#$discriminator',
+    '',
+    ButtonStyle.primary,
+  );
+}
+
 /// A converter that converts input to an [IMember].
 ///
 /// This will first attempt to parse the input to a snowflake which will then be converted to an
@@ -545,6 +683,8 @@ const Converter<IMember> memberConverter = FallbackConverter<IMember>(
     Converter<IMember>(convertMember),
   ],
   type: CommandOptionType.user,
+  toMultiselectOption: memberToMultiselectOption,
+  toButton: memberToButton,
 );
 
 Future<IUser?> snowflakeToUser(Snowflake snowflake, IContextData context) async {
@@ -601,6 +741,17 @@ FutureOr<IUser?> convertUser(StringView view, IContextData context) {
   return null;
 }
 
+MultiselectOptionBuilder userToMultiselectOption(IUser user) => MultiselectOptionBuilder(
+      '${user.username}#${user.formattedDiscriminator}',
+      user.id.toString(),
+    );
+
+ButtonBuilder userToButton(IUser user) => ButtonBuilder(
+      '${user.username}#${user.formattedDiscriminator}',
+      '',
+      ButtonStyle.primary,
+    );
+
 /// A converter that converts input to an [IUser].
 ///
 /// This will first attempt to parse the input to a snowflake which will then be converted to an
@@ -615,6 +766,8 @@ const Converter<IUser> userConverter = FallbackConverter<IUser>(
     Converter<IUser>(convertUser),
   ],
   type: CommandOptionType.user,
+  toMultiselectOption: userToMultiselectOption,
+  toButton: userToButton,
 );
 
 IGuildChannel? snowflakeToGuildChannel(Snowflake snowflake, IContextData context) {
@@ -632,6 +785,10 @@ IGuildChannel? snowflakeToGuildChannel(Snowflake snowflake, IContextData context
 IGuildChannel? convertGuildChannel(StringView view, IContextData context) {
   if (context.guild != null) {
     String word = view.getQuotedWord();
+
+    if (word.startsWith('#')) {
+      word = word.substring(1);
+    }
 
     List<IGuildChannel> caseInsensitive = [];
     List<IGuildChannel> partial = [];
@@ -716,6 +873,27 @@ class GuildChannelConverter<T extends IGuildChannel> implements Converter<T> {
 
   @override
   CommandOptionType get type => CommandOptionType.channel;
+
+  @override
+  MultiselectOptionBuilder Function(T) get toMultiselectOption => (channel) {
+        MultiselectOptionBuilder builder = MultiselectOptionBuilder(
+          channel.name,
+          channel.id.toString(),
+        );
+
+        if (channel is ITextGuildChannel) {
+          builder.description = channel.topic;
+        }
+
+        return builder;
+      };
+
+  @override
+  ButtonBuilder Function(T) get toButton => (channel) => ButtonBuilder(
+        '#${channel.name}',
+        '',
+        ButtonStyle.primary,
+      );
 }
 
 /// A converter that converts input to an [IGuildChannel].
@@ -822,6 +1000,25 @@ FutureOr<IRole?> convertRole(StringView view, IContextData context) async {
   return null;
 }
 
+MultiselectOptionBuilder roleToMultiselectOption(IRole role) {
+  MultiselectOptionBuilder builder = MultiselectOptionBuilder(
+    role.name,
+    role.id.toString(),
+  );
+
+  if (role.iconEmoji != null) {
+    builder.emoji = UnicodeEmoji(role.iconEmoji!);
+  }
+
+  return builder;
+}
+
+ButtonBuilder roleToButton(IRole role) => ButtonBuilder(
+      role.name,
+      '',
+      ButtonStyle.primary,
+    );
+
 /// A converter that converts input to an [IRole].
 ///
 /// This will first attempt to parse the input as a snowflake that will then be converted to an
@@ -834,6 +1031,8 @@ const Converter<IRole> roleConverter = FallbackConverter<IRole>(
     Converter<IRole>(convertRole),
   ],
   type: CommandOptionType.role,
+  toMultiselectOption: roleToMultiselectOption,
+  toButton: roleToButton,
 );
 
 /// A converter that converts input to a [Mentionable].
@@ -903,6 +1102,18 @@ IAttachment? convertAttachment(StringView view, IContextData context) {
   return null;
 }
 
+MultiselectOptionBuilder attachmentToMultiselectOption(IAttachment attachment) =>
+    MultiselectOptionBuilder(
+      attachment.filename,
+      attachment.id.toString(),
+    );
+
+ButtonBuilder attachmentToButton(IAttachment attachment) => ButtonBuilder(
+      attachment.filename,
+      '',
+      ButtonStyle.primary,
+    );
+
 /// A converter that converts input to an [IAttachment].
 ///
 /// This will first attempt to parse the input to a snowflake that will then be resolved as the ID
@@ -916,6 +1127,8 @@ const Converter<IAttachment> attachmentConverter = FallbackConverter(
     Converter(convertAttachment),
   ],
   type: CommandOptionType.attachment,
+  toMultiselectOption: attachmentToMultiselectOption,
+  toButton: attachmentToButton,
 );
 
 /// Apply a converter to an input and return the result.
