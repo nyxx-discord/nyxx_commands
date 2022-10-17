@@ -452,8 +452,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
       } else if (builder.type == CommandOptionType.subCommandGroup) {
         _processHandlerRegistration(
           builder.options!,
-          current.children.where((child) => child.name == builder.name).first
-              as IChatCommandComponent,
+          current.children.where((child) => child.name == builder.name).first,
         );
       }
     }
@@ -579,7 +578,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
         _chatCommands[alias] = command;
       }
 
-      for (final child in command.walkCommands() as Iterable<IChatCommandComponent>) {
+      for (final child in command.walkCommands()) {
         logger.info('Registered command "${child.fullName}"');
       }
     } else if (command is UserCommand) {
