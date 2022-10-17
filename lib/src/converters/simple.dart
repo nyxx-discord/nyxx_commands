@@ -1,7 +1,8 @@
+import 'dart:async';
+
 import 'package:fuzzywuzzy/fuzzywuzzy.dart' as fuzzy;
-import 'package:nyxx_interactions/src/builders/arg_choice_builder.dart';
-import 'package:nyxx_interactions/src/builders/command_option_builder.dart';
-import 'package:nyxx_interactions/src/models/command_option.dart';
+import 'package:nyxx/nyxx.dart';
+import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../context/autocomplete_context.dart';
 import '../context/base.dart';
@@ -60,7 +61,16 @@ abstract class SimpleConverter<T> implements Converter<T> {
   @override
   CommandOptionType get type => CommandOptionType.string;
 
-  const SimpleConverter._({required this.sensitivity, this.reviver});
+  final FutureOr<MultiselectOptionBuilder> Function(T)? _toMultiSelectOption;
+  final FutureOr<ButtonBuilder> Function(T)? _toButton;
+
+  const SimpleConverter._({
+    required this.sensitivity,
+    this.reviver,
+    FutureOr<MultiselectOptionBuilder> Function(T)? toMultiSelectOption,
+    FutureOr<ButtonBuilder> Function(T)? toButton,
+  })  : _toMultiSelectOption = toMultiSelectOption,
+        _toButton = toButton;
 
   /// Create a new [SimpleConverter].
   ///
@@ -116,6 +126,24 @@ abstract class SimpleConverter<T> implements Converter<T> {
       };
 
   @override
+  FutureOr<MultiselectOptionBuilder> Function(T)? get toMultiselectOption =>
+      _toMultiSelectOption ??
+      (element) {
+        String value = stringify(element);
+
+        return MultiselectOptionBuilder(value, value);
+      };
+
+  @override
+  FutureOr<ButtonBuilder> Function(T)? get toButton =>
+      _toButton ??
+      (element) => ButtonBuilder(
+            stringify(element),
+            '',
+            ButtonStyle.primary,
+          );
+
+  @override
   Iterable<ArgChoiceBuilder>? get choices => null;
 
   @override
@@ -134,6 +162,8 @@ class _DynamicSimpleConverter<T> extends SimpleConverter<T> {
     required this.stringify,
     super.sensitivity = 50,
     super.reviver,
+    super.toMultiSelectOption,
+    super.toButton,
   }) : super._();
 }
 
@@ -148,6 +178,8 @@ class _FixedSimpleConverter<T> extends SimpleConverter<T> {
     required this.stringify,
     super.sensitivity = 50,
     super.reviver,
+    super.toMultiSelectOption,
+    super.toButton,
   }) : super._();
 
   @override
