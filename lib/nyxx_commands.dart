@@ -58,32 +58,10 @@ export 'src/context/base.dart'
         ResponseLevel;
 export 'src/context/message_context.dart' show MessageContext;
 export 'src/context/user_context.dart' show UserContext;
-export 'src/converters/converter.dart'
-    show
-        CombineConverter,
-        Converter,
-        DoubleConverter,
-        FallbackConverter,
-        GuildChannelConverter,
-        IntConverter,
-        NumConverter,
-        attachmentConverter,
-        boolConverter,
-        categoryGuildChannelConverter,
-        doubleConverter,
-        guildChannelConverter,
-        intConverter,
-        memberConverter,
-        mentionableConverter,
-        roleConverter,
-        snowflakeConverter,
-        stageVoiceChannelConverter,
-        stringConverter,
-        textGuildChannelConverter,
-        userConverter,
-        voiceGuildChannelConverter,
-        registerDefaultConverters,
-        parse;
+export 'src/converters/built_in.dart'; // Barrel file, exports are already filtered
+export 'src/converters/combine.dart' show CombineConverter;
+export 'src/converters/converter.dart' show Converter, registerDefaultConverters, parse;
+export 'src/converters/fallback.dart' show FallbackConverter;
 export 'src/converters/simple.dart' show SimpleConverter;
 export 'src/mirror_utils/mirror_utils.dart' show DartType;
 export 'src/errors.dart'
