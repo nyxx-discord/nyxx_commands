@@ -1,3 +1,27 @@
+## 5.0.0-dev.0
+__Breaking changes__:
+- `ChatCommand.type` has been moved to `CommandOptions`. Use `ChatCommand(options: CommandOptions(type: ...))` instead  of `ChatCommand(type: ...)` to set a commands type. With this change, the `textOnly` and `slashOnly` constructors have been removed from `ChatCommand`.
+- `Converter`s no longer take an `IContext` as a parameter but now take an `ICommandContextData`.
+- Some of the arguments in `Check` constructors have been changed from positional to named arguments.
+- All deprecated fields have been removed.
+- `IInteractiveContext.respond` (previously `IContext.respond`) now takes a `ResponseLevel` instead of the context-type-specific named parameters. See `ResponseLevel` for more.
+- All uses of `Type`s in the package have been replaced with `DartType`s. This wrapper class allows for sound type safety and simplifies compilation. Notable places this change has an effect are in `CommandsPlugin.getConverter` and `NoConverterException.type`.
+- The old component wrappers have been replaced with newer, more versatile methods.
+
+__New features__:
+- The `prefix` function used to determine the prefix for a given text message can now return a `Pattern` and be asynchronous. This allows the use of `RegExp`s to determine command prefixes.
+- `CommandsPlugin.contextManager` can be used to create your own contexts from raw events.
+- `SimpleConverter` is a new `Converter` that simplifies the creation of custom converters. Providing a function to generate items and a function to stringify each item will create a converter with support for basic conversion, autocompletion and more.
+- The prefix is now nullable in the `CommandsPlugin` constructor. Setting it to `null` will make the default command type automatically be `slashOnly` if `CommandsOptions.inferDefaultCommandType` is `true`.
+- Commands will now respond to the latest interaction instead of the original interaction if the component wrappers on `IInteractiveContext` are used. See `IInteractiveContext.delegate` for more.
+- `CommandOptions.preserveComponentMessages` can be used to choose whether Message Component responses should overwrite the message.
+- `CommandOptions.autoAcknowledgeDuration` can be used to manually set the auto-acknowledge timeout.
+- `CommandOptions.caseInsensitiveCommands` can be used to allow commands to be invoked case-insensitively.
+- `AutocompleteContext` has new methods for parsing values in the autocompletion event.
+
+__Bug fixes__:
+- Returning `null` in an autocomplete handler no longer displays an error in the Discord UI.
+
 ## 4.3.0
 __New features__:
 - Added support for command localization. See `localizedNames` on all `ICommand`s and `localizedDescriptions` for `ChatCommand`s and the `@Description()` annotation.
