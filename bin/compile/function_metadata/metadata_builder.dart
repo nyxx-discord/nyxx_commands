@@ -59,7 +59,7 @@ Iterable<CompileTimeFunctionData> getFunctionData(
     ];
 
     for (final parameter in parameterList.parameters.skip(1)) {
-      if (parameter.identifier == null) {
+      if (parameter.name == null) {
         // Parameters must have a name to be used. Skip this function.
         continue outerLoop;
       }
@@ -77,7 +77,7 @@ Iterable<CompileTimeFunctionData> getFunctionData(
             return false;
           }
 
-          return result.type?.element?.location?.encoding == source;
+          return result.type?.element2?.location?.encoding == source;
         });
       }
 
@@ -129,7 +129,7 @@ Iterable<CompileTimeFunctionData> getFunctionData(
           localizedNames = nameArgs?.last;
         }
       } else {
-        name = parameter.identifier!.name;
+        name = parameter.name!.lexeme;
       }
 
       if (descriptionAnnotations.isNotEmpty) {
