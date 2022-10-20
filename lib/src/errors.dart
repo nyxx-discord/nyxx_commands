@@ -2,6 +2,7 @@ import 'checks/checks.dart';
 import 'context/autocomplete_context.dart';
 import 'context/base.dart';
 import 'context/chat_context.dart';
+import 'converters/converter.dart';
 import 'mirror_utils/mirror_utils.dart';
 import 'util/view.dart';
 
@@ -100,6 +101,22 @@ class UncaughtCommandsException extends UncaughtException {
 class BadInputException extends ContextualException {
   /// Create a new [BadInputException].
   BadInputException(super.message, super.context);
+}
+
+/// An exception thrown when a converter fails to convert user input.
+class ConverterFailedException extends BadInputException {
+  /// The converter that failed.
+  final Converter<dynamic> failed;
+
+  /// The [StringView] representing the arguments before the converter was invoked.
+  final StringView input;
+
+  /// Create a new [ConverterFailedException].
+  ConverterFailedException(this.failed, this.input, IContextData context)
+      : super(
+          'Could not parse input $input to type "${failed.type}"',
+          context,
+        );
 }
 
 /// An exception thrown when the end of user input is encountered before all the required arguments
