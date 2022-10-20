@@ -150,11 +150,13 @@ Future<T> parse<T>(
     throw NoConverterException(expectedType);
   }
 
+  StringView originalInput = toParse.copy();
+
   try {
     T? parsed = await converter.convert(toParse, context);
 
     if (parsed == null) {
-      throw BadInputException('Could not parse input $context to type "$expectedType"', context);
+      throw ConverterFailedException(converter, originalInput, context);
     }
 
     return parsed;
