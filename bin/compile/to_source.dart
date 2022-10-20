@@ -110,7 +110,7 @@ List<String>? toTypeSource(DartType type, [bool handleTypeParameters = true]) {
     }
 
     String? importPrefix;
-    if (type.element2 is ClassElement) {
+    if (type.element2 is InterfaceElement) {
       importPrefix = toImportPrefix(type.element2!.library!.source.uri.toString());
     }
 
