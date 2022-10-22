@@ -28,7 +28,7 @@ abstract class SimpleConverter<T> implements Converter<T> {
   /// This should return an iterable of all the instances of `T` that this converter should allow to
   /// be returned. It does not have to always return the same number of instances, and will be
   /// called for each new operation requested from this converter.
-  Iterable<T> Function(IContextData) get provider;
+  FutureOr<Iterable<T>> Function(IContextData) get provider;
 
   /// A function called to convert elements into [String]s that can be displayed in the Discord
   /// client.
@@ -78,11 +78,11 @@ abstract class SimpleConverter<T> implements Converter<T> {
   /// [stringify] must be top-level or static functions. Function literals are not `const`, so they
   /// cannot be used in a constant creation expression.
   const factory SimpleConverter({
-    required Iterable<T> Function(IContextData) provider,
+    required FutureOr<Iterable<T>> Function(IContextData) provider,
     required String Function(T) stringify,
     int sensitivity,
     T? Function(StringView, IContextData) reviver,
-  }) = _DynamicSimpleConverter;
+  }) = _DynamicSimpleConverter<T>;
 
   /// Create a new [SimpleConverter] which converts an unchanging number of elements.
   ///
@@ -94,26 +94,26 @@ abstract class SimpleConverter<T> implements Converter<T> {
     required String Function(T) stringify,
     int sensitivity,
     T? Function(StringView, IContextData) reviver,
-  }) = _FixedSimpleConverter;
+  }) = _FixedSimpleConverter<T>;
 
   @override
-  Iterable<ArgChoiceBuilder>? Function(AutocompleteContext)? get autocompleteCallback =>
-      (context) => fuzzy
+  Future<Iterable<ArgChoiceBuilder>>? Function(AutocompleteContext)? get autocompleteCallback =>
+      (context) async => fuzzy
           .extractTop(
             query: context.currentValue,
-            choices: provider(context).map(stringify).toList(),
+            choices: (await provider(context)).map(stringify).toList(),
             limit: 25,
             cutoff: sensitivity,
           )
           .map((e) => ArgChoiceBuilder(e.choice, e.choice));
 
   @override
-  T? Function(StringView view, IContextData context) get convert => (view, context) {
+  Future<T?> Function(StringView view, IContextData context) get convert => (view, context) async {
         try {
           return fuzzy
               .extractOne(
                 query: view.getQuotedWord(),
-                choices: provider(context).toList(),
+                choices: (await provider(context)).toList(),
                 getter: stringify,
                 cutoff: sensitivity,
               )
@@ -152,7 +152,7 @@ abstract class SimpleConverter<T> implements Converter<T> {
 
 class _DynamicSimpleConverter<T> extends SimpleConverter<T> {
   @override
-  final Iterable<T> Function(IContextData) provider;
+  final FutureOr<Iterable<T>> Function(IContextData) provider;
 
   @override
   final String Function(T) stringify;
@@ -186,7 +186,7 @@ class _FixedSimpleConverter<T> extends SimpleConverter<T> {
   Iterable<T> Function(IContextData) get provider => (_) => elements;
 
   @override
-  Iterable<ArgChoiceBuilder>? Function(AutocompleteContext)? get autocompleteCallback =>
+  Future<Iterable<ArgChoiceBuilder>>? Function(AutocompleteContext)? get autocompleteCallback =>
       // Don't autocomplete if we have less than 25 elements because we will use choices instead.
       elements.length > 25 ? super.autocompleteCallback : null;
 
