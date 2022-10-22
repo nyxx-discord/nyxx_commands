@@ -82,7 +82,7 @@ abstract class SimpleConverter<T> implements Converter<T> {
     required String Function(T) stringify,
     int sensitivity,
     T? Function(StringView, IContextData) reviver,
-  }) = _DynamicSimpleConverter;
+  }) = _DynamicSimpleConverter<T>;
 
   /// Create a new [SimpleConverter] which converts an unchanging number of elements.
   ///
@@ -94,7 +94,7 @@ abstract class SimpleConverter<T> implements Converter<T> {
     required String Function(T) stringify,
     int sensitivity,
     T? Function(StringView, IContextData) reviver,
-  }) = _FixedSimpleConverter;
+  }) = _FixedSimpleConverter<T>;
 
   @override
   Iterable<ArgChoiceBuilder>? Function(AutocompleteContext)? get autocompleteCallback =>
