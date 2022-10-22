@@ -78,7 +78,7 @@ abstract class SimpleConverter<T> implements Converter<T> {
   /// [stringify] must be top-level or static functions. Function literals are not `const`, so they
   /// cannot be used in a constant creation expression.
   const factory SimpleConverter({
-    required Iterable<T> Function(IContextData) provider,
+    required FutureOr<Iterable<T>> Function(IContextData) provider,
     required String Function(T) stringify,
     int sensitivity,
     T? Function(StringView, IContextData) reviver,
@@ -152,7 +152,7 @@ abstract class SimpleConverter<T> implements Converter<T> {
 
 class _DynamicSimpleConverter<T> extends SimpleConverter<T> {
   @override
-  final Iterable<T> Function(IContextData) provider;
+  final FutureOr<Iterable<T>> Function(IContextData) provider;
 
   @override
   final String Function(T) stringify;
