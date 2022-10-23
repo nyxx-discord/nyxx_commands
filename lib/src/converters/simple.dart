@@ -98,14 +98,22 @@ abstract class SimpleConverter<T> implements Converter<T> {
 
   @override
   Future<Iterable<ArgChoiceBuilder>>? Function(AutocompleteContext)? get autocompleteCallback =>
-      (context) async => fuzzy
-          .extractTop(
-            query: context.currentValue,
-            choices: (await provider(context)).map(stringify).toList(),
-            limit: 25,
-            cutoff: sensitivity,
-          )
-          .map((e) => ArgChoiceBuilder(e.choice, e.choice));
+      (context) async {
+        List<String> choices = (await provider(context)).map(stringify).toList();
+
+        if (context.currentValue.isEmpty) {
+          return choices.take(25).map((e) => ArgChoiceBuilder(e, e));
+        }
+
+        return fuzzy
+            .extractTop(
+              query: context.currentValue,
+              choices: choices,
+              limit: 25,
+              cutoff: sensitivity,
+            )
+            .map((e) => ArgChoiceBuilder(e.choice, e.choice));
+      };
 
   @override
   Future<T?> Function(StringView view, IContextData context) get convert => (view, context) async {
