@@ -60,9 +60,12 @@ export 'src/errors.dart'
         CommandRegistrationError,
         CommandsError,
         CommandsException,
+        ContextualException,
+        ConverterFailedException,
         NoConverterException,
         NotEnoughArgumentsException,
         ParsingException,
+        UncaughtCommandsException,
         UncaughtException;
 export 'src/options.dart' show CommandsOptions;
 export 'src/util/util.dart'
