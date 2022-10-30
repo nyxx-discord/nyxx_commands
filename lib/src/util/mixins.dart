@@ -340,6 +340,8 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
       ButtonStyle? style = styles?[value];
       String id = createId();
 
+      idToValue[id] = value;
+
       // We have to copy since the fields on ButtonBuilder are final.
       return ButtonBuilder(
         builder.label,
