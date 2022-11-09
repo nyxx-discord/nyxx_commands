@@ -43,6 +43,7 @@ export 'src/context/base.dart'
         IInteractiveContext,
         ResponseLevel;
 export 'src/context/message_context.dart' show MessageContext;
+export 'src/context/modal_context.dart' show ModalContext;
 export 'src/context/user_context.dart' show UserContext;
 export 'src/converters/built_in.dart'; // Barrel file, exports are already filtered
 export 'src/converters/combine.dart' show CombineConverter;

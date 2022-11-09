@@ -1,4 +1,5 @@
 import 'package:nyxx/nyxx.dart';
+import 'package:nyxx_commands/src/context/modal_context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands.dart';
@@ -89,12 +90,7 @@ class ContextManager {
     ISlashCommandInteraction interaction = interactionEvent.interaction;
 
     IMember? member = interaction.memberAuthor;
-    IUser user;
-    if (member != null) {
-      user = await member.user.getOrDownload();
-    } else {
-      user = interaction.userAuthor!;
-    }
+    IUser user = await member?.user.getOrDownload() ?? interaction.userAuthor!;
 
     Map<String, dynamic> rawArguments = <String, dynamic>{};
 
@@ -127,12 +123,7 @@ class ContextManager {
     ISlashCommandInteraction interaction = interactionEvent.interaction;
 
     IMember? member = interaction.memberAuthor;
-    IUser user;
-    if (member != null) {
-      user = await member.user.getOrDownload();
-    } else {
-      user = interaction.userAuthor!;
-    }
+    IUser user = await member?.user.getOrDownload() ?? interaction.userAuthor!;
 
     IUser targetUser = commands.client!.users[interaction.targetId] ??
         await commands.client!.httpEndpoints.fetchUser(interaction.targetId!);
@@ -165,12 +156,7 @@ class ContextManager {
     ISlashCommandInteraction interaction = interactionEvent.interaction;
 
     IMember? member = interaction.memberAuthor;
-    IUser user;
-    if (member != null) {
-      user = await member.user.getOrDownload();
-    } else {
-      user = interaction.userAuthor!;
-    }
+    IUser user = await member?.user.getOrDownload() ?? interaction.userAuthor!;
 
     IGuild? guild = await interaction.guild?.getOrDownload();
 
@@ -200,12 +186,7 @@ class ContextManager {
     ISlashCommandInteraction interaction = interactionEvent.interaction;
 
     IMember? member = interaction.memberAuthor;
-    IUser user;
-    if (member != null) {
-      user = await member.user.getOrDownload();
-    } else {
-      user = interaction.userAuthor!;
-    }
+    IUser user = await member?.user.getOrDownload() ?? interaction.userAuthor!;
 
     return AutocompleteContext(
       commands: commands,
@@ -231,12 +212,7 @@ class ContextManager {
     IButtonInteraction interaction = interactionEvent.interaction;
 
     IMember? member = interaction.memberAuthor;
-    IUser user;
-    if (member != null) {
-      user = await member.user.getOrDownload();
-    } else {
-      user = interaction.userAuthor!;
-    }
+    IUser user = await member?.user.getOrDownload() ?? interaction.userAuthor!;
 
     return ButtonComponentContext(
       user: user,
@@ -261,12 +237,7 @@ class ContextManager {
     IMultiselectInteraction interaction = interactionEvent.interaction;
 
     IMember? member = interaction.memberAuthor;
-    IUser user;
-    if (member != null) {
-      user = await member.user.getOrDownload();
-    } else {
-      user = interaction.userAuthor!;
-    }
+    IUser user = await member?.user.getOrDownload() ?? interaction.userAuthor!;
 
     return MultiselectComponentContext(
       user: user,
@@ -278,6 +249,27 @@ class ContextManager {
       interaction: interaction,
       interactionEvent: interactionEvent,
       selected: selected,
+    );
+  }
+
+  /// Create a [ModalContext] from an [IModalInteractionEvent].
+  ///
+  /// [interactionEvent] is the interaction event that triggered this context's creation.
+  Future<ModalContext> createModalContext(IModalInteractionEvent interactionEvent) async {
+    IModalInteraction interaction = interactionEvent.interaction;
+
+    IMember? member = interaction.memberAuthor;
+    IUser user = await member?.user.getOrDownload() ?? interaction.userAuthor!;
+
+    return ModalContext(
+      user: user,
+      member: member,
+      guild: await interaction.guild?.getOrDownload(),
+      channel: await interaction.channel.getOrDownload(),
+      commands: commands,
+      client: commands.client!,
+      interaction: interaction,
+      interactionEvent: interactionEvent,
     );
   }
 }

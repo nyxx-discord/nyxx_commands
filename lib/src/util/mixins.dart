@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:nyxx/nyxx.dart';
+import 'package:nyxx_commands/src/context/modal_context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../checks/checks.dart';
@@ -612,6 +613,76 @@ mixin InteractionRespondMixin
   Future<void> acknowledge({ResponseLevel? level}) async {
     _responseLevel = level ??= _nearestCommandContext.command.resolvedOptions.defaultResponseLevel!;
     await interactionEvent.acknowledge(hidden: level.hideInteraction);
+  }
+
+  @override
+  Future<ModalContext> awaitModal(String customId, {Duration? timeout}) async {
+    if (_delegate != null) {
+      if (_delegate is! IInteractionInteractiveContext) {
+        throw UncaughtCommandsException(
+          "Couldn't delegate awaitModal() to non-interaction context",
+          _nearestCommandContext,
+        );
+      }
+
+      return (_delegate as IInteractionInteractiveContext).awaitModal(customId, timeout: timeout);
+    }
+
+    Future<IModalInteractionEvent> event = commands.interactions.events.onModalEvent
+        .where(
+          (event) => event.interaction.customId == customId,
+        )
+        .first;
+
+    if (timeout != null) {
+      event = event.timeout(timeout);
+    }
+
+    ModalContext context = await commands.contextManager.createModalContext(await event);
+
+    context._parent = this;
+    _delegate = context;
+
+    return context;
+  }
+
+  @override
+  Future<ModalContext> getModal({
+    required String title,
+    required List<TextInputBuilder> components,
+    Duration? timeout,
+  }) async {
+    if (_delegate != null) {
+      if (_delegate is! IInteractionInteractiveContext) {
+        throw UncaughtCommandsException(
+          "Couldn't delegate getModal() to non-interaction context",
+          _nearestCommandContext,
+        );
+      }
+
+      return (_delegate as IInteractionInteractiveContext).getModal(
+        title: title,
+        components: components,
+        timeout: timeout,
+      );
+    }
+
+    final interactionEvent = this.interactionEvent;
+    if (interactionEvent is! IModalResponseMixin) {
+      throw UncaughtCommandsException(
+        'Cannot respond to a context of type $runtimeType with a modal',
+        _nearestCommandContext,
+      );
+    }
+
+    ModalBuilder builder = ModalBuilder(createId(), title);
+    builder.componentRows = [
+      for (final input in components) ComponentRowBuilder()..addComponent(input),
+    ];
+
+    await (interactionEvent as IModalResponseMixin).respondModal(builder);
+
+    return awaitModal(builder.customId, timeout: timeout);
   }
 }
 
