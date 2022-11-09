@@ -1,4 +1,5 @@
 import 'package:nyxx/nyxx.dart';
+import 'package:nyxx_commands/src/context/modal_context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands.dart';
@@ -278,6 +279,32 @@ class ContextManager {
       interaction: interaction,
       interactionEvent: interactionEvent,
       selected: selected,
+    );
+  }
+
+  /// Create a [ModalContext] from an [IModalInteractionEvent].
+  ///
+  /// [interactionEvent] is the interaction event that triggered this context's creation.
+  Future<ModalContext> createModalContext(IModalInteractionEvent interactionEvent) async {
+    IModalInteraction interaction = interactionEvent.interaction;
+
+    IMember? member = interaction.memberAuthor;
+    IUser user;
+    if (member != null) {
+      user = await member.user.getOrDownload();
+    } else {
+      user = interaction.userAuthor!;
+    }
+
+    return ModalContext(
+      user: user,
+      member: member,
+      guild: await interaction.guild?.getOrDownload(),
+      channel: await interaction.channel.getOrDownload(),
+      commands: commands,
+      client: commands.client!,
+      interaction: interaction,
+      interactionEvent: interactionEvent,
     );
   }
 }
