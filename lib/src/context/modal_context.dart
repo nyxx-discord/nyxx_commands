@@ -1,7 +1,7 @@
+import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/src/context/base.dart';
 import 'package:nyxx_commands/src/util/mixins.dart';
-import 'package:nyxx_interactions/src/models/interaction.dart';
-import 'package:nyxx_interactions/src/events/interaction_event.dart';
+import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 /// A context in which a user submitted a modal.
 class ModalContext extends ContextBase
@@ -24,4 +24,13 @@ class ModalContext extends ContextBase
     required this.interaction,
     required this.interactionEvent,
   });
+
+  /// Get the value the user inputted in a component based on its [id].
+  ///
+  /// Throws a [StateError] if no component with the given [id] exist in the modal.
+  String operator [](String id) => interaction.components
+      .expand((row) => row)
+      .whereType<IMessageTextInput>()
+      .singleWhere((element) => element.customId == id)
+      .value;
 }

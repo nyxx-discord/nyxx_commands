@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
+import 'package:nyxx_commands/src/context/modal_context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands.dart';
@@ -224,7 +225,7 @@ abstract class IInteractiveContext {
     Converter<T>? converterOverride,
   });
 
-  /// Wait for a user to press on any button on aa given message and return a context representing
+  /// Wait for a user to press on any button on a given message and return a context representing
   /// the button press.
   ///
   /// If [timeout] is set, this method will complete with an error after [timeout] has passed.
@@ -357,6 +358,32 @@ abstract class IInteractionInteractiveContext implements IInteractiveContext {
   /// You might also be interested in:
   /// - [respond], for sending a full response.
   Future<void> acknowledge({ResponseLevel? level});
+
+  /// Wait for a user to submit a modal and return a context representing that submission.
+  ///
+  /// [customId] is the id of the modal to wait for.
+  ///
+  /// If [timeout] is set, this method will complete with an error after [timeout] has passed.
+  ///
+  /// You might also be interested in:
+  /// - [awaitSelection] and [awaitMultiSelection], for getting a selection from a user.
+  Future<ModalContext> awaitModal(String customId, {Duration? timeout});
+
+  /// Present the user with a modal, wait for them to submit it, and return a context representing
+  /// that submission.
+  ///
+  /// [title] is the title of the modal that should be shown to the user.
+  ///
+  /// If [timeout] is set, this method will complete with an error after [timeout] has passed.
+  ///
+  /// [components] are the text inputs that will be presented to the user. The
+  /// [TextInputBuilder.customId] can be later used with [ModalContext.operator[]] to get the value
+  /// submitted by the user.
+  Future<ModalContext> getModal({
+    required String title,
+    required List<TextInputBuilder> components,
+    Duration? timeout,
+  });
 }
 
 /// A context in which a command was executed.
