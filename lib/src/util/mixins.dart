@@ -167,7 +167,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
 
     ButtonComponentContext context =
         await commands.contextManager.createButtonComponentContext(await _getInteractionEvent(
-      commands.interactions.events.onButtonEvent,
+      interactions.events.onButtonEvent,
       componentIds: [componentId],
       timeout: timeout,
       authorOnly: authorOnly,
@@ -196,7 +196,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     }
 
     IMultiselectInteractionEvent event = await _getInteractionEvent(
-      commands.interactions.events.onMultiselectEvent,
+      interactions.events.onMultiselectEvent,
       componentIds: [componentId],
       timeout: timeout,
       authorOnly: authorOnly,
@@ -237,7 +237,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     }
 
     IMultiselectInteractionEvent event = await _getInteractionEvent(
-      commands.interactions.events.onMultiselectEvent,
+      interactions.events.onMultiselectEvent,
       componentIds: [componentId],
       timeout: timeout,
       authorOnly: authorOnly,
@@ -282,7 +282,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
 
     ButtonComponentContext context = await commands.contextManager.createButtonComponentContext(
       await _getInteractionEvent(
-        commands.interactions.events.onButtonEvent,
+        interactions.events.onButtonEvent,
         messageIds: [message.id],
         timeout: timeout,
         authorOnly: authorOnly,
@@ -373,7 +373,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
 
     ButtonComponentContext context = await commands.contextManager.createButtonComponentContext(
       await _getInteractionEvent(
-        commands.interactions.events.onButtonEvent,
+        interactions.events.onButtonEvent,
         componentIds: idToValue.keys.toList(),
         timeout: timeout,
         authorOnly: authorOnly,
@@ -628,7 +628,7 @@ mixin InteractionRespondMixin
       return (_delegate as IInteractionInteractiveContext).awaitModal(customId, timeout: timeout);
     }
 
-    Future<IModalInteractionEvent> event = commands.interactions.events.onModalEvent
+    Future<IModalInteractionEvent> event = interactions.events.onModalEvent
         .where(
           (event) => event.interaction.customId == customId,
         )

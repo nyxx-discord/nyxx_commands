@@ -33,6 +33,12 @@ abstract class IContextData {
 
   /// The client that emitted the event triggering this context's creation.
   INyxx get client;
+
+  /// The instance of [IInteractions] managed by [commands].
+  ///
+  /// If this context originated from an interaction, this will be the instance of [IInteractions]
+  /// that emitted the interaction event.
+  IInteractions get interactions;
 }
 
 class ContextBase implements IContextData {
@@ -48,6 +54,8 @@ class ContextBase implements IContextData {
   final CommandsPlugin commands;
   @override
   final INyxx client;
+  @override
+  final IInteractions interactions;
 
   ContextBase({
     required this.user,
@@ -56,6 +64,7 @@ class ContextBase implements IContextData {
     required this.channel,
     required this.commands,
     required this.client,
+    required this.interactions,
   });
 }
 

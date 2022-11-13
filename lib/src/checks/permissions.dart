@@ -54,7 +54,7 @@ class PermissionsCheck extends Check {
               ISlashCommand command;
 
               if (context is IInteractionCommandContextData) {
-                command = context.commands.interactions.commands.firstWhere((command) =>
+                command = context.interactions.commands.firstWhere((command) =>
                     command.id ==
                     (context as IInteractionCommandContextData).interaction.commandId);
               } else {
@@ -66,8 +66,7 @@ class PermissionsCheck extends Check {
                   root = root.parent as ICommandRegisterable;
                 }
 
-                Iterable<ISlashCommand> matchingCommands =
-                    context.commands.interactions.commands.where(
+                Iterable<ISlashCommand> matchingCommands = context.interactions.commands.where(
                   (command) => command.name == root.name && command.type == SlashCommandType.chat,
                 );
 
@@ -82,7 +81,7 @@ class PermissionsCheck extends Check {
                   await command.getPermissionOverridesInGuild(context.guild!.id).getOrDownload();
 
               if (overrides.permissionOverrides.isEmpty) {
-                overrides = await context.commands.interactions
+                overrides = await context.interactions
                     .getGlobalOverridesInGuild(context.guild!.id)
                     .getOrDownload();
               }

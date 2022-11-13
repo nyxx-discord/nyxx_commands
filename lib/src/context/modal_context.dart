@@ -23,6 +23,7 @@ class ModalContext extends ContextBase
     required super.client,
     required this.interaction,
     required this.interactionEvent,
+    required super.interactions,
   });
 
   /// Get the value the user inputted in a component based on its [id].

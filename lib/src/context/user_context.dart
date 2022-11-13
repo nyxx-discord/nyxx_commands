@@ -41,5 +41,6 @@ class UserContext extends ContextBase
     required super.channel,
     required super.commands,
     required super.client,
+    required super.interactions,
   });
 }

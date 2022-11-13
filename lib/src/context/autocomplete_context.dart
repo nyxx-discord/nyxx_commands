@@ -66,8 +66,9 @@ class AutocompleteContext extends ContextBase implements IInteractionContextData
     required super.channel,
     required super.commands,
     required super.client,
+    required super.interactions,
   }) {
-    ISlashCommand command = commands.interactions.commands.singleWhere(
+    ISlashCommand command = interactions.commands.singleWhere(
       (command) => command.id == interaction.commandId,
     );
 

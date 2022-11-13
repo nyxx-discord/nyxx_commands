@@ -53,6 +53,7 @@ class ButtonComponentContext extends ContextBase
     required super.client,
     required this.interaction,
     required this.interactionEvent,
+    required super.interactions,
   });
 }
 
@@ -88,5 +89,6 @@ class MultiselectComponentContext<T> extends ContextBase
     required this.interaction,
     required this.interactionEvent,
     required this.selected,
+    required super.interactions,
   });
 }
