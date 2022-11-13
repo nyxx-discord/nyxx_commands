@@ -630,6 +630,12 @@ mixin InteractionRespondMixin
 
       return interactionEvent.sendFollowup(builder, hidden: level.hideInteraction);
     } else {
+      // Using interactionEvent.respond is actually the same as editing a message in the case where
+      // the interaction is a message component. In those cases, leaving `componentRows` as `null`
+      // would leave the existing components on the message - which likely isn't what our users
+      // expect. Instead, we override them and set the builder to have to components.
+      builder = builderToComponentBuilder(builder)..componentRows ??= [];
+
       await interactionEvent.respond(builder, hidden: level.hideInteraction);
       return interactionEvent.getOriginalResponse();
     }
