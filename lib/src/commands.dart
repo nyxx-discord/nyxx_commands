@@ -209,7 +209,15 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
       nyxx.eventsWs.onMessageReceived.listen((event) => _processMessage(event.message));
     }
 
-    await _syncWithInteractions();
+    // Workaround until https://github.com/nyxx-discord/nyxx/pull/392 gets merged
+    // TODO: Remove this
+    if (!nyxx.ready) {
+      // Use .eventsWs.onReady instead of .onReady because .ready matches the state of eventsWs, not
+      // the client itself.
+      nyxx.eventsWs.onReady.first.then((_) => _syncWithInteractions());
+    } else {
+      await _syncWithInteractions();
+    }
   }
 
   @override
