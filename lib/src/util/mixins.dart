@@ -384,22 +384,24 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     builder.componentRows = activeComponentRows;
     final message = await respond(builder, level: level);
 
-    ButtonComponentContext context = await commands.contextManager.createButtonComponentContext(
-      await _getInteractionEvent(
-        interactions.events.onButtonEvent,
-        componentIds: idToValue.keys.toList(),
-        timeout: timeout,
-        authorOnly: authorOnly,
-      ),
-    );
+    try {
+      ButtonComponentContext context = await commands.contextManager.createButtonComponentContext(
+        await _getInteractionEvent(
+          interactions.events.onButtonEvent,
+          componentIds: idToValue.keys.toList(),
+          timeout: timeout,
+          authorOnly: authorOnly,
+        ),
+      );
 
-    builder.componentRows = disabledComponentRows;
-    await message.edit(builder);
+      context._parent = this;
+      _delegate = context;
 
-    context._parent = this;
-    _delegate = context;
-
-    return idToValue[context.componentId]!;
+      return idToValue[context.componentId]!;
+    } finally {
+      builder.componentRows = disabledComponentRows;
+      await message.edit(builder);
+    }
   }
 
   @override
@@ -475,57 +477,60 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     late MultiselectBuilder menu;
     late IMessage message;
 
-    do {
-      bool hasPreviousPage = currentOffset != 0;
-      int itemsPerPage = hasPreviousPage ? 24 : 25;
-      bool hasNextPage = currentOffset + itemsPerPage < options.length;
+    try {
+      do {
+        bool hasPreviousPage = currentOffset != 0;
+        int itemsPerPage = hasPreviousPage ? 24 : 25;
+        bool hasNextPage = currentOffset + itemsPerPage < options.length;
 
-      if (hasNextPage) {
-        itemsPerPage -= 1;
-      }
+        if (hasNextPage) {
+          itemsPerPage -= 1;
+        }
 
-      menu = MultiselectBuilder(createId(), [
-        if (hasPreviousPage) prevPageOption,
-        ...options.skip(currentOffset).take(itemsPerPage),
-        if (hasNextPage) nextPageOption,
-      ]);
+        menu = MultiselectBuilder(createId(), [
+          if (hasPreviousPage) prevPageOption,
+          ...options.skip(currentOffset).take(itemsPerPage),
+          if (hasNextPage) nextPageOption,
+        ]);
 
-      ComponentRowBuilder row = ComponentRowBuilder()..addComponent(menu);
-      if (context == null) {
-        // This is the first time we're sending a message, just append the component row.
-        (builder as ComponentMessageBuilder).addComponentRow(row);
-      } else {
-        // On later iterations, replace the last row with our newly created one.
-        List<ComponentRowBuilder> rows = (builder as ComponentMessageBuilder).componentRows!;
+        ComponentRowBuilder row = ComponentRowBuilder()..addComponent(menu);
+        if (context == null) {
+          // This is the first time we're sending a message, just append the component row.
+          (builder as ComponentMessageBuilder).addComponentRow(row);
+        } else {
+          // On later iterations, replace the last row with our newly created one.
+          List<ComponentRowBuilder> rows = (builder as ComponentMessageBuilder).componentRows!;
 
-        rows[rows.length - 1] = row;
-      }
+          rows[rows.length - 1] = row;
+        }
 
-      message = await respond(builder, level: level);
+        message = await respond(builder, level: level);
 
-      context = await awaitSelection(
-        menu.customId,
-        authorOnly: authorOnly,
-        timeout: timeout,
+        context = await awaitSelection(
+          menu.customId,
+          authorOnly: authorOnly,
+          timeout: timeout,
+        );
+
+        if (context.selected == nextPageOption.value) {
+          currentOffset += itemsPerPage;
+        } else if (context.selected == prevPageOption.value) {
+          currentOffset -= itemsPerPage;
+        }
+      } while (
+          context.selected == nextPageOption.value || context.selected == prevPageOption.value);
+
+      return parse(
+        commands,
+        context,
+        StringView(context.selected, isRestBlock: true),
+        DartType<T>(),
+        converterOverride: converterOverride,
       );
-
-      if (context.selected == nextPageOption.value) {
-        currentOffset += itemsPerPage;
-      } else if (context.selected == prevPageOption.value) {
-        currentOffset -= itemsPerPage;
-      }
-    } while (context.selected == nextPageOption.value || context.selected == prevPageOption.value);
-
-    menu.disabled = true;
-    await message.edit(builder);
-
-    return parse(
-      commands,
-      context,
-      StringView(context.selected, isRestBlock: true),
-      DartType<T>(),
-      converterOverride: converterOverride,
-    );
+    } finally {
+      menu.disabled = true;
+      await message.edit(builder);
+    }
   }
 
   @override
@@ -569,17 +574,19 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
 
     final message = await respond(builder, level: level);
 
-    final context = await awaitMultiSelection(
-      menu.customId,
-      authorOnly: authorOnly,
-      converterOverride: converterOverride,
-      timeout: timeout,
-    );
+    try {
+      final context = await awaitMultiSelection(
+        menu.customId,
+        authorOnly: authorOnly,
+        converterOverride: converterOverride,
+        timeout: timeout,
+      );
 
-    menu.disabled = true;
-    await message.edit(builder);
-
-    return context.selected;
+      return context.selected;
+    } finally {
+      menu.disabled = true;
+      await message.edit(builder);
+    }
   }
 }
 
