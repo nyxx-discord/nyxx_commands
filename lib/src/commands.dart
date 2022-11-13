@@ -149,7 +149,8 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
   ///
   /// You might also be interested in:
   /// - [INyxx.registerPlugin], for adding plugins to clients.
-  INyxx? client;
+  INyxx? get client => _client;
+  INyxx? _client;
 
   /// The [ContextManager] attached to this [CommandsPlugin].
   late final ContextManager contextManager = ContextManager(this);
@@ -186,29 +187,29 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
   }
 
   @override
-  void onRegister(INyxx nyxx, Logger logger) async {
-    client = nyxx;
+  Future<void> onRegister(INyxx nyxx, Logger logger) async {
+    _client = nyxx;
 
-    if (nyxx is INyxxWebsocket) {
-      if (prefix != null) {
-        nyxx.eventsWs.onMessageReceived.listen((event) => _processMessage(event.message));
-      }
-
-      _interactions = IInteractions.create(options.backend ?? WebsocketInteractionBackend(nyxx));
-    } else {
-      logger.warning('Commands was not intended for use without NyxxWebsocket.');
-
+    if (nyxx is! INyxxWebsocket) {
       throw CommandsError(
           'Cannot create the Interactions backend for non-websocket INyxx instances.');
     }
 
     if (nyxx.ready) {
-      await _syncWithInteractions();
-    } else {
-      nyxx.onReady.listen((event) async {
-        await _syncWithInteractions();
-      });
+      await onBotStart(nyxx, logger);
     }
+  }
+
+  @override
+  Future<void> onBotStart(INyxx nyxx, Logger logger) async {
+    nyxx = nyxx as INyxxWebsocket;
+    _interactions = IInteractions.create(options.backend ?? WebsocketInteractionBackend(nyxx));
+
+    if (prefix != null) {
+      nyxx.eventsWs.onMessageReceived.listen((event) => _processMessage(event.message));
+    }
+
+    await _syncWithInteractions();
   }
 
   @override
@@ -217,8 +218,8 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
     await _onPreCallController.close();
     await _onCommandErrorController.close();
 
-    client = null;
     _interactions = null;
+    _client = null;
   }
 
   Future<void> _syncWithInteractions() async {
