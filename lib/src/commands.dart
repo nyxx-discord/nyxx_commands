@@ -126,7 +126,8 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
   /// Because [IInteractions] also allows you to use [Message Components](https://discord.com/developers/docs/interactions/message-components),
   /// developers might need to use this instance of [IInteractions]. It is not recommended to create
   /// your own instance alongside nyxx_commands as that might result in commands being deleted.
-  late final IInteractions interactions;
+  IInteractions? get interactions => _interactions;
+  IInteractions? _interactions;
 
   @override
   final CommandsOptions options;
@@ -193,7 +194,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
         nyxx.eventsWs.onMessageReceived.listen((event) => _processMessage(event.message));
       }
 
-      interactions = IInteractions.create(options.backend ?? WebsocketInteractionBackend(nyxx));
+      _interactions = IInteractions.create(options.backend ?? WebsocketInteractionBackend(nyxx));
     } else {
       logger.warning('Commands was not intended for use without NyxxWebsocket.');
 
@@ -215,15 +216,18 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
     await _onPostCallController.close();
     await _onPreCallController.close();
     await _onCommandErrorController.close();
+
+    client = null;
+    _interactions = null;
   }
 
   Future<void> _syncWithInteractions() async {
     for (final builder in await _getSlashBuilders()) {
-      interactions.registerSlashCommand(builder);
+      interactions!.registerSlashCommand(builder);
     }
 
-    interactions.sync(
-        syncRule: ManualCommandSync(sync: client?.options.shardIds?.contains(0) ?? true));
+    interactions!
+        .sync(syncRule: ManualCommandSync(sync: client!.options.shardIds?.contains(0) ?? true));
   }
 
   Future<void> _processMessage(IMessage message) async {
