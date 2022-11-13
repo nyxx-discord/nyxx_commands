@@ -128,7 +128,7 @@ class EntireAstVisitor extends RecursiveAstVisitor<void> {
   void visitPartDirective(PartDirective directive) {
     super.visitPartDirective(directive);
 
-    DirectiveUri uri = directive.element2!.uri;
+    DirectiveUri uri = directive.element!.uri;
     if (uri is! DirectiveUriWithSource) {
       throw CommandsError('Unknown part target $directive');
     }

@@ -77,7 +77,7 @@ Iterable<CompileTimeFunctionData> getFunctionData(
             return false;
           }
 
-          return result.type?.element2?.location?.encoding == source;
+          return result.type?.element?.location?.encoding == source;
         });
       }
 
