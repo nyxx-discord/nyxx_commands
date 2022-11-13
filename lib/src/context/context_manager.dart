@@ -73,6 +73,7 @@ class ContextManager {
       prefix: prefix,
       message: message,
       rawArguments: contentView.remaining,
+      interactions: commands.interactions!,
     );
   }
 
@@ -109,6 +110,7 @@ class ContextManager {
       interaction: interaction,
       rawArguments: rawArguments,
       interactionEvent: interactionEvent,
+      interactions: commands.interactions!,
     );
   }
 
@@ -142,6 +144,7 @@ class ContextManager {
       guild: guild,
       targetUser: targetUser,
       targetMember: guild?.members[targetUser.id] ?? await guild?.fetchMember(targetUser.id),
+      interactions: commands.interactions!,
     );
   }
 
@@ -172,6 +175,7 @@ class ContextManager {
       guild: guild,
       targetMessage: interaction.channel.getFromCache()!.messageCache[interaction.targetId] ??
           await interaction.channel.getFromCache()!.fetchMessage(interaction.targetId!),
+      interactions: commands.interactions!,
     );
   }
 
@@ -200,6 +204,7 @@ class ContextManager {
       interactionEvent: interactionEvent,
       option: interactionEvent.focusedOption,
       currentValue: interactionEvent.focusedOption.value.toString(),
+      interactions: commands.interactions!,
     );
   }
 
@@ -223,6 +228,7 @@ class ContextManager {
       client: commands.client!,
       interaction: interaction,
       interactionEvent: interactionEvent,
+      interactions: commands.interactions!,
     );
   }
 
@@ -249,6 +255,7 @@ class ContextManager {
       interaction: interaction,
       interactionEvent: interactionEvent,
       selected: selected,
+      interactions: commands.interactions!,
     );
   }
 
@@ -270,6 +277,7 @@ class ContextManager {
       client: commands.client!,
       interaction: interaction,
       interactionEvent: interactionEvent,
+      interactions: commands.interactions!,
     );
   }
 }

@@ -167,7 +167,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
 
     ButtonComponentContext context =
         await commands.contextManager.createButtonComponentContext(await _getInteractionEvent(
-      commands.interactions.events.onButtonEvent,
+      interactions.events.onButtonEvent,
       componentIds: [componentId],
       timeout: timeout,
       authorOnly: authorOnly,
@@ -196,7 +196,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     }
 
     IMultiselectInteractionEvent event = await _getInteractionEvent(
-      commands.interactions.events.onMultiselectEvent,
+      interactions.events.onMultiselectEvent,
       componentIds: [componentId],
       timeout: timeout,
       authorOnly: authorOnly,
@@ -237,7 +237,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     }
 
     IMultiselectInteractionEvent event = await _getInteractionEvent(
-      commands.interactions.events.onMultiselectEvent,
+      interactions.events.onMultiselectEvent,
       componentIds: [componentId],
       timeout: timeout,
       authorOnly: authorOnly,
@@ -282,7 +282,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
 
     ButtonComponentContext context = await commands.contextManager.createButtonComponentContext(
       await _getInteractionEvent(
-        commands.interactions.events.onButtonEvent,
+        interactions.events.onButtonEvent,
         messageIds: [message.id],
         timeout: timeout,
         authorOnly: authorOnly,
@@ -355,35 +355,53 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
 
     builder = builderToComponentBuilder(builder);
 
+    final activeComponentRows = [...?(builder as ComponentMessageBuilder).componentRows];
+    final disabledComponentRows = [...?builder.componentRows];
+
     while (buttons.isNotEmpty) {
       // Max 5 buttons per row
-      int lastIndex = min(5, buttons.length);
+      int count = min(5, buttons.length);
 
-      ComponentRowBuilder row = ComponentRowBuilder();
+      ComponentRowBuilder activeRow = ComponentRowBuilder();
+      ComponentRowBuilder disabledRow = ComponentRowBuilder();
 
-      for (final button in buttons.take(lastIndex)) {
-        row.addComponent(button);
+      for (final button in buttons.take(count)) {
+        activeRow.addComponent(button);
+
+        disabledRow.addComponent(
+          ButtonBuilder(button.label, button.customId, button.style)
+            ..disabled = true
+            ..emoji = button.emoji,
+        );
       }
 
-      (builder as ComponentMessageBuilder).addComponentRow(row);
-      buttons.removeRange(0, lastIndex);
+      activeComponentRows.add(activeRow);
+      disabledComponentRows.add(disabledRow);
+
+      buttons.removeRange(0, count);
     }
 
-    await respond(builder, level: level);
+    builder.componentRows = activeComponentRows;
+    final message = await respond(builder, level: level);
 
-    ButtonComponentContext context = await commands.contextManager.createButtonComponentContext(
-      await _getInteractionEvent(
-        commands.interactions.events.onButtonEvent,
-        componentIds: idToValue.keys.toList(),
-        timeout: timeout,
-        authorOnly: authorOnly,
-      ),
-    );
+    try {
+      ButtonComponentContext context = await commands.contextManager.createButtonComponentContext(
+        await _getInteractionEvent(
+          interactions.events.onButtonEvent,
+          componentIds: idToValue.keys.toList(),
+          timeout: timeout,
+          authorOnly: authorOnly,
+        ),
+      );
 
-    context._parent = this;
-    _delegate = context;
+      context._parent = this;
+      _delegate = context;
 
-    return idToValue[context.componentId]!;
+      return idToValue[context.componentId]!;
+    } finally {
+      builder.componentRows = disabledComponentRows;
+      await message.edit(builder);
+    }
   }
 
   @override
@@ -456,54 +474,63 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     MultiselectComponentContext<String>? context;
     int currentOffset = 0;
 
-    do {
-      bool hasPreviousPage = currentOffset != 0;
-      int itemsPerPage = hasPreviousPage ? 24 : 25;
-      bool hasNextPage = currentOffset + itemsPerPage < options.length;
+    late MultiselectBuilder menu;
+    late IMessage message;
 
-      if (hasNextPage) {
-        itemsPerPage -= 1;
-      }
+    try {
+      do {
+        bool hasPreviousPage = currentOffset != 0;
+        int itemsPerPage = hasPreviousPage ? 24 : 25;
+        bool hasNextPage = currentOffset + itemsPerPage < options.length;
 
-      MultiselectBuilder menu = MultiselectBuilder(createId(), [
-        if (hasPreviousPage) prevPageOption,
-        ...options.skip(currentOffset).take(itemsPerPage),
-        if (hasNextPage) nextPageOption,
-      ]);
+        if (hasNextPage) {
+          itemsPerPage -= 1;
+        }
 
-      ComponentRowBuilder row = ComponentRowBuilder()..addComponent(menu);
-      if (context == null) {
-        // This is the first time we're sending a message, just append the component row.
-        (builder as ComponentMessageBuilder).addComponentRow(row);
-      } else {
-        // On later iterations, replace the last row with our newly created one.
-        List<ComponentRowBuilder> rows = (builder as ComponentMessageBuilder).componentRows!;
+        menu = MultiselectBuilder(createId(), [
+          if (hasPreviousPage) prevPageOption,
+          ...options.skip(currentOffset).take(itemsPerPage),
+          if (hasNextPage) nextPageOption,
+        ]);
 
-        rows[rows.length - 1] = row;
-      }
+        ComponentRowBuilder row = ComponentRowBuilder()..addComponent(menu);
+        if (context == null) {
+          // This is the first time we're sending a message, just append the component row.
+          (builder as ComponentMessageBuilder).addComponentRow(row);
+        } else {
+          // On later iterations, replace the last row with our newly created one.
+          List<ComponentRowBuilder> rows = (builder as ComponentMessageBuilder).componentRows!;
 
-      await respond(builder, level: level);
+          rows[rows.length - 1] = row;
+        }
 
-      context = await awaitSelection(
-        menu.customId,
-        authorOnly: authorOnly,
-        timeout: timeout,
+        message = await respond(builder, level: level);
+
+        context = await awaitSelection(
+          menu.customId,
+          authorOnly: authorOnly,
+          timeout: timeout,
+        );
+
+        if (context.selected == nextPageOption.value) {
+          currentOffset += itemsPerPage;
+        } else if (context.selected == prevPageOption.value) {
+          currentOffset -= itemsPerPage;
+        }
+      } while (
+          context.selected == nextPageOption.value || context.selected == prevPageOption.value);
+
+      return parse(
+        commands,
+        context,
+        StringView(context.selected, isRestBlock: true),
+        DartType<T>(),
+        converterOverride: converterOverride,
       );
-
-      if (context.selected == nextPageOption.value) {
-        currentOffset += itemsPerPage;
-      } else if (context.selected == prevPageOption.value) {
-        currentOffset -= itemsPerPage;
-      }
-    } while (context.selected == nextPageOption.value || context.selected == prevPageOption.value);
-
-    return parse(
-      commands,
-      context,
-      StringView(context.selected, isRestBlock: true),
-      DartType<T>(),
-      converterOverride: converterOverride,
-    );
+    } finally {
+      menu.disabled = true;
+      await message.edit(builder);
+    }
   }
 
   @override
@@ -545,15 +572,21 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
 
     (builder as ComponentMessageBuilder).addComponentRow(row);
 
-    await respond(builder, level: level);
+    final message = await respond(builder, level: level);
 
-    return (await awaitMultiSelection(
-      menu.customId,
-      authorOnly: authorOnly,
-      converterOverride: converterOverride,
-      timeout: timeout,
-    ))
-        .selected;
+    try {
+      final context = await awaitMultiSelection(
+        menu.customId,
+        authorOnly: authorOnly,
+        converterOverride: converterOverride,
+        timeout: timeout,
+      );
+
+      return context.selected;
+    } finally {
+      menu.disabled = true;
+      await message.edit(builder);
+    }
   }
 }
 
@@ -604,6 +637,12 @@ mixin InteractionRespondMixin
 
       return interactionEvent.sendFollowup(builder, hidden: level.hideInteraction);
     } else {
+      // Using interactionEvent.respond is actually the same as editing a message in the case where
+      // the interaction is a message component. In those cases, leaving `componentRows` as `null`
+      // would leave the existing components on the message - which likely isn't what our users
+      // expect. Instead, we override them and set the builder to have to components.
+      builder = builderToComponentBuilder(builder)..componentRows ??= [];
+
       await interactionEvent.respond(builder, hidden: level.hideInteraction);
       return interactionEvent.getOriginalResponse();
     }
@@ -628,7 +667,7 @@ mixin InteractionRespondMixin
       return (_delegate as IInteractionInteractiveContext).awaitModal(customId, timeout: timeout);
     }
 
-    Future<IModalInteractionEvent> event = commands.interactions.events.onModalEvent
+    Future<IModalInteractionEvent> event = interactions.events.onModalEvent
         .where(
           (event) => event.interaction.customId == customId,
         )

@@ -58,6 +58,7 @@ abstract class ChatContext extends ContextBase with InteractiveMixin implements 
     required super.channel,
     required super.commands,
     required super.client,
+    required super.interactions,
   });
 }
 
@@ -98,6 +99,7 @@ class MessageChatContext extends ChatContext with MessageRespondMixin {
     required super.channel,
     required super.commands,
     required super.client,
+    required super.interactions,
   });
 }
 
@@ -133,5 +135,6 @@ class InteractionChatContext extends ChatContext
     required super.channel,
     required super.commands,
     required super.client,
+    required super.interactions,
   });
 }

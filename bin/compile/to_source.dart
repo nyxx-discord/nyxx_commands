@@ -55,7 +55,7 @@ List<String>? toTypeSource(DartType type, [bool handleTypeParameters = true]) {
       [],
       (previousValue, element) {
         // Only include each type parameter once
-        if (!previousValue.any((t) => t.element2 == element.element2)) {
+        if (!previousValue.any((t) => t.element == element.element)) {
           previousValue.add(element);
         }
 
@@ -68,7 +68,7 @@ List<String>? toTypeSource(DartType type, [bool handleTypeParameters = true]) {
       typeArguments += '<';
 
       for (final typeParameter in typeParameters) {
-        typeArguments += typeParameter.element2.name;
+        typeArguments += typeParameter.element.name;
 
         if (typeParameter.bound is! DynamicType) {
           typeArguments += ' extends ';
@@ -103,20 +103,20 @@ List<String>? toTypeSource(DartType type, [bool handleTypeParameters = true]) {
       return ['Never'];
     }
 
-    if (type.element2?.library?.source.uri.toString().contains(':_') ?? false) {
+    if (type.element?.library?.source.uri.toString().contains(':_') ?? false) {
       return null; // Private or unresolved library; cannot handle
     } else if (type.getDisplayString(withNullability: true).startsWith('_')) {
       return null; // Private type; cannot handle
     }
 
     String? importPrefix;
-    if (type.element2 is InterfaceElement) {
-      importPrefix = toImportPrefix(type.element2!.library!.source.uri.toString());
+    if (type.element is InterfaceElement) {
+      importPrefix = toImportPrefix(type.element!.library!.source.uri.toString());
     }
 
     List<String> imports = [];
     if (importPrefix != null) {
-      imports.add('import "${type.element2!.library!.source.uri.toString()}" as $importPrefix;');
+      imports.add('import "${type.element!.library!.source.uri.toString()}" as $importPrefix;');
     }
 
     String prefix = importPrefix != null ? '$importPrefix.' : '';
@@ -125,7 +125,7 @@ List<String>? toTypeSource(DartType type, [bool handleTypeParameters = true]) {
 
     if (type is ParameterizedType) {
       // Either a type parameter or a class
-      typeString = '$prefix${type.element2!.name!}';
+      typeString = '$prefix${type.element!.name!}';
 
       // Add type arguments as needed
       if (type.typeArguments.isNotEmpty) {
@@ -233,7 +233,7 @@ List<String>? toTypeSource(DartType type, [bool handleTypeParameters = true]) {
     } else if (type is TypeParameterType) {
       // Copy the name of the type parameter. It should have been introduced when we processed type
       // arguments earlier, so we don't need to do anything more
-      typeString = type.element2.name;
+      typeString = type.element.name;
     } else if (type is InterfaceType) {
       // Just a simple class (or enum/mixin)
       typeString = '$prefix${type.toString()}';
@@ -357,7 +357,7 @@ List<String>? toExpressionSource(Expression expression) {
         ];
       } else if (referenced.variable is FieldElement) {
         List<String>? typeData =
-            toTypeSource((referenced.variable.enclosingElement3 as ClassElement).thisType);
+            toTypeSource((referenced.variable.enclosingElement as ClassElement).thisType);
 
         if (typeData == null || !referenced.variable.isPublic || !referenced.variable.isStatic) {
           return null;
@@ -391,8 +391,7 @@ List<String>? toExpressionSource(Expression expression) {
         return null; // Cannot handle private functions
       }
     } else if (referenced is MethodElement) {
-      List<String>? typeData =
-          toTypeSource((referenced.enclosingElement3 as ClassElement).thisType);
+      List<String>? typeData = toTypeSource((referenced.enclosingElement as ClassElement).thisType);
 
       if (typeData == null || !referenced.isPublic || !referenced.isStatic) {
         return null;

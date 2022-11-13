@@ -126,7 +126,8 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
   /// Because [IInteractions] also allows you to use [Message Components](https://discord.com/developers/docs/interactions/message-components),
   /// developers might need to use this instance of [IInteractions]. It is not recommended to create
   /// your own instance alongside nyxx_commands as that might result in commands being deleted.
-  late final IInteractions interactions;
+  IInteractions? get interactions => _interactions;
+  IInteractions? _interactions;
 
   @override
   final CommandsOptions options;
@@ -148,7 +149,8 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
   ///
   /// You might also be interested in:
   /// - [INyxx.registerPlugin], for adding plugins to clients.
-  INyxx? client;
+  INyxx? get client => _client;
+  INyxx? _client;
 
   /// The [ContextManager] attached to this [CommandsPlugin].
   late final ContextManager contextManager = ContextManager(this);
@@ -185,28 +187,36 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
   }
 
   @override
-  void onRegister(INyxx nyxx, Logger logger) async {
-    client = nyxx;
+  Future<void> onRegister(INyxx nyxx, Logger logger) async {
+    _client = nyxx;
 
-    if (nyxx is INyxxWebsocket) {
-      if (prefix != null) {
-        nyxx.eventsWs.onMessageReceived.listen((event) => _processMessage(event.message));
-      }
-
-      interactions = IInteractions.create(options.backend ?? WebsocketInteractionBackend(nyxx));
-    } else {
-      logger.warning('Commands was not intended for use without NyxxWebsocket.');
-
+    if (nyxx is! INyxxWebsocket) {
       throw CommandsError(
           'Cannot create the Interactions backend for non-websocket INyxx instances.');
     }
 
     if (nyxx.ready) {
-      await _syncWithInteractions();
+      await onBotStart(nyxx, logger);
+    }
+  }
+
+  @override
+  Future<void> onBotStart(INyxx nyxx, Logger logger) async {
+    nyxx = nyxx as INyxxWebsocket;
+    _interactions = IInteractions.create(options.backend ?? WebsocketInteractionBackend(nyxx));
+
+    if (prefix != null) {
+      nyxx.eventsWs.onMessageReceived.listen((event) => _processMessage(event.message));
+    }
+
+    // Workaround until https://github.com/nyxx-discord/nyxx/pull/392 gets merged
+    // TODO: Remove this
+    if (!nyxx.ready) {
+      // Use .eventsWs.onReady instead of .onReady because .ready matches the state of eventsWs, not
+      // the client itself.
+      nyxx.eventsWs.onReady.first.then((_) => _syncWithInteractions());
     } else {
-      nyxx.onReady.listen((event) async {
-        await _syncWithInteractions();
-      });
+      await _syncWithInteractions();
     }
   }
 
@@ -215,15 +225,18 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
     await _onPostCallController.close();
     await _onPreCallController.close();
     await _onCommandErrorController.close();
+
+    _interactions = null;
+    _client = null;
   }
 
   Future<void> _syncWithInteractions() async {
     for (final builder in await _getSlashBuilders()) {
-      interactions.registerSlashCommand(builder);
+      interactions!.registerSlashCommand(builder);
     }
 
-    interactions.sync(
-        syncRule: ManualCommandSync(sync: client?.options.shardIds?.contains(0) ?? true));
+    interactions!
+        .sync(syncRule: ManualCommandSync(sync: client!.options.shardIds?.contains(0) ?? true));
   }
 
   Future<void> _processMessage(IMessage message) async {

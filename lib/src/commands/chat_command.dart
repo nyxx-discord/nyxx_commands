@@ -109,9 +109,9 @@ mixin ChatGroupMixin implements IChatCommandComponent {
 
   @override
   String get fullName =>
-      (parent == null || parent is! ICommandRegisterable
+      (parent == null || parent is! IChatCommandComponent
           ? ''
-          : (parent as ICommandRegisterable).name + ' ') +
+          : '${(parent as IChatCommandComponent).fullName} ') +
       name;
 
   @override
