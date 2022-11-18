@@ -434,6 +434,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     ResponseLevel? level,
     Duration? timeout,
     bool authorOnly = true,
+    FutureOr<MultiselectOptionBuilder> Function(T)? toMultiSelect,
     Converter<T>? converterOverride,
   }) async {
     if (_delegate != null) {
@@ -444,19 +445,32 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
         converterOverride: converterOverride,
         level: level,
         timeout: timeout,
+        toMultiSelect: toMultiSelect,
       );
     }
 
-    FutureOr<MultiselectOptionBuilder> Function(T)? toOption =
-        converterOverride?.toMultiselectOption;
-    toOption ??= commands.getConverter(DartType<T>())?.toMultiselectOption;
+    assert(
+      toMultiSelect == null || converterOverride == null,
+      'Cannot specify both toMultiSelect and converterOverride',
+    );
 
-    if (toOption == null) {
-      throw NoConverterException(DartType<T>());
+    toMultiSelect ??= converterOverride?.toMultiselectOption;
+    toMultiSelect ??= commands.getConverter(DartType<T>())?.toMultiselectOption;
+
+    if (toMultiSelect == null) {
+      throw UncaughtCommandsException(
+        'No suitable method for converting $T to MultiselectOptionBuilder found',
+        _nearestCommandContext,
+      );
     }
 
+    Map<String, T> idToValue = {};
     List<MultiselectOptionBuilder> options = await Future.wait(choices.map(
-      (value) async => toOption!(value),
+      (value) async {
+        MultiselectOptionBuilder builder = await toMultiSelect!(value);
+        idToValue[builder.value] = value;
+        return builder;
+      },
     ));
 
     MultiselectOptionBuilder prevPageOption = MultiselectOptionBuilder(
@@ -520,13 +534,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
       } while (
           context.selected == nextPageOption.value || context.selected == prevPageOption.value);
 
-      return parse(
-        commands,
-        context,
-        StringView(context.selected, isRestBlock: true),
-        DartType<T>(),
-        converterOverride: converterOverride,
-      );
+      return idToValue[context.selected]!;
     } finally {
       menu.disabled = true;
       await message.edit(builder);
@@ -540,6 +548,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     ResponseLevel? level,
     Duration? timeout,
     bool authorOnly = true,
+    FutureOr<MultiselectOptionBuilder> Function(T)? toMultiSelect,
     Converter<T>? converterOverride,
   }) async {
     if (_delegate != null) {
@@ -550,19 +559,27 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
         converterOverride: converterOverride,
         level: level,
         timeout: timeout,
+        toMultiSelect: toMultiSelect,
       );
     }
 
-    FutureOr<MultiselectOptionBuilder> Function(T)? toOption =
-        converterOverride?.toMultiselectOption;
-    toOption ??= commands.getConverter(DartType<T>())?.toMultiselectOption;
+    toMultiSelect ??= converterOverride?.toMultiselectOption;
+    toMultiSelect ??= commands.getConverter(DartType<T>())?.toMultiselectOption;
 
-    if (toOption == null) {
-      throw NoConverterException(DartType<T>());
+    if (toMultiSelect == null) {
+      throw UncaughtCommandsException(
+        'No suitable method for converting $T to MultiselectOptionBuilder found',
+        _nearestCommandContext,
+      );
     }
 
+    Map<String, T> idToValue = {};
     List<MultiselectOptionBuilder> options = await Future.wait(choices.map(
-      (value) async => toOption!(value),
+      (value) async {
+        MultiselectOptionBuilder builder = await toMultiSelect!(value);
+        idToValue[builder.value] = value;
+        return builder;
+      },
     ));
 
     builder = builderToComponentBuilder(builder);
@@ -572,17 +589,16 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
 
     (builder as ComponentMessageBuilder).addComponentRow(row);
 
-    final message = await respond(builder, level: level);
+    IMessage message = await respond(builder, level: level);
 
     try {
-      final context = await awaitMultiSelection(
+      MultiselectComponentContext<List<String>> context = await awaitMultiSelection(
         menu.customId,
         authorOnly: authorOnly,
-        converterOverride: converterOverride,
         timeout: timeout,
       );
 
-      return context.selected;
+      return context.selected.map((id) => idToValue[id]!).toList();
     } finally {
       menu.disabled = true;
       await message.edit(builder);
