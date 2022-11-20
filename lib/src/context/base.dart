@@ -326,6 +326,7 @@ abstract class IInteractiveContext {
     ResponseLevel? level,
     Duration? timeout,
     bool authorOnly = true,
+    FutureOr<MultiselectOptionBuilder> Function(T)? toMultiSelect,
     Converter<T>? converterOverride,
   });
 
@@ -351,6 +352,7 @@ abstract class IInteractiveContext {
     ResponseLevel? level,
     Duration? timeout,
     bool authorOnly = true,
+    FutureOr<MultiselectOptionBuilder> Function(T)? toMultiSelect,
     Converter<T>? converterOverride,
   });
 }
