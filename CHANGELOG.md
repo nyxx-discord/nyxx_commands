@@ -1,3 +1,21 @@
+## 5.0.0-dev.1
+__Breaking changes__:
+- `CommandsPlugin` has been made more type safe, making the `interactions` field nullable. To use the `IInteractions` instance from your commands, see `IContextData.interactions`. `client` has also been changed to be read-only.
+
+__New features__:
+- A helper for using modals has been added. See `IInteractionInteractiveContext.getModal` for more.
+- `getSelection` and `getMultiSelection` from `IInteractiveContext` can now be used without a converter, using the `toMultiSelect` parameter.
+- Failed converters now throw a `ConverterFailedException` instead of a `BadInputException`.
+- `SimpleConverter.provider` can now be async.
+
+__Bug fixes__:
+- `IChatCommandComponent.fullName` now correctly returns the full command name.
+- Responding to a component context now correctly clears components on the message.
+
+__Miscellaneous__:
+- `package:analyzer` has been bumped to 5.0.0.
+- A few elements that were previously unexported are now correctly exported.
+
 ## 5.0.0-dev.0
 __Breaking changes__:
 - `ChatCommand.type` has been moved to `CommandOptions`. Use `ChatCommand(options: CommandOptions(type: ...))` instead  of `ChatCommand(type: ...)` to set a commands type. With this change, the `textOnly` and `slashOnly` constructors have been removed from `ChatCommand`.
