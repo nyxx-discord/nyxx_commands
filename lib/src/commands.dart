@@ -178,11 +178,9 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
     registerDefaultConverters(this);
 
     if (options.logErrors) {
-      onCommandError.listen((error) {
-        logger
-          ..warning('Uncaught exception in command')
-          ..shout(error);
-      });
+      onCommandError.listen(
+        (error) => logger.shout('Uncaught exception in command', error, error.stackTrace),
+      );
     }
   }
 
@@ -209,15 +207,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
       nyxx.eventsWs.onMessageReceived.listen((event) => _processMessage(event.message));
     }
 
-    // Workaround until https://github.com/nyxx-discord/nyxx/pull/392 gets merged
-    // TODO: Remove this
-    if (!nyxx.ready) {
-      // Use .eventsWs.onReady instead of .onReady because .ready matches the state of eventsWs, not
-      // the client itself.
-      nyxx.eventsWs.onReady.first.then((_) => _syncWithInteractions());
-    } else {
-      await _syncWithInteractions();
-    }
+    await _syncWithInteractions();
   }
 
   @override
@@ -237,6 +227,11 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
 
     interactions!
         .sync(syncRule: ManualCommandSync(sync: client!.options.shardIds?.contains(0) ?? true));
+  }
+
+  void _handleError(CommandsException error, StackTrace stackTrace) {
+    error.stackTrace ??= stackTrace;
+    _onCommandErrorController.add(error);
   }
 
   Future<void> _processMessage(IMessage message) async {
@@ -263,8 +258,8 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
 
         await context.command.invoke(context);
       }
-    } on CommandsException catch (e) {
-      _onCommandErrorController.add(e);
+    } on CommandsException catch (e, s) {
+      _handleError(e, s);
     }
   }
 
@@ -295,8 +290,8 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
           'from interaction ${context.interactionEvent.interaction.token}');
 
       await context.command.invoke(context);
-    } on CommandsException catch (e) {
-      _onCommandErrorController.add(e);
+    } on CommandsException catch (e, s) {
+      _handleError(e, s);
     }
   }
 
@@ -340,8 +335,8 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
       } on Exception catch (e) {
         throw AutocompleteFailedException(e, context);
       }
-    } on CommandsException catch (e) {
-      _onCommandErrorController.add(e);
+    } on CommandsException catch (e, s) {
+      _handleError(e, s);
     }
   }
 

@@ -22,6 +22,25 @@ class CommandsException implements Exception {
   /// users. Checking the type of the error and reacting accordingly is recommended.
   String message;
 
+  /// The stack trace at the point where this exception was first thrown.
+  ///
+  /// Might be unset if nyxx_commands has not yet handled this exception. The `stackTrace = ...`
+  /// setter should not be called if this is already non-null, so you should avoid calling it unless
+  /// you are creating exceptions yourself.
+  StackTrace? get stackTrace => _stackTrace;
+
+  set stackTrace(StackTrace? stackTrace) {
+    if (stackTrace != null) {
+      // Use a native error instead of one from nyxx_commands that could potentially lead to an
+      // infinite error loop
+      throw StateError('Cannot set CommandsException.stackTrace if it is already set');
+    }
+
+    _stackTrace = stackTrace;
+  }
+
+  StackTrace? _stackTrace;
+
   /// Create a new [CommandsException].
   CommandsException(this.message);
 
@@ -87,12 +106,13 @@ class UncaughtException extends CommandInvocationException {
 
 /// An exception thrown by nyxx_commands to indicate misuse of the library.
 class UncaughtCommandsException extends UncaughtException {
+  @override
+  final StackTrace stackTrace;
+
   /// Create a new [UncaughtCommandsException].
   UncaughtCommandsException(String message, ICommandContext context)
-      : super(
-          CommandsException(message),
-          context,
-        );
+      : stackTrace = StackTrace.current,
+        super(CommandsException(message), context);
 }
 
 /// An exception that occurred due to an invalid input from the user.
