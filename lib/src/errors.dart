@@ -30,7 +30,7 @@ class CommandsException implements Exception {
   StackTrace? get stackTrace => _stackTrace;
 
   set stackTrace(StackTrace? stackTrace) {
-    if (stackTrace != null) {
+    if (this.stackTrace != null) {
       // Use a native error instead of one from nyxx_commands that could potentially lead to an
       // infinite error loop
       throw StateError('Cannot set CommandsException.stackTrace if it is already set');
