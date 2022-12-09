@@ -277,6 +277,8 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
           timeout = const Duration(seconds: 3) - latency * 2;
         }
 
+        timeout -= DateTime.now().difference(context.interactionEvent.receivedAt);
+
         Timer(timeout, () async {
           try {
             await context.acknowledge();
