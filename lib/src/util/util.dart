@@ -356,11 +356,102 @@ ChatCommand? getCommandHelper(StringView view, Map<String, IChatCommandComponent
   }
 }
 
-final int _start = DateTime.now().millisecondsSinceEpoch;
-int _increment = 0;
+class ComponentId {
+  final int uniqueIdentifier;
+  final DateTime sessionStartTime;
+  final DateTime? expiresAt;
 
-/// Create a unique ID for components.
-String createId() => 'nyxx_commands-$_start-${++_increment}';
+  Duration? get expiresIn => expiresAt != null ? DateTime.now().difference(expiresAt!) : null;
+
+  final ComponentIdStatus status;
+
+  static final currentSessionStartTime = DateTime.now().toUtc();
+  static int _uniqueIdentifier = 0;
+
+  const ComponentId({
+    required this.uniqueIdentifier,
+    required this.sessionStartTime,
+    required this.expiresAt,
+    required this.status,
+  });
+
+  factory ComponentId.generate({Duration? expirationTime}) => ComponentId(
+        uniqueIdentifier: _uniqueIdentifier++,
+        sessionStartTime: currentSessionStartTime,
+        expiresAt: expirationTime != null ? DateTime.now().add(expirationTime).toUtc() : null,
+        status: ComponentIdStatus.ok,
+      );
+
+  static ComponentId? parse(String id) {
+    final parts = id.split('/');
+
+    if (parts.isEmpty || parts.first != 'nyxx_commands') {
+      return null;
+    }
+
+    final uniqueIdentifier = int.parse(parts[1]);
+    final sessionStartTime = DateTime.parse(parts[2]);
+    final expiresAt = parts[3] != 'null' ? DateTime.parse(parts[3]) : null;
+
+    final ComponentIdStatus? status;
+    if (sessionStartTime != currentSessionStartTime) {
+      status = ComponentIdStatus.fromDifferentSession;
+    } else if (expiresAt?.isBefore(DateTime.now()) ?? false) {
+      status = ComponentIdStatus.expired;
+    } else {
+      status = ComponentIdStatus.ok;
+    }
+
+    return ComponentId(
+      expiresAt: expiresAt,
+      sessionStartTime: sessionStartTime,
+      status: status,
+      uniqueIdentifier: uniqueIdentifier,
+    );
+  }
+
+  ComponentId withStatus(ComponentIdStatus status) => ComponentId(
+        expiresAt: expiresAt,
+        sessionStartTime: sessionStartTime,
+        status: status,
+        uniqueIdentifier: uniqueIdentifier,
+      );
+
+  @override
+  String toString() => 'nyxx_commands/$uniqueIdentifier/$sessionStartTime/$expiresAt';
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ComponentId &&
+          other.uniqueIdentifier == uniqueIdentifier &&
+          other.sessionStartTime == sessionStartTime &&
+          other.expiresAt == expiresAt);
+
+  @override
+  int get hashCode => Object.hash(uniqueIdentifier, sessionStartTime, expiresAt);
+}
+
+enum ComponentIdStatus {
+  ok,
+  fromDifferentSession,
+  expired,
+  noHandlerFound;
+
+  @override
+  String toString() {
+    switch (this) {
+      case ComponentIdStatus.ok:
+        return 'OK';
+      case ComponentIdStatus.fromDifferentSession:
+        return 'From different session';
+      case ComponentIdStatus.expired:
+        return 'Expired';
+      case ComponentIdStatus.noHandlerFound:
+        return 'No handler found';
+    }
+  }
+}
 
 /// Convert any [MessageBuilder] to a [ComponentMessageBuilder].
 ComponentMessageBuilder builderToComponentBuilder(MessageBuilder builder) {

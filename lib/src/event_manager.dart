@@ -8,14 +8,59 @@ import 'package:nyxx_commands/src/commands/user_command.dart';
 import 'package:nyxx_commands/src/context/autocomplete_context.dart';
 import 'package:nyxx_commands/src/context/base.dart';
 import 'package:nyxx_commands/src/context/chat_context.dart';
+import 'package:nyxx_commands/src/context/component_context.dart';
 import 'package:nyxx_commands/src/errors.dart';
+import 'package:nyxx_commands/src/util/util.dart';
 import 'package:nyxx_commands/src/util/view.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 class EventManager {
   final CommandsPlugin commands;
 
+  final Map<ComponentId, Completer<ButtonComponentContext>> _buttonListeners = {};
+
   EventManager(this.commands);
+
+  Future<ButtonComponentContext> nextButtonEvent(ComponentId id) {
+    _buttonListeners[id] ??= Completer();
+
+    if (id.expiresAt != null) {
+      Timer(id.expiresIn!, () => _buttonListeners.remove(id));
+    }
+
+    return _buttonListeners[id]!.future;
+  }
+
+  void stopListeningFor(ComponentId id) => _buttonListeners.remove(id);
+
+  Future<void> processButtonEvent(IButtonInteractionEvent event) async {
+    final id = ComponentId.parse(event.interaction.customId);
+
+    if (id == null) {
+      return;
+    }
+
+    ButtonComponentContext context = await commands.contextManager.createButtonComponentContext(
+      event,
+    );
+
+    if (id.status != ComponentIdStatus.ok) {
+      throw UnhandledInteractionException('Unhandled interaction: ${id.status}', context, id);
+    }
+
+    final completer = _buttonListeners[id];
+
+    if (completer == null) {
+      throw UnhandledInteractionException(
+        'Unhandled interaction: ${id.status}',
+        context,
+        id.withStatus(ComponentIdStatus.noHandlerFound),
+      );
+    }
+
+    completer.complete(context);
+    _buttonListeners.remove(id);
+  }
 
   Future<void> processMessage(IMessage message) async {
     Pattern prefix = await commands.prefix!(message);

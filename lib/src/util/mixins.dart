@@ -334,19 +334,19 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
       );
     }
 
-    Map<String, T> idToValue = {};
+    Map<ComponentId, T> idToValue = {};
 
     List<ButtonBuilder> buttons = await Future.wait(values.map((value) async {
       ButtonBuilder builder = await toButton!(value);
       ButtonStyle? style = styles?[value];
-      String id = createId();
+      ComponentId id = ComponentId.generate(expirationTime: timeout);
 
       idToValue[id] = value;
 
       // We have to copy since the fields on ButtonBuilder are final.
       return ButtonBuilder(
         builder.label,
-        id,
+        id.toString(),
         style ?? builder.style,
       )
         ..disabled = builder.disabled
@@ -384,21 +384,31 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     builder.componentRows = activeComponentRows;
     final message = await respond(builder, level: level);
 
-    try {
-      ButtonComponentContext context = await commands.contextManager.createButtonComponentContext(
-        await _getInteractionEvent(
-          interactions.events.onButtonEvent,
-          componentIds: idToValue.keys.toList(),
-          timeout: timeout,
-          authorOnly: authorOnly,
+    final listeners =
+        idToValue.keys.map((id) => commands.eventManager.nextButtonEvent(id)).toList();
+
+    if (timeout != null) {
+      listeners.add(Future.delayed(
+        timeout,
+        () => throw InteractionTimeoutException(
+          'Timed out waiting for button selection',
+          _nearestCommandContext,
         ),
-      );
+      ));
+    }
+
+    try {
+      ButtonComponentContext context = await Future.any(listeners);
 
       context._parent = this;
       _delegate = context;
 
       return idToValue[context.componentId]!;
     } finally {
+      for (final id in idToValue.keys) {
+        commands.eventManager.stopListeningFor(id);
+      }
+
       builder.componentRows = disabledComponentRows;
       await message.edit(builder);
     }
@@ -475,12 +485,12 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
 
     MultiselectOptionBuilder prevPageOption = MultiselectOptionBuilder(
       'Previous page',
-      createId(),
+      ComponentId.generate().toString(),
     );
 
     MultiselectOptionBuilder nextPageOption = MultiselectOptionBuilder(
       'Next page',
-      createId(),
+      ComponentId.generate().toString(),
     );
 
     builder = builderToComponentBuilder(builder);
@@ -501,7 +511,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
           itemsPerPage -= 1;
         }
 
-        menu = MultiselectBuilder(createId(), [
+        menu = MultiselectBuilder(ComponentId.generate().toString(), [
           if (hasPreviousPage) prevPageOption,
           ...options.skip(currentOffset).take(itemsPerPage),
           if (hasNextPage) nextPageOption,
@@ -584,7 +594,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
 
     builder = builderToComponentBuilder(builder);
 
-    MultiselectBuilder menu = MultiselectBuilder(createId(), options);
+    MultiselectBuilder menu = MultiselectBuilder(ComponentId.generate().toString(), options);
     ComponentRowBuilder row = ComponentRowBuilder()..addComponent(menu);
 
     (builder as ComponentMessageBuilder).addComponentRow(row);
@@ -730,7 +740,7 @@ mixin InteractionRespondMixin
       );
     }
 
-    ModalBuilder builder = ModalBuilder(createId(), title);
+    ModalBuilder builder = ModalBuilder(ComponentId.generate().toString(), title);
     builder.componentRows = [
       for (final input in components) ComponentRowBuilder()..addComponent(input),
     ];

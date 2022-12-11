@@ -1,3 +1,6 @@
+import 'package:nyxx_commands/src/context/component_context.dart';
+import 'package:nyxx_commands/src/util/util.dart';
+
 import 'checks/checks.dart';
 import 'context/autocomplete_context.dart';
 import 'context/base.dart';
@@ -59,6 +62,17 @@ class ContextualException extends CommandsException {
   ContextualException(super.message, this.context);
 }
 
+class UnhandledInteractionException extends CommandsException implements ContextualException {
+  @override
+  final IComponentContext context;
+
+  final ComponentId componentId;
+
+  ComponentIdStatus get reason => componentId.status;
+
+  UnhandledInteractionException(super.message, this.context, this.componentId);
+}
+
 /// An exception that occurred during the execution of a command.
 class CommandInvocationException extends CommandsException implements ContextualException {
   @override
@@ -102,6 +116,10 @@ class UncaughtException extends CommandInvocationException {
 
   /// Create a new [UncaughtException].
   UncaughtException(this.exception, ICommandContext context) : super(exception.toString(), context);
+}
+
+class InteractionTimeoutException extends CommandInvocationException {
+  InteractionTimeoutException(super.message, super.context);
 }
 
 /// An exception thrown by nyxx_commands to indicate misuse of the library.
