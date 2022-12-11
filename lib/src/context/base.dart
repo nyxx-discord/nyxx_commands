@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/src/context/modal_context.dart';
+import 'package:nyxx_commands/src/util/util.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands.dart';
@@ -197,11 +198,7 @@ abstract class IInteractiveContext {
   ///
   /// You might also be interested in:
   /// - [awaitSelection] and [awaitMultiSelection], for getting a selection from a user.
-  Future<ButtonComponentContext> awaitButtonPress(
-    String componentId, {
-    Duration? timeout,
-    bool authorOnly = true,
-  });
+  Future<ButtonComponentContext> awaitButtonPress(ComponentId componentId);
 
   /// Wait for a user to select a single option from a multi-select menu and return a context
   /// representing that selection.
@@ -214,9 +211,7 @@ abstract class IInteractiveContext {
   /// Will throw a [StateError] if more than one option is selected (for example, from a
   /// multi-select menu allowing more than one choice).
   Future<MultiselectComponentContext<T>> awaitSelection<T>(
-    String componentId, {
-    Duration? timeout,
-    bool authorOnly = true,
+    ComponentId componentId, {
     Converter<T>? converterOverride,
   });
 
@@ -228,9 +223,7 @@ abstract class IInteractiveContext {
   /// If [authorOnly] is set, only the author of this interaction will be able to interact with the
   /// selection menu.
   Future<MultiselectComponentContext<List<T>>> awaitMultiSelection<T>(
-    String componentId, {
-    Duration? timeout,
-    bool authorOnly = true,
+    ComponentId componentId, {
     Converter<T>? converterOverride,
   });
 
@@ -249,7 +242,6 @@ abstract class IInteractiveContext {
   Future<ButtonComponentContext> getButtonPress(
     IMessage message, {
     bool authorOnly = true,
-    ResponseLevel? level,
     Duration? timeout,
   });
 

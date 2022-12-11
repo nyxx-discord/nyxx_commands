@@ -10,6 +10,7 @@ import 'package:nyxx_commands/src/context/base.dart';
 import 'package:nyxx_commands/src/context/chat_context.dart';
 import 'package:nyxx_commands/src/context/component_context.dart';
 import 'package:nyxx_commands/src/errors.dart';
+import 'package:nyxx_commands/src/mirror_utils/mirror_utils.dart';
 import 'package:nyxx_commands/src/util/util.dart';
 import 'package:nyxx_commands/src/util/view.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
@@ -17,49 +18,87 @@ import 'package:nyxx_interactions/nyxx_interactions.dart';
 class EventManager {
   final CommandsPlugin commands;
 
-  final Map<ComponentId, Completer<ButtonComponentContext>> _buttonListeners = {};
+  final Map<DartType<dynamic>,
+      Map<ComponentId, Completer<dynamic /* covariant IComponentContext */ >>> _listeners = {};
 
   EventManager(this.commands);
 
-  Future<ButtonComponentContext> nextButtonEvent(ComponentId id) {
-    _buttonListeners[id] ??= Completer();
+  Future<T> _nextComponentEvent<T>(ComponentId id) {
+    assert(T != dynamic);
+
+    final type = DartType<T>();
+    _listeners[type] ??= {};
+
+    final completer = Completer<T>();
+    _listeners[type]![id] ??= completer;
 
     if (id.expiresAt != null) {
-      Timer(id.expiresIn!, () => _buttonListeners.remove(id));
+      Timer(id.expiresIn!, () {
+        if (!completer.isCompleted) {
+          completer.completeError(TimeoutException(null), StackTrace.current);
+        }
+
+        stopListeningFor(id);
+      });
     }
 
-    return _buttonListeners[id]!.future;
+    return completer.future;
   }
 
-  void stopListeningFor(ComponentId id) => _buttonListeners.remove(id);
-
-  Future<void> processButtonEvent(IButtonInteractionEvent event) async {
+  Future<void>
+      _processComponentEvent<T extends IComponentInteractionEvent, U extends IComponentContext>(
+    T event,
+    FutureOr<U> Function(T) converter,
+  ) async {
     final id = ComponentId.parse(event.interaction.customId);
 
     if (id == null) {
       return;
     }
 
-    ButtonComponentContext context = await commands.contextManager.createButtonComponentContext(
-      event,
-    );
+    U context = await converter(event);
 
     if (id.status != ComponentIdStatus.ok) {
-      throw UnhandledInteractionException('Unhandled interaction: ${id.status}', context, id);
+      throw UnhandledInteractionException(context, id);
     }
 
-    final completer = _buttonListeners[id];
+    if (id.allowedUser != null && context.user.id != id.allowedUser) {
+      throw UnhandledInteractionException(context, id.withStatus(ComponentIdStatus.wrongUser));
+    }
+
+    final listenerType = DartType<U>();
+    final completer = _listeners[listenerType]?[id];
 
     if (completer == null) {
-      throw UnhandledInteractionException(
-        'Unhandled interaction: ${id.status}',
-        context,
-        id.withStatus(ComponentIdStatus.noHandlerFound),
-      );
+      throw UnhandledInteractionException(context, id.withStatus(ComponentIdStatus.noHandlerFound));
     }
 
     completer.complete(context);
-    _buttonListeners.remove(id);
+    stopListeningFor(id);
+  }
+
+  Future<ButtonComponentContext> nextButtonEvent(ComponentId id) => _nextComponentEvent(id);
+
+  Future<MultiselectComponentContext<List<String>>> nextMultiselectEvent(ComponentId id) =>
+      _nextComponentEvent(id);
+
+  Future<void> processButtonEvent(IButtonInteractionEvent event) => _processComponentEvent(
+        event,
+        commands.contextManager.createButtonComponentContext,
+      );
+
+  Future<void> processMultiselectEvent(IMultiselectInteractionEvent event) =>
+      _processComponentEvent<IMultiselectInteractionEvent,
+          MultiselectComponentContext<List<String>>>(
+        event,
+        (event) => commands.contextManager
+            .createMultiselectComponentContext(event, event.interaction.values),
+      );
+
+  void stopListeningFor(ComponentId id) {
+    for (final listenerMap in _listeners.values) {
+      listenerMap.remove(id);
+    }
   }
 
   Future<void> processMessage(IMessage message) async {

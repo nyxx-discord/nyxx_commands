@@ -360,6 +360,7 @@ class ComponentId {
   final int uniqueIdentifier;
   final DateTime sessionStartTime;
   final DateTime? expiresAt;
+  final Snowflake? allowedUser;
 
   Duration? get expiresIn => expiresAt != null ? DateTime.now().difference(expiresAt!) : null;
 
@@ -373,13 +374,15 @@ class ComponentId {
     required this.sessionStartTime,
     required this.expiresAt,
     required this.status,
+    required this.allowedUser,
   });
 
-  factory ComponentId.generate({Duration? expirationTime}) => ComponentId(
+  factory ComponentId.generate({Duration? expirationTime, Snowflake? allowedUser}) => ComponentId(
         uniqueIdentifier: _uniqueIdentifier++,
         sessionStartTime: currentSessionStartTime,
         expiresAt: expirationTime != null ? DateTime.now().add(expirationTime).toUtc() : null,
         status: ComponentIdStatus.ok,
+        allowedUser: allowedUser,
       );
 
   static ComponentId? parse(String id) {
@@ -392,6 +395,7 @@ class ComponentId {
     final uniqueIdentifier = int.parse(parts[1]);
     final sessionStartTime = DateTime.parse(parts[2]);
     final expiresAt = parts[3] != 'null' ? DateTime.parse(parts[3]) : null;
+    final allowedUser = parts[4] != 'null' ? Snowflake(parts[4]) : null;
 
     final ComponentIdStatus? status;
     if (sessionStartTime != currentSessionStartTime) {
@@ -407,6 +411,7 @@ class ComponentId {
       sessionStartTime: sessionStartTime,
       status: status,
       uniqueIdentifier: uniqueIdentifier,
+      allowedUser: allowedUser,
     );
   }
 
@@ -415,10 +420,21 @@ class ComponentId {
         sessionStartTime: sessionStartTime,
         status: status,
         uniqueIdentifier: uniqueIdentifier,
+        allowedUser: allowedUser,
       );
 
   @override
-  String toString() => 'nyxx_commands/$uniqueIdentifier/$sessionStartTime/$expiresAt';
+  // When adding new fields, ensure we don't go over the maximum length (100).
+  // Current length:
+  //   13 - nyxx_commands prefix
+  //   4  - / separators
+  //   6  - uniqueIdentifier (assume we won't go over 1 000 000 interactions in one session)
+  //   27 - sessionStartTime
+  //   27 - expiresAt
+  //   19 - allowedUser
+  // Total: 96, 4 free (could be used up by uniqueIdentifier)
+  // TODO: Serialize to binary => encode base64?
+  String toString() => 'nyxx_commands/$uniqueIdentifier/$sessionStartTime/$expiresAt/$allowedUser';
 
   @override
   bool operator ==(Object other) =>
@@ -426,17 +442,19 @@ class ComponentId {
       (other is ComponentId &&
           other.uniqueIdentifier == uniqueIdentifier &&
           other.sessionStartTime == sessionStartTime &&
-          other.expiresAt == expiresAt);
+          other.expiresAt == expiresAt &&
+          other.allowedUser == allowedUser);
 
   @override
-  int get hashCode => Object.hash(uniqueIdentifier, sessionStartTime, expiresAt);
+  int get hashCode => Object.hash(uniqueIdentifier, sessionStartTime, expiresAt, allowedUser);
 }
 
 enum ComponentIdStatus {
   ok,
   fromDifferentSession,
   expired,
-  noHandlerFound;
+  noHandlerFound,
+  wrongUser;
 
   @override
   String toString() {
@@ -449,6 +467,8 @@ enum ComponentIdStatus {
         return 'Expired';
       case ComponentIdStatus.noHandlerFound:
         return 'No handler found';
+      case ComponentIdStatus.wrongUser:
+        return 'User not allowed';
     }
   }
 }

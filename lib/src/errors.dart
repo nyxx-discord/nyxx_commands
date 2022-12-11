@@ -70,7 +70,8 @@ class UnhandledInteractionException extends CommandsException implements Context
 
   ComponentIdStatus get reason => componentId.status;
 
-  UnhandledInteractionException(super.message, this.context, this.componentId);
+  UnhandledInteractionException(this.context, this.componentId)
+      : super('Unhandled interaction: ${componentId.status}');
 }
 
 /// An exception that occurred during the execution of a command.
