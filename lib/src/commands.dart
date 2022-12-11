@@ -212,6 +212,10 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
       ));
     }
 
+    _interactions!.events.onButtonEvent.listen(_handleErrorsFrom(eventManager.processButtonEvent));
+    _interactions!.events.onMultiselectEvent
+        .listen(_handleErrorsFrom(eventManager.processMultiselectEvent));
+
     await _syncWithInteractions();
   }
 
