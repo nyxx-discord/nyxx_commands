@@ -504,8 +504,8 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
         } else if (context.selected.single == prevPageOption.value) {
           currentOffset -= itemsPerPage;
         }
-      } while (
-          context.selected == nextPageOption.value || context.selected == prevPageOption.value);
+      } while (context.selected.single == nextPageOption.value ||
+          context.selected.single == prevPageOption.value);
 
       return idToValue[context.selected.single]!;
     } on TimeoutException catch (e, s) {
