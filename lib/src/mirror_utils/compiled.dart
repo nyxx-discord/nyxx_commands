@@ -1,5 +1,4 @@
-import 'package:nyxx_commands/nyxx_commands.dart';
-
+import '../errors.dart';
 import '../util/util.dart';
 import 'mirror_utils.dart';
 

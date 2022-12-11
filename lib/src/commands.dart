@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:logging/logging.dart';
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/context/autocomplete_context.dart';
-import 'package:nyxx_commands/src/event_manager.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import 'checks/checks.dart';
@@ -12,12 +10,14 @@ import 'commands/chat_command.dart';
 import 'commands/interfaces.dart';
 import 'commands/message_command.dart';
 import 'commands/user_command.dart';
+import 'context/autocomplete_context.dart';
 import 'context/base.dart';
 import 'context/context_manager.dart';
 import 'converters/combine.dart';
 import 'converters/converter.dart';
 import 'converters/fallback.dart';
 import 'errors.dart';
+import 'event_manager.dart';
 import 'mirror_utils/mirror_utils.dart';
 import 'options.dart';
 import 'util/util.dart';

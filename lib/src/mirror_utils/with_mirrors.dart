@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:mirrors';
 
-import 'package:nyxx_commands/nyxx_commands.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands.dart';
+import '../context/autocomplete_context.dart';
+import '../converters/converter.dart';
+import '../errors.dart';
+import '../util/util.dart';
 import 'mirror_utils.dart';
 
 final Map<Function, FunctionData> _cache = {};

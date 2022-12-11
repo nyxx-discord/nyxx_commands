@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/context/modal_context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../checks/checks.dart';
@@ -12,6 +11,7 @@ import '../commands/interfaces.dart';
 import '../commands/options.dart';
 import '../context/base.dart';
 import '../context/component_context.dart';
+import '../context/modal_context.dart';
 import '../converters/converter.dart';
 import '../errors.dart';
 import '../mirror_utils/mirror_utils.dart';

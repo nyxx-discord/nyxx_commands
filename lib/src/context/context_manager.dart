@@ -1,5 +1,4 @@
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/context/modal_context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands.dart';
@@ -12,6 +11,7 @@ import 'autocomplete_context.dart';
 import 'chat_context.dart';
 import 'component_context.dart';
 import 'message_context.dart';
+import 'modal_context.dart';
 import 'user_context.dart';
 
 /// Exposes methods for creating contexts from the raw event dispatched from Discord.

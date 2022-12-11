@@ -1,19 +1,20 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/commands.dart';
-import 'package:nyxx_commands/src/commands/chat_command.dart';
-import 'package:nyxx_commands/src/commands/message_command.dart';
-import 'package:nyxx_commands/src/commands/user_command.dart';
-import 'package:nyxx_commands/src/context/autocomplete_context.dart';
-import 'package:nyxx_commands/src/context/base.dart';
-import 'package:nyxx_commands/src/context/chat_context.dart';
-import 'package:nyxx_commands/src/context/component_context.dart';
-import 'package:nyxx_commands/src/errors.dart';
-import 'package:nyxx_commands/src/mirror_utils/mirror_utils.dart';
-import 'package:nyxx_commands/src/util/util.dart';
-import 'package:nyxx_commands/src/util/view.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+
+import 'commands.dart';
+import 'commands/chat_command.dart';
+import 'commands/message_command.dart';
+import 'commands/user_command.dart';
+import 'context/autocomplete_context.dart';
+import 'context/base.dart';
+import 'context/chat_context.dart';
+import 'context/component_context.dart';
+import 'errors.dart';
+import 'mirror_utils/mirror_utils.dart';
+import 'util/util.dart';
+import 'util/view.dart';
 
 class EventManager {
   final CommandsPlugin commands;

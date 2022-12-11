@@ -1,14 +1,14 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/context/modal_context.dart';
-import 'package:nyxx_commands/src/util/util.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands.dart';
 import '../commands/interfaces.dart';
 import '../converters/converter.dart';
+import '../util/util.dart';
 import 'component_context.dart';
+import 'modal_context.dart';
 
 /// The base class for all contexts in nyxx_commands.
 ///
