@@ -117,44 +117,6 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     return _parent!._nearestCommandContext;
   }
 
-  Future<T> _getInteractionEvent<T extends IComponentInteractionEvent>(
-    Stream<T> stream, {
-    List<String>? componentIds,
-    List<Snowflake>? messageIds,
-    required Duration? timeout,
-    required bool authorOnly,
-  }) async {
-    assert(
-      (componentIds == null) ^ (messageIds == null),
-      'Exactly one of componentIds or messageIds must be set',
-    );
-
-    if (componentIds != null) {
-      stream = stream.where((event) => componentIds.contains(event.interaction.customId));
-    }
-
-    if (messageIds != null) {
-      stream = stream.where((event) => messageIds.contains(event.interaction.message?.id));
-    }
-
-    if (authorOnly) {
-      stream = stream.where((event) {
-        Snowflake interactionUserId =
-            event.interaction.userAuthor?.id ?? event.interaction.memberAuthor!.id;
-
-        return interactionUserId == user.id;
-      });
-    }
-
-    Future<T> event = stream.first;
-
-    if (timeout != null) {
-      event = event.timeout(timeout);
-    }
-
-    return event;
-  }
-
   @override
   Future<ButtonComponentContext> awaitButtonPress(ComponentId componentId) async {
     if (delegate != null) {
@@ -243,23 +205,52 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
   }
 
   @override
-  Future<ButtonComponentContext> getButtonPress(
-    IMessage message, {
-    bool authorOnly = true,
-    Duration? timeout,
-  }) async {
+  Future<ButtonComponentContext> getButtonPress(IMessage message) async {
     if (_delegate != null) {
-      return _delegate!.getButtonPress(message, authorOnly: authorOnly);
+      return _delegate!.getButtonPress(message);
     }
 
-    ButtonComponentContext context = await commands.contextManager.createButtonComponentContext(
-      await _getInteractionEvent(
-        interactions.events.onButtonEvent,
-        messageIds: [message.id],
-        timeout: timeout,
-        authorOnly: authorOnly,
-      ),
-    );
+    final componentIds = message.components
+        .expand((_) => _)
+        .where((element) => element.type == ComponentType.button)
+        .map((component) => ComponentId.parse(component.customId))
+        .toList();
+
+    if (componentIds.any((element) => element == null)) {
+      throw UncaughtCommandsException(
+        'Buttons in getButtonPress must have an ID set with ComponentId.generate()',
+        _nearestCommandContext,
+      );
+    }
+
+    int remaining = componentIds.length;
+    Completer<ButtonComponentContext> completer = Completer();
+
+    for (final id in componentIds) {
+      commands.eventManager.nextButtonEvent(id!).then((context) {
+        if (completer.isCompleted) {
+          return;
+        }
+
+        completer.complete(context);
+      }).catchError((Object error, StackTrace stackTrace) {
+        remaining--;
+
+        if (remaining == 0 && !completer.isCompleted) {
+          // All the futures failed with an exception, throw the latest one back to the user
+          if (error is TimeoutException) {
+            error = InteractionTimeoutException(
+              'Timed out waiting for button press on message ${message.id}',
+              _nearestCommandContext,
+            );
+          }
+
+          completer.completeError(error, stackTrace);
+        }
+      });
+    }
+
+    ButtonComponentContext context = await completer.future;
 
     context._parent = this;
     _delegate = context;

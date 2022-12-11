@@ -239,11 +239,7 @@ abstract class IInteractiveContext {
   /// - [awaitButtonPress], for getting a press from a single button;
   /// - [getButtonSelection], for getting a value from a button selection;
   /// - [getSelection], for getting a selection from a multi-select menu.
-  Future<ButtonComponentContext> getButtonPress(
-    IMessage message, {
-    bool authorOnly = true,
-    Duration? timeout,
-  });
+  Future<ButtonComponentContext> getButtonPress(IMessage message);
 
   /// Get a selection from a user, presenting the options as an array of buttons.
   ///
