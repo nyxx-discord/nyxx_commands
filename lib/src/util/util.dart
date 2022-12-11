@@ -356,19 +356,56 @@ ChatCommand? getCommandHelper(StringView view, Map<String, IChatCommandComponent
   }
 }
 
+/// An identifier for message components containing metadata about the handler associated with the
+/// component.
+///
+/// This class contains the data needed for nyxx_commands to find the correct handler for a
+/// component interaction event, and throw an error if no handler is found.
+///
+/// [ComponentId]s should not be stored. See [expiresAt] for the reason why.
 class ComponentId {
+  /// A unique identifier (in this process) for this component.
+  ///
+  /// Every [ComponentId] will get a new [uniqueIdentifier].
   final int uniqueIdentifier;
+
+  /// The time at which the process that created this [ComponentId] was started.
+  ///
+  /// This will be the same for all [ComponentId]s created in the same process and allows
+  /// nyxx_commands to tell when an interaction comes from a previous session, meaning no handler
+  /// will be found.
   final DateTime sessionStartTime;
+
+  /// If the handler associated with this component has an expiration timeout, the time at which it
+  /// will expire, otherwise null.
+  ///
+  /// This is set as soon as this [ComponentId] is created, so [ComponentId]s should be used as soon
+  /// as they are created.
   final DateTime? expiresAt;
+
+  /// If the handler associated with this component only allows a specific user to use the
+  /// component, the ID of that user, otherwise null.
   final Snowflake? allowedUser;
 
+  /// The time remaining until the handler for this [ComponentId] expires, if [expiresAt] was set.
   Duration? get expiresIn => expiresAt != null ? DateTime.now().difference(expiresAt!) : null;
 
+  /// The status of this [ComponentId].
+  ///
+  /// This will always be [ComponentIdStatus.ok] for [ComponentId]s created using
+  /// [ComponentId.generate] but will contain information about the status of the handler if this
+  /// [ComponentId] was received from the API and created using [ComponentId.parse].
   final ComponentIdStatus status;
 
+  /// The start time of the current session.
+  ///
+  /// This will be the value of [ComponentId.sessionStartTime] for all [ComponentId]s created in
+  /// this process.
   static final currentSessionStartTime = DateTime.now().toUtc();
+
   static int _uniqueIdentifier = 0;
 
+  /// Create a new [ComponentId].
   const ComponentId({
     required this.uniqueIdentifier,
     required this.sessionStartTime,
@@ -377,6 +414,10 @@ class ComponentId {
     required this.allowedUser,
   });
 
+  /// Generate a new unique [ComponentId].
+  ///
+  /// [expirationTime] should be the time after which the handler will expire. [allowedUser] should
+  /// be the ID of the user allows to interact with this component.
   factory ComponentId.generate({Duration? expirationTime, Snowflake? allowedUser}) => ComponentId(
         uniqueIdentifier: _uniqueIdentifier++,
         sessionStartTime: currentSessionStartTime,
@@ -385,6 +426,10 @@ class ComponentId {
         allowedUser: allowedUser,
       );
 
+  /// Parse a [ComponentId] received from the API.
+  ///
+  /// If [id] was not a [ComponentId] created by nyxx_commands, such as a manually set custom id,
+  /// this method will return `null`.
   static ComponentId? parse(String id) {
     final parts = id.split('/');
 
@@ -415,6 +460,7 @@ class ComponentId {
     );
   }
 
+  /// Copy this [ComponentId] with a new status.
   ComponentId withStatus(ComponentIdStatus status) => ComponentId(
         expiresAt: expiresAt,
         sessionStartTime: sessionStartTime,
@@ -449,11 +495,28 @@ class ComponentId {
   int get hashCode => Object.hash(uniqueIdentifier, sessionStartTime, expiresAt, allowedUser);
 }
 
+/// The status of the handler associated with a [ComponentId].
 enum ComponentIdStatus {
+  /// No problems.
+  ///
+  /// This status shouldn't ever occur in an error.
   ok,
+
+  /// The [ComponentId] was created in a different process, so no handler could be found.
+  ///
+  /// This also means that the state associated with the handler is now lost.
   fromDifferentSession,
+
+  /// The handler for this [ComponentId] has expired.
   expired,
+
+  /// No handler for this [ComponentId] was found.
+  ///
+  /// This can happen when two instances of nyxx_commands are running at the same time, so the event
+  /// will probably be handled by the other instance.
   noHandlerFound,
+
+  /// The user who interacted with the component was not allowed to do so.
   wrongUser;
 
   @override

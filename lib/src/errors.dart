@@ -1,12 +1,11 @@
-import 'package:nyxx_commands/src/context/component_context.dart';
-import 'package:nyxx_commands/src/util/util.dart';
-
 import 'checks/checks.dart';
 import 'context/autocomplete_context.dart';
 import 'context/base.dart';
 import 'context/chat_context.dart';
+import 'context/component_context.dart';
 import 'converters/converter.dart';
 import 'mirror_utils/mirror_utils.dart';
+import 'util/util.dart';
 import 'util/view.dart';
 
 /// The base class for exceptions thrown by nyxx_commands.
@@ -62,14 +61,19 @@ class ContextualException extends CommandsException {
   ContextualException(super.message, this.context);
 }
 
+/// An exception thrown when an interaction on a component created by nyxx_commands was received but
+/// was not handled.
 class UnhandledInteractionException extends CommandsException implements ContextualException {
   @override
   final IComponentContext context;
 
+  /// The [ComponentId] of the component that was interacted with.
   final ComponentId componentId;
 
+  /// The reason this interaction was not handled.
   ComponentIdStatus get reason => componentId.status;
 
+  /// Create a new [UnhandledInteractionException].
   UnhandledInteractionException(this.context, this.componentId)
       : super('Unhandled interaction: ${componentId.status}');
 }
@@ -119,7 +123,12 @@ class UncaughtException extends CommandInvocationException {
   UncaughtException(this.exception, ICommandContext context) : super(exception.toString(), context);
 }
 
+/// An exception thrown when an interaction times out in a command.
+///
+/// This is the exception thrown by [IInteractiveContext.getButtonPress],
+/// [IInteractiveContext.getSelection] and other methods that might time out.
 class InteractionTimeoutException extends CommandInvocationException {
+  /// Create a new [InteractionTimeouException].
   InteractionTimeoutException(super.message, super.context);
 }
 

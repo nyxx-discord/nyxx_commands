@@ -191,22 +191,12 @@ abstract class IInteractiveContext {
 
   /// Wait for a user to press a button and return a context representing that button press.
   ///
-  /// If [timeout] is set, this method will complete with an error after [timeout] has passed.
-  ///
-  /// If [authorOnly] is set, only the author of this interaction will be able to interact with the
-  /// button.
-  ///
   /// You might also be interested in:
   /// - [awaitSelection] and [awaitMultiSelection], for getting a selection from a user.
   Future<ButtonComponentContext> awaitButtonPress(ComponentId componentId);
 
   /// Wait for a user to select a single option from a multi-select menu and return a context
   /// representing that selection.
-  ///
-  /// If [timeout] is set, this method will complete with an error after [timeout] has passed.
-  ///
-  /// If [authorOnly] is set, only the author of this interaction will be able to interact with the
-  /// selection menu.
   ///
   /// Will throw a [StateError] if more than one option is selected (for example, from a
   /// multi-select menu allowing more than one choice).
@@ -217,11 +207,6 @@ abstract class IInteractiveContext {
 
   /// Wait for a user to select options from a multi-select menu and return a context
   /// representing that selection.
-  ///
-  /// If [timeout] is set, this method will complete with an error after [timeout] has passed.
-  ///
-  /// If [authorOnly] is set, only the author of this interaction will be able to interact with the
-  /// selection menu.
   Future<MultiselectComponentContext<List<T>>> awaitMultiSelection<T>(
     ComponentId componentId, {
     Converter<T>? converterOverride,
@@ -229,11 +214,6 @@ abstract class IInteractiveContext {
 
   /// Wait for a user to press on any button on a given message and return a context representing
   /// the button press.
-  ///
-  /// If [timeout] is set, this method will complete with an error after [timeout] has passed.
-  ///
-  /// If [authorOnly] is set, only the author of this interaction will be able to interact with a
-  /// button.
   ///
   /// You might also be interested in:
   /// - [awaitButtonPress], for getting a press from a single button;

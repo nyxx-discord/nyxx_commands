@@ -16,12 +16,20 @@ import 'mirror_utils/mirror_utils.dart';
 import 'util/util.dart';
 import 'util/view.dart';
 
+/// A handler for events incoming from nyxx and nyxx_interactions, and listeners associated with
+/// those events.
+///
+/// This class will listen to events from nyxx and nyxx_interactions, transform them into a
+/// nyxx_commands class using [CommandsPlugin.contextManager] if needed and emit them to the correct
+/// command handler or listener.
 class EventManager {
+  /// The [CommandsPlugin] this event manager is associated with.
   final CommandsPlugin commands;
 
   final Map<DartType<dynamic>,
       Map<ComponentId, Completer<dynamic /* covariant IComponentContext */ >>> _listeners = {};
 
+  /// Create a new [EventManager].
   EventManager(this.commands);
 
   Future<T> _nextComponentEvent<T>(ComponentId id) {
@@ -78,16 +86,38 @@ class EventManager {
     stopListeningFor(id);
   }
 
+  /// Get a future that completes with a context representing the next interaction on the button
+  /// with id [id].
+  ///
+  /// If [id] has an expiration time, the future will complete with an error once that time is
+  /// elapsed.
   Future<ButtonComponentContext> nextButtonEvent(ComponentId id) => _nextComponentEvent(id);
 
+  /// Get a future that completes with a context representing the next interaction on the
+  /// multiselect menu with id [id].
+  ///
+  /// If [id] has an expiration time, the future will complete with an error once that time is
+  /// elapsed.
   Future<MultiselectComponentContext<List<String>>> nextMultiselectEvent(ComponentId id) =>
       _nextComponentEvent(id);
 
+  /// Stop listening for events from the component with id [id].
+  ///
+  /// Listeners waiting for events from this component will not be completed.
+  void stopListeningFor(ComponentId id) {
+    for (final listenerMap in _listeners.values) {
+      listenerMap.remove(id);
+    }
+  }
+
+  /// The handler for [IButtonInteractionEvent]s. Attach to [IEventController.onButtonEvent].
   Future<void> processButtonEvent(IButtonInteractionEvent event) => _processComponentEvent(
         event,
         commands.contextManager.createButtonComponentContext,
       );
 
+  /// The handler for [IMultiselectInteractionEvent]s. Attach to
+  /// [IEventController.onMultiselectEvent].
   Future<void> processMultiselectEvent(IMultiselectInteractionEvent event) =>
       _processComponentEvent<IMultiselectInteractionEvent,
           MultiselectComponentContext<List<String>>>(
@@ -96,12 +126,8 @@ class EventManager {
             .createMultiselectComponentContext(event, event.interaction.values),
       );
 
-  void stopListeningFor(ComponentId id) {
-    for (final listenerMap in _listeners.values) {
-      listenerMap.remove(id);
-    }
-  }
-
+  /// A handler for [IMessageReceivedEvent]s. Attach to
+  /// [IWebsocketEventController.onMessageReceived], and pass in the inner [IMessage] object.
   Future<void> processMessage(IMessage message) async {
     Pattern prefix = await commands.prefix!(message);
     StringView view = StringView(message.content);
@@ -127,6 +153,10 @@ class EventManager {
     }
   }
 
+  /// A handler for generic interaction contexts.
+  ///
+  /// This handler takes in a context created by another handler and executes the associated
+  /// command.
   Future<void> processInteractionCommand(IInteractionCommandContext context) async {
     if (context.command.resolvedOptions.autoAcknowledgeInteractions!) {
       Duration? timeout = context.command.resolvedOptions.autoAcknowledgeDuration;
@@ -159,6 +189,9 @@ class EventManager {
     await context.command.invoke(context);
   }
 
+  /// A handler for chat [ISlashCommandInteractionEvent]s. Attach to
+  /// [IEventController.onSlashCommand] and pass the [ChatCommand] for which the event was
+  /// triggered, or use [SlashCommandBuilder.registerHandler].
   Future<void> processChatInteraction(
     ISlashCommandInteractionEvent interactionEvent,
     ChatCommand command,
@@ -167,6 +200,9 @@ class EventManager {
         await commands.contextManager.createInteractionChatContext(interactionEvent, command),
       );
 
+  /// A handler for user [ISlashCommandInteractionEvent]s. Attach to
+  /// [IEventController.onSlashCommand] and pass the [UserCommand] for which the event was
+  /// triggered, or use [SlashCommandBuilder.registerHandler].
   Future<void> processUserInteraction(
     ISlashCommandInteractionEvent interactionEvent,
     UserCommand command,
@@ -175,6 +211,9 @@ class EventManager {
         await commands.contextManager.createUserContext(interactionEvent, command),
       );
 
+  /// A handler for message [ISlashCommandInteractionEvent]s. Attach to
+  /// [IEventController.onSlashCommand] and pass the [MessageCommand] for which the event was
+  /// triggered, or use [SlashCommandBuilder.registerHandler].
   Future<void> processMessageInteraction(
     ISlashCommandInteractionEvent interactionEvent,
     MessageCommand command,
@@ -183,6 +222,10 @@ class EventManager {
         await commands.contextManager.createMessageContext(interactionEvent, command),
       );
 
+  /// A handler for [IAutocompleteInteractionEvent]s. Attach to
+  /// [IEventController.onAutocompleteEvent] and pass in the autocompletion callback and the command
+  /// for which the argument is being autocompleted, or use
+  /// [CommandOptionBuilder.registerAutocompleteHandler].
   Future<void> processAutocompleteInteraction(
     IAutocompleteInteractionEvent interactionEvent,
     FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext) callback,
