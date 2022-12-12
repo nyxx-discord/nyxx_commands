@@ -629,7 +629,7 @@ mixin InteractionRespondMixin
 
     _hasResponded = true;
 
-    if (_responseLevel != null && !_responseLevel!.hideInteraction != level.hideInteraction) {
+    if (_responseLevel != null && _responseLevel!.hideInteraction != level.hideInteraction) {
       // We acknowledged the interaction but our original acknowledgement doesn't correspond to
       // what's being requested here.
       // It's a bit ugly, but send an empty response and delete it to match [level].
