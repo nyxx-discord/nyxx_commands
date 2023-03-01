@@ -98,7 +98,7 @@ class AutocompleteFailedException extends CommandsException {
 /// If you are throwing exceptions to indicate command failure, consider using [Check]s instead.
 class UncaughtException extends CommandInvocationException {
   /// The exception that occurred.
-  final Exception exception;
+  final Object exception;
 
   /// Create a new [UncaughtException].
   UncaughtException(this.exception, ICommandContext context) : super(exception.toString(), context);

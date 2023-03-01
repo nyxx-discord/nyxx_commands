@@ -439,7 +439,7 @@ class ChatCommand
 
     try {
       await Function.apply(execute, [context, ...context.arguments]);
-    } on Exception catch (e, s) {
+    } catch (e, s) {
       Error.throwWithStackTrace(UncaughtException(e, context)..stackTrace = s, s);
     }
 
