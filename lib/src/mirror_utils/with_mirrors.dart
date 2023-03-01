@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:mirrors';
 
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+import 'package:runtime_type/mirrors.dart';
+import 'package:runtime_type/runtime_type.dart';
 
 import '../commands.dart';
 import '../context/autocomplete_context.dart';
@@ -51,10 +53,7 @@ FunctionData loadFunctionData(Function fn) {
     // Get parameter type
     Type rawType =
         parameterMirror.type.hasReflectedType ? parameterMirror.type.reflectedType : dynamic;
-    DartType<dynamic> type = (reflectType(DartType, [rawType]) as ClassMirror).newInstance(
-      Symbol.empty,
-      [],
-    ).reflectee as DartType;
+    RuntimeType<dynamic> type = rawType.toRuntimeType();
 
     // Get parameter description (if any)
 

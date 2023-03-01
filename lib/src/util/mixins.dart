@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+import 'package:runtime_type/runtime_type.dart';
 
 import '../checks/checks.dart';
 import '../commands.dart';
@@ -14,7 +15,6 @@ import '../context/component_context.dart';
 import '../context/modal_context.dart';
 import '../converters/converter.dart';
 import '../errors.dart';
-import '../mirror_utils/mirror_utils.dart';
 import '../util/util.dart';
 import '../util/view.dart';
 
@@ -160,7 +160,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
         commands,
         _nearestCommandContext,
         StringView(rawContext.selected.single, isRestBlock: true),
-        DartType<T>(),
+        RuntimeType<T>(),
       ),
     );
 
@@ -193,7 +193,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
           commands,
           rawContext,
           StringView(value, isRestBlock: true),
-          DartType<T>(),
+          RuntimeType<T>(),
         ),
       )),
     );
@@ -288,7 +288,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     );
 
     toButton ??= converterOverride?.toButton;
-    toButton ??= commands.getConverter(DartType<T>())?.toButton;
+    toButton ??= commands.getConverter(RuntimeType<T>())?.toButton;
 
     if (toButton == null) {
       throw UncaughtCommandsException(
@@ -427,7 +427,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     );
 
     toMultiSelect ??= converterOverride?.toMultiselectOption;
-    toMultiSelect ??= commands.getConverter(DartType<T>())?.toMultiselectOption;
+    toMultiSelect ??= commands.getConverter(RuntimeType<T>())?.toMultiselectOption;
 
     if (toMultiSelect == null) {
       throw UncaughtCommandsException(
@@ -542,7 +542,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     }
 
     toMultiSelect ??= converterOverride?.toMultiselectOption;
-    toMultiSelect ??= commands.getConverter(DartType<T>())?.toMultiselectOption;
+    toMultiSelect ??= commands.getConverter(RuntimeType<T>())?.toMultiselectOption;
 
     if (toMultiSelect == null) {
       throw UncaughtCommandsException(

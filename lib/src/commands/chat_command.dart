@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+import 'package:runtime_type/runtime_type.dart';
 
 import '../checks/checks.dart';
 import '../commands.dart';
@@ -282,7 +283,7 @@ class ChatCommand
   final List<AbstractCheck> singleChecks = [];
 
   /// The types of the required and positional arguments of [execute], in the order they appear.
-  final List<DartType<dynamic>> argumentTypes = [];
+  final List<RuntimeType<dynamic>> argumentTypes = [];
 
   @override
   final CommandOptions options;
@@ -323,16 +324,16 @@ class ChatCommand
       throw CommandRegistrationError('Invalid localized name for command "$name".');
     }
 
-    DartType<IChatContext> contextType;
+    RuntimeType<IChatContext> contextType;
     switch (resolvedOptions.type) {
       case CommandType.textOnly:
-        contextType = const DartType<MessageChatContext>();
+        contextType = const RuntimeType<MessageChatContext>.allowingDynamic();
         break;
       case CommandType.slashOnly:
-        contextType = const DartType<InteractionChatContext>();
+        contextType = const RuntimeType<InteractionChatContext>.allowingDynamic();
         break;
       default:
-        contextType = const DartType<IChatContext>();
+        contextType = const RuntimeType<IChatContext>.allowingDynamic();
     }
 
     _loadArguments(execute, contextType);
@@ -350,7 +351,7 @@ class ChatCommand
     }
   }
 
-  void _loadArguments(Function fn, DartType<IChatContext> contextType) {
+  void _loadArguments(Function fn, RuntimeType<IChatContext> contextType) {
     _functionData = loadFunctionData(fn);
 
     if (_functionData.parametersData.isEmpty) {
@@ -439,7 +440,7 @@ class ChatCommand
 
     try {
       await Function.apply(execute, [context, ...context.arguments]);
-    } on Exception catch (e, s) {
+    } catch (e, s) {
       Error.throwWithStackTrace(UncaughtException(e, context)..stackTrace = s, s);
     }
 
