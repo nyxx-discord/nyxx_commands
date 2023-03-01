@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+import 'package:runtime_type/runtime_type.dart';
 
 import 'commands.dart';
 import 'commands/chat_command.dart';
@@ -12,7 +13,6 @@ import 'context/base.dart';
 import 'context/chat_context.dart';
 import 'context/component_context.dart';
 import 'errors.dart';
-import 'mirror_utils/mirror_utils.dart';
 import 'util/util.dart';
 import 'util/view.dart';
 
@@ -26,7 +26,7 @@ class EventManager {
   /// The [CommandsPlugin] this event manager is associated with.
   final CommandsPlugin commands;
 
-  final Map<DartType<dynamic>,
+  final Map<RuntimeType<dynamic>,
       Map<ComponentId, Completer<dynamic /* covariant IComponentContext */ >>> _listeners = {};
 
   /// Create a new [EventManager].
@@ -35,7 +35,7 @@ class EventManager {
   Future<T> _nextComponentEvent<T>(ComponentId id) {
     assert(T != dynamic);
 
-    final type = DartType<T>();
+    final type = RuntimeType<T>();
     _listeners[type] ??= {};
 
     final completer = Completer<T>();
@@ -75,7 +75,7 @@ class EventManager {
       throw UnhandledInteractionException(context, id.withStatus(ComponentIdStatus.wrongUser));
     }
 
-    final listenerType = DartType<U>();
+    final listenerType = RuntimeType<U>();
     final completer = _listeners[listenerType]?[id];
 
     if (completer == null) {
