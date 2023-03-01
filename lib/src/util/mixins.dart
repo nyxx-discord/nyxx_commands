@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/src/context/modal_context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+import 'package:runtime_type/runtime_type.dart';
 
 import '../checks/checks.dart';
 import '../commands.dart';
@@ -14,7 +15,6 @@ import '../context/base.dart';
 import '../context/component_context.dart';
 import '../converters/converter.dart';
 import '../errors.dart';
-import '../mirror_utils/mirror_utils.dart';
 import '../util/util.dart';
 import '../util/view.dart';
 
@@ -211,7 +211,12 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     MultiselectComponentContext<T> context =
         await commands.contextManager.createMultiselectComponentContext(
       event,
-      await parse(commands, _nearestCommandContext, StringView(rawContext.selected), DartType<T>()),
+      await parse(
+        commands,
+        _nearestCommandContext,
+        StringView(rawContext.selected),
+        RuntimeType<T>(),
+      ),
     );
 
     context._parent = this;
@@ -253,8 +258,8 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     );
 
     List<T> values = await Future.wait(rawContexts.map(
-      (rawContext) =>
-          parse(commands, _nearestCommandContext, StringView(rawContext.selected), DartType<T>()),
+      (rawContext) => parse(
+          commands, _nearestCommandContext, StringView(rawContext.selected), RuntimeType<T>()),
     ));
 
     MultiselectComponentContext<List<T>> context =
@@ -325,7 +330,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     );
 
     toButton ??= converterOverride?.toButton;
-    toButton ??= commands.getConverter(DartType<T>())?.toButton;
+    toButton ??= commands.getConverter(RuntimeType<T>())?.toButton;
 
     if (toButton == null) {
       throw UncaughtCommandsException(
@@ -455,7 +460,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     );
 
     toMultiSelect ??= converterOverride?.toMultiselectOption;
-    toMultiSelect ??= commands.getConverter(DartType<T>())?.toMultiselectOption;
+    toMultiSelect ??= commands.getConverter(RuntimeType<T>())?.toMultiselectOption;
 
     if (toMultiSelect == null) {
       throw UncaughtCommandsException(
@@ -564,7 +569,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     }
 
     toMultiSelect ??= converterOverride?.toMultiselectOption;
-    toMultiSelect ??= commands.getConverter(DartType<T>())?.toMultiselectOption;
+    toMultiSelect ??= commands.getConverter(RuntimeType<T>())?.toMultiselectOption;
 
     if (toMultiSelect == null) {
       throw UncaughtCommandsException(

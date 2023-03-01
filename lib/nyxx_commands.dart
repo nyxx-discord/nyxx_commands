@@ -50,7 +50,6 @@ export 'src/converters/combine.dart' show CombineConverter;
 export 'src/converters/converter.dart' show Converter, registerDefaultConverters, parse;
 export 'src/converters/fallback.dart' show FallbackConverter;
 export 'src/converters/simple.dart' show SimpleConverter;
-export 'src/mirror_utils/mirror_utils.dart' show DartType;
 export 'src/errors.dart'
     show
         AutocompleteFailedException,
@@ -68,6 +67,7 @@ export 'src/errors.dart'
         ParsingException,
         UncaughtCommandsException,
         UncaughtException;
+export 'src/mirror_utils/mirror_utils.dart' show RuntimeType;
 export 'src/options.dart' show CommandsOptions;
 export 'src/util/util.dart'
     show

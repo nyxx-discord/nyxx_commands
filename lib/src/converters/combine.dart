@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+import 'package:runtime_type/runtime_type.dart';
 
 import '../context/autocomplete_context.dart';
 import '../context/base.dart';
-import '../mirror_utils/mirror_utils.dart';
 import '../util/view.dart';
 import 'converter.dart';
 
@@ -27,7 +27,7 @@ class CombineConverter<R, T> implements Converter<T> {
   final FutureOr<T?> Function(R, IContextData) process;
 
   @override
-  DartType<T> get output => DartType<T>();
+  RuntimeType<T> get output => RuntimeType<T>();
 
   final void Function(CommandOptionBuilder)? _customProcessOptionCallback;
 

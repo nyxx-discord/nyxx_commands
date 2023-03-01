@@ -1,9 +1,10 @@
+import 'package:runtime_type/runtime_type.dart';
+
 import 'checks/checks.dart';
 import 'context/autocomplete_context.dart';
 import 'context/base.dart';
 import 'context/chat_context.dart';
 import 'converters/converter.dart';
-import 'mirror_utils/mirror_utils.dart';
 import 'util/view.dart';
 
 /// The base class for exceptions thrown by nyxx_commands.
@@ -167,7 +168,7 @@ class CheckFailedException extends CommandInvocationException {
 /// - [CommandsPlugin.addConverter], for adding your own [Converter]s to your bot.
 class NoConverterException extends CommandsException {
   /// The type that the converter was requested for.
-  final DartType<dynamic> expectedType;
+  final RuntimeType<dynamic> expectedType;
 
   /// Create a new [NoConverterException].
   NoConverterException(this.expectedType) : super('No converter found for type "$expectedType"');

@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+import 'package:runtime_type/runtime_type.dart';
 
 import '../commands.dart';
 import '../context/autocomplete_context.dart';
 import '../context/base.dart';
 import '../errors.dart';
-import '../mirror_utils/mirror_utils.dart';
 import '../util/view.dart';
 import 'built_in.dart';
 
@@ -72,7 +72,7 @@ class Converter<T> {
   /// The type that this converter parses.
   ///
   /// Used by [CommandsPlugin.getConverter] to construct assembled converters.
-  DartType<T> get output => DartType<T>();
+  RuntimeType<T> get output => RuntimeType<T>();
 
   /// A callback called with the [CommandOptionBuilder] created for an option using this converter.
   ///
@@ -142,7 +142,7 @@ Future<T> parse<T>(
   CommandsPlugin commands,
   IContextData context,
   StringView toParse,
-  DartType<T> expectedType, {
+  RuntimeType<T> expectedType, {
   Converter<T>? converterOverride,
 }) async {
   Converter<T>? converter = converterOverride ?? commands.getConverter(expectedType);

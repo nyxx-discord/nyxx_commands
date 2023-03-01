@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:logging/logging.dart';
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+import 'package:runtime_type/runtime_type.dart';
 
 import 'checks/checks.dart';
 import 'checks/guild.dart';
@@ -116,7 +117,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
   @override
   late final Stream<ICommandContext> onPostCall = _onPostCallController.stream;
 
-  final Map<DartType<dynamic>, Converter<dynamic>> _converters = {};
+  final Map<RuntimeType<dynamic>, Converter<dynamic>> _converters = {};
 
   /// The [IInteractions] instance used by this [CommandsPlugin].
   ///
@@ -494,14 +495,14 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
   /// - [registerDefaultConverters], for adding the default converters to a [CommandsPlugin];
   /// - [getConverter], for retrieving the [Converter] for a specific type.
   void addConverter<T>(Converter<T> converter) {
-    DartType<T> type = converter.output;
+    RuntimeType<T> type = converter.output;
 
     // If we were given a type argument, use that as the target type.
     // We're guaranteed by type safety that [converter] will be a subtype
     // of Converter<T>, so we can assume that the provided type argument
     // is compatible with the converter.
     if (T != dynamic) {
-      type = DartType<T>();
+      type = RuntimeType<T>();
     }
 
     _converters[type] = converter;
@@ -516,7 +517,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
   ///
   /// You might also be interested in:
   /// - [addConverter], for adding converters to this [CommandsPlugin].
-  Converter<T>? getConverter<T>(DartType<T> type, {bool logWarn = true}) {
+  Converter<T>? getConverter<T>(RuntimeType<T> type, {bool logWarn = true}) {
     if (_converters.containsKey(type)) {
       return _converters[type]! as Converter<T>;
     }
@@ -536,9 +537,10 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
       // Converters for types that superclass the target type might return an instance of the
       // target type.
       assignable.add(CombineConverter(converter, (superInstance, context) {
-        if (type.isSuperClassOfObject(superInstance)) {
+        if (superInstance.isOfType(type)) {
           return superInstance as T;
         }
+
         return null;
       }));
     }
@@ -547,7 +549,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
       if (logWarn) {
         logger.warning('Using assembled converter for type $type. If this is intentional, you '
             'should register a custom converter for that type using '
-            '`addConverter(getConverter(const DartType<$type>(), logWarn: false))`');
+            '`addConverter(getConverter(RuntimeType<$type>(), logWarn: false))`');
       }
       return FallbackConverter(assignable);
     }

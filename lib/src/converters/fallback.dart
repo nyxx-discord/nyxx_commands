@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+import 'package:runtime_type/runtime_type.dart';
 
 import '../context/autocomplete_context.dart';
 import '../context/base.dart';
-import '../mirror_utils/mirror_utils.dart';
 import '../util/view.dart';
 import 'converter.dart';
 
@@ -35,7 +35,7 @@ class FallbackConverter<T> implements Converter<T> {
   final FutureOr<ButtonBuilder> Function(T)? _toButton;
 
   @override
-  DartType<T> get output => DartType<T>();
+  RuntimeType<T> get output => RuntimeType<T>();
 
   /// Create a new [FallbackConverter].
   const FallbackConverter(
