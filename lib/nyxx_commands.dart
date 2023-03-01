@@ -67,6 +67,7 @@ export 'src/errors.dart'
         ParsingException,
         UncaughtCommandsException,
         UncaughtException;
+export 'src/mirror_utils/mirror_utils.dart' show RuntimeType;
 export 'src/options.dart' show CommandsOptions;
 export 'src/util/util.dart'
     show
@@ -81,6 +82,3 @@ export 'src/util/util.dart'
         id,
         mentionOr;
 export 'src/util/view.dart' show StringView;
-
-// Export types from other packages used in the nyxx_commands API.
-export 'package:runtime_type/runtime_type.dart' show RuntimeType;
