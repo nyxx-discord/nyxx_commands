@@ -1,13 +1,14 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/context/modal_context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands.dart';
 import '../commands/interfaces.dart';
 import '../converters/converter.dart';
+import '../util/util.dart';
 import 'component_context.dart';
+import 'modal_context.dart';
 
 /// The base class for all contexts in nyxx_commands.
 ///
@@ -190,68 +191,35 @@ abstract class IInteractiveContext {
 
   /// Wait for a user to press a button and return a context representing that button press.
   ///
-  /// If [timeout] is set, this method will complete with an error after [timeout] has passed.
-  ///
-  /// If [authorOnly] is set, only the author of this interaction will be able to interact with the
-  /// button.
-  ///
   /// You might also be interested in:
   /// - [awaitSelection] and [awaitMultiSelection], for getting a selection from a user.
-  Future<ButtonComponentContext> awaitButtonPress(
-    String componentId, {
-    Duration? timeout,
-    bool authorOnly = true,
-  });
+  Future<ButtonComponentContext> awaitButtonPress(ComponentId componentId);
 
   /// Wait for a user to select a single option from a multi-select menu and return a context
   /// representing that selection.
   ///
-  /// If [timeout] is set, this method will complete with an error after [timeout] has passed.
-  ///
-  /// If [authorOnly] is set, only the author of this interaction will be able to interact with the
-  /// selection menu.
-  ///
   /// Will throw a [StateError] if more than one option is selected (for example, from a
   /// multi-select menu allowing more than one choice).
   Future<MultiselectComponentContext<T>> awaitSelection<T>(
-    String componentId, {
-    Duration? timeout,
-    bool authorOnly = true,
+    ComponentId componentId, {
     Converter<T>? converterOverride,
   });
 
   /// Wait for a user to select options from a multi-select menu and return a context
   /// representing that selection.
-  ///
-  /// If [timeout] is set, this method will complete with an error after [timeout] has passed.
-  ///
-  /// If [authorOnly] is set, only the author of this interaction will be able to interact with the
-  /// selection menu.
   Future<MultiselectComponentContext<List<T>>> awaitMultiSelection<T>(
-    String componentId, {
-    Duration? timeout,
-    bool authorOnly = true,
+    ComponentId componentId, {
     Converter<T>? converterOverride,
   });
 
   /// Wait for a user to press on any button on a given message and return a context representing
   /// the button press.
   ///
-  /// If [timeout] is set, this method will complete with an error after [timeout] has passed.
-  ///
-  /// If [authorOnly] is set, only the author of this interaction will be able to interact with a
-  /// button.
-  ///
   /// You might also be interested in:
   /// - [awaitButtonPress], for getting a press from a single button;
   /// - [getButtonSelection], for getting a value from a button selection;
   /// - [getSelection], for getting a selection from a multi-select menu.
-  Future<ButtonComponentContext> getButtonPress(
-    IMessage message, {
-    bool authorOnly = true,
-    ResponseLevel? level,
-    Duration? timeout,
-  });
+  Future<ButtonComponentContext> getButtonPress(IMessage message);
 
   /// Get a selection from a user, presenting the options as an array of buttons.
   ///

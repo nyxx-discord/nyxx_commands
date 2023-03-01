@@ -13,12 +13,12 @@ import 'commands/message_command.dart';
 import 'commands/user_command.dart';
 import 'context/autocomplete_context.dart';
 import 'context/base.dart';
-import 'context/chat_context.dart';
 import 'context/context_manager.dart';
 import 'converters/combine.dart';
 import 'converters/converter.dart';
 import 'converters/fallback.dart';
 import 'errors.dart';
+import 'event_manager.dart';
 import 'mirror_utils/mirror_utils.dart';
 import 'options.dart';
 import 'util/util.dart';
@@ -156,6 +156,9 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
   /// The [ContextManager] attached to this [CommandsPlugin].
   late final ContextManager contextManager = ContextManager(this);
 
+  /// The [EventManager] attached to this [CommandsPlugin].
+  late final EventManager eventManager = EventManager(this);
+
   @override
   final List<AbstractCheck> checks = [];
 
@@ -205,8 +208,14 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
     _interactions = IInteractions.create(options.backend ?? WebsocketInteractionBackend(nyxx));
 
     if (prefix != null) {
-      nyxx.eventsWs.onMessageReceived.listen((event) => _processMessage(event.message));
+      nyxx.eventsWs.onMessageReceived.listen(_handleErrorsFrom(
+        (event) => eventManager.processMessage(event.message),
+      ));
     }
+
+    _interactions!.events.onButtonEvent.listen(_handleErrorsFrom(eventManager.processButtonEvent));
+    _interactions!.events.onMultiselectEvent
+        .listen(_handleErrorsFrom(eventManager.processMultiselectEvent));
 
     await _syncWithInteractions();
   }
@@ -235,112 +244,14 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
     _onCommandErrorController.add(error);
   }
 
-  Future<void> _processMessage(IMessage message) async {
-    try {
-      Pattern prefix = await this.prefix!(message);
-      StringView view = StringView(message.content);
-
-      Match? matchedPrefix = view.skipPattern(prefix);
-
-      if (matchedPrefix != null) {
-        IChatContext context =
-            await contextManager.createMessageChatContext(message, view, matchedPrefix.group(0)!);
-
-        if (message.author.bot && !context.command.resolvedOptions.acceptBotCommands!) {
-          return;
-        }
-
-        if (message.author.id == (client as INyxxRest).self.id &&
-            !context.command.resolvedOptions.acceptSelfCommands!) {
-          return;
-        }
-
-        logger.fine('Invoking command ${context.command.name} from message $message');
-
-        await context.command.invoke(context);
-      }
-    } on CommandsException catch (e, s) {
-      _handleError(e, s);
-    }
-  }
-
-  Future<void> _processInteractionCommand(IInteractionCommandContext context) async {
-    try {
-      if (context.command.resolvedOptions.autoAcknowledgeInteractions!) {
-        Duration? timeout = context.command.resolvedOptions.autoAcknowledgeDuration;
-
-        if (timeout == null) {
-          Duration latency = const Duration(seconds: 1);
-          if (client is INyxxWebsocket) {
-            latency = (client as INyxxWebsocket).shardManager.gatewayLatency;
-          }
-
-          timeout = const Duration(seconds: 3) - latency * 2;
-        }
-
-        timeout -= DateTime.now().difference(context.interactionEvent.receivedAt);
-
-        Timer(timeout, () async {
-          try {
-            await context.acknowledge();
-          } on AlreadyRespondedError {
-            // ignore: command has responded itself
-          }
-        });
-      }
-
-      logger.fine('Invoking command ${context.command.name} '
-          'from interaction ${context.interactionEvent.interaction.token}');
-
-      await context.command.invoke(context);
-    } on CommandsException catch (e, s) {
-      _handleError(e, s);
-    }
-  }
-
-  Future<void> _processChatInteraction(
-    ISlashCommandInteractionEvent interactionEvent,
-    ChatCommand command,
-  ) async =>
-      _processInteractionCommand(
-        await contextManager.createInteractionChatContext(interactionEvent, command),
-      );
-
-  Future<void> _processUserInteraction(
-    ISlashCommandInteractionEvent interactionEvent,
-    UserCommand command,
-  ) async =>
-      _processInteractionCommand(
-        await contextManager.createUserContext(interactionEvent, command),
-      );
-
-  Future<void> _processMessageInteraction(
-    ISlashCommandInteractionEvent interactionEvent,
-    MessageCommand command,
-  ) async =>
-      _processInteractionCommand(
-        await contextManager.createMessageContext(interactionEvent, command),
-      );
-
-  Future<void> _processAutocompleteInteraction(
-    IAutocompleteInteractionEvent interactionEvent,
-    FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext) callback,
-    ChatCommand command,
-  ) async {
-    try {
-      AutocompleteContext context =
-          await contextManager.createAutocompleteContext(interactionEvent, command);
-
+  Future<void> Function(T) _handleErrorsFrom<T>(Future<void> Function(T) fn) {
+    return (arg) async {
       try {
-        Iterable<ArgChoiceBuilder>? choices = await callback(context);
-
-        interactionEvent.respond(choices?.toList() ?? []);
-      } on Exception catch (e) {
-        throw AutocompleteFailedException(e, context);
+        await fn(arg);
+      } on CommandsException catch (e, s) {
+        _handleError(e, s);
       }
-    } on CommandsException catch (e, s) {
-      _handleError(e, s);
-    }
+    };
   }
 
   Future<Iterable<SlashCommandBuilder>> _getSlashBuilders() async {
@@ -378,7 +289,9 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
           );
 
           if (command is ChatCommand && command.resolvedOptions.type != CommandType.textOnly) {
-            builder.registerHandler((interaction) => _processChatInteraction(interaction, command));
+            builder.registerHandler(_handleErrorsFrom(
+              (interaction) => eventManager.processChatInteraction(interaction, command),
+            ));
 
             _processAutocompleteHandlerRegistration(builder.options, command);
           }
@@ -396,7 +309,10 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
             localizationsName: command.localizedNames,
           );
 
-          builder.registerHandler((interaction) => _processUserInteraction(interaction, command));
+          builder.registerHandler(
+            _handleErrorsFrom(
+                (interaction) => eventManager.processUserInteraction(interaction, command)),
+          );
 
           builders.add(builder);
         } else if (command is MessageCommand) {
@@ -411,8 +327,9 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
             localizationsName: command.localizedNames,
           );
 
-          builder
-              .registerHandler((interaction) => _processMessageInteraction(interaction, command));
+          builder.registerHandler(_handleErrorsFrom(
+            (interaction) => eventManager.processMessageInteraction(interaction, command),
+          ));
 
           builders.add(builder);
         }
@@ -443,7 +360,9 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
         ChatCommand command =
             current.children.where((child) => child.name == builder.name).first as ChatCommand;
 
-        builder.registerHandler((interaction) => _processChatInteraction(interaction, command));
+        builder.registerHandler(_handleErrorsFrom(
+          (interaction) => eventManager.processChatInteraction(interaction, command),
+        ));
 
         _processAutocompleteHandlerRegistration(builder.options!, command);
       } else if (builder.type == CommandOptionType.subCommandGroup) {
@@ -477,8 +396,10 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
           parameterIterator.current.autocompleteOverride ?? converter?.autocompleteCallback;
 
       if (autocompleteCallback != null) {
-        builderIterator.current.registerAutocompleteHandler(
-            (event) => _processAutocompleteInteraction(event, autocompleteCallback, command));
+        builderIterator.current.registerAutocompleteHandler(_handleErrorsFrom(
+          (event) =>
+              eventManager.processAutocompleteInteraction(event, autocompleteCallback, command),
+        ));
       }
     }
   }

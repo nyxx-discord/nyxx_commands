@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/context/modal_context.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 import 'package:runtime_type/runtime_type.dart';
 
@@ -13,6 +12,7 @@ import '../commands/interfaces.dart';
 import '../commands/options.dart';
 import '../context/base.dart';
 import '../context/component_context.dart';
+import '../context/modal_context.dart';
 import '../converters/converter.dart';
 import '../errors.dart';
 import '../util/util.dart';
@@ -117,104 +117,49 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     return _parent!._nearestCommandContext;
   }
 
-  Future<T> _getInteractionEvent<T extends IComponentInteractionEvent>(
-    Stream<T> stream, {
-    List<String>? componentIds,
-    List<Snowflake>? messageIds,
-    required Duration? timeout,
-    required bool authorOnly,
-  }) async {
-    assert(
-      (componentIds == null) ^ (messageIds == null),
-      'Exactly one of componentIds or messageIds must be set',
-    );
-
-    if (componentIds != null) {
-      stream = stream.where((event) => componentIds.contains(event.interaction.customId));
-    }
-
-    if (messageIds != null) {
-      stream = stream.where((event) => messageIds.contains(event.interaction.message?.id));
-    }
-
-    if (authorOnly) {
-      stream = stream.where((event) {
-        Snowflake interactionUserId =
-            event.interaction.userAuthor?.id ?? event.interaction.memberAuthor!.id;
-
-        return interactionUserId == user.id;
-      });
-    }
-
-    Future<T> event = stream.first;
-
-    if (timeout != null) {
-      event = event.timeout(timeout);
-    }
-
-    return event;
-  }
-
   @override
-  Future<ButtonComponentContext> awaitButtonPress(
-    String componentId, {
-    Duration? timeout,
-    bool authorOnly = true,
-  }) async {
+  Future<ButtonComponentContext> awaitButtonPress(ComponentId componentId) async {
     if (delegate != null) {
-      return delegate!.awaitButtonPress(componentId, timeout: timeout, authorOnly: authorOnly);
+      return delegate!.awaitButtonPress(componentId);
     }
 
-    ButtonComponentContext context =
-        await commands.contextManager.createButtonComponentContext(await _getInteractionEvent(
-      interactions.events.onButtonEvent,
-      componentIds: [componentId],
-      timeout: timeout,
-      authorOnly: authorOnly,
-    ));
+    try {
+      ButtonComponentContext context = await commands.eventManager.nextButtonEvent(componentId);
 
-    context._parent = this;
-    _delegate = context;
+      context._parent = this;
+      _delegate = context;
 
-    return context;
+      return context;
+    } on TimeoutException catch (e, s) {
+      throw InteractionTimeoutException(
+        'Timed out waiting for button press on component $componentId',
+        _nearestCommandContext,
+      )..stackTrace = s;
+    }
   }
 
   @override
   Future<MultiselectComponentContext<T>> awaitSelection<T>(
-    String componentId, {
-    Duration? timeout,
-    bool authorOnly = true,
+    ComponentId componentId, {
     Converter<T>? converterOverride,
   }) async {
     if (delegate != null) {
       return delegate!.awaitSelection(
         componentId,
-        timeout: timeout,
-        authorOnly: authorOnly,
         converterOverride: converterOverride,
       );
     }
 
-    IMultiselectInteractionEvent event = await _getInteractionEvent(
-      interactions.events.onMultiselectEvent,
-      componentIds: [componentId],
-      timeout: timeout,
-      authorOnly: authorOnly,
-    );
-
-    MultiselectComponentContext<String> rawContext =
-        await commands.contextManager.createMultiselectComponentContext(
-      event,
-      event.interaction.values.single,
-    );
+    MultiselectComponentContext<List<String>> rawContext =
+        await commands.eventManager.nextMultiselectEvent(componentId);
 
     MultiselectComponentContext<T> context =
         await commands.contextManager.createMultiselectComponentContext(
-      event,
+      rawContext.interactionEvent,
       await parse(
         commands,
         _nearestCommandContext,
-        StringView(rawContext.selected),
+        StringView(rawContext.selected.single, isRestBlock: true),
         RuntimeType<T>(),
       ),
     );
@@ -227,45 +172,30 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
 
   @override
   Future<MultiselectComponentContext<List<T>>> awaitMultiSelection<T>(
-    String componentId, {
-    Duration? timeout,
-    bool authorOnly = true,
+    ComponentId componentId, {
     Converter<T>? converterOverride,
   }) async {
     if (delegate != null) {
       return delegate!.awaitMultiSelection(
         componentId,
-        authorOnly: authorOnly,
         converterOverride: converterOverride,
-        timeout: timeout,
       );
     }
 
-    IMultiselectInteractionEvent event = await _getInteractionEvent(
-      interactions.events.onMultiselectEvent,
-      componentIds: [componentId],
-      timeout: timeout,
-      authorOnly: authorOnly,
-    );
-
-    List<MultiselectComponentContext<String>> rawContexts = await Future.wait(
-      event.interaction.values.map(
-        (value) => commands.contextManager.createMultiselectComponentContext(
-          event,
-          value,
-        ),
-      ),
-    );
-
-    List<T> values = await Future.wait(rawContexts.map(
-      (rawContext) => parse(
-          commands, _nearestCommandContext, StringView(rawContext.selected), RuntimeType<T>()),
-    ));
+    MultiselectComponentContext<List<String>> rawContext =
+        await commands.eventManager.nextMultiselectEvent(componentId);
 
     MultiselectComponentContext<List<T>> context =
         await commands.contextManager.createMultiselectComponentContext(
-      event,
-      values,
+      rawContext.interactionEvent,
+      await Future.wait(rawContext.selected.map(
+        (value) => parse(
+          commands,
+          rawContext,
+          StringView(value, isRestBlock: true),
+          RuntimeType<T>(),
+        ),
+      )),
     );
 
     context._parent = this;
@@ -275,24 +205,52 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
   }
 
   @override
-  Future<ButtonComponentContext> getButtonPress(
-    IMessage message, {
-    bool authorOnly = true,
-    ResponseLevel? level,
-    Duration? timeout,
-  }) async {
+  Future<ButtonComponentContext> getButtonPress(IMessage message) async {
     if (_delegate != null) {
-      return _delegate!.getButtonPress(message, authorOnly: authorOnly, level: level);
+      return _delegate!.getButtonPress(message);
     }
 
-    ButtonComponentContext context = await commands.contextManager.createButtonComponentContext(
-      await _getInteractionEvent(
-        interactions.events.onButtonEvent,
-        messageIds: [message.id],
-        timeout: timeout,
-        authorOnly: authorOnly,
-      ),
-    );
+    final componentIds = message.components
+        .expand((_) => _)
+        .where((element) => element.type == ComponentType.button)
+        .map((component) => ComponentId.parse(component.customId))
+        .toList();
+
+    if (componentIds.any((element) => element == null)) {
+      throw UncaughtCommandsException(
+        'Buttons in getButtonPress must have an ID set with ComponentId.generate()',
+        _nearestCommandContext,
+      );
+    }
+
+    int remaining = componentIds.length;
+    Completer<ButtonComponentContext> completer = Completer();
+
+    for (final id in componentIds) {
+      commands.eventManager.nextButtonEvent(id!).then((context) {
+        if (completer.isCompleted) {
+          return;
+        }
+
+        completer.complete(context);
+      }).catchError((Object error, StackTrace stackTrace) {
+        remaining--;
+
+        if (remaining == 0 && !completer.isCompleted) {
+          // All the futures failed with an exception, throw the latest one back to the user
+          if (error is TimeoutException) {
+            error = InteractionTimeoutException(
+              'Timed out waiting for button press on message ${message.id}',
+              _nearestCommandContext,
+            );
+          }
+
+          completer.completeError(error, stackTrace);
+        }
+      });
+    }
+
+    ButtonComponentContext context = await completer.future;
 
     context._parent = this;
     _delegate = context;
@@ -339,19 +297,23 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
       );
     }
 
-    Map<String, T> idToValue = {};
+    Map<ComponentId, T> idToValue = {};
 
     List<ButtonBuilder> buttons = await Future.wait(values.map((value) async {
       ButtonBuilder builder = await toButton!(value);
       ButtonStyle? style = styles?[value];
-      String id = createId();
+
+      ComponentId id = ComponentId.generate(
+        expirationTime: timeout,
+        allowedUser: authorOnly ? user.id : null,
+      );
 
       idToValue[id] = value;
 
       // We have to copy since the fields on ButtonBuilder are final.
       return ButtonBuilder(
         builder.label,
-        id,
+        id.toString(),
         style ?? builder.style,
       )
         ..disabled = builder.disabled
@@ -389,21 +351,26 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     builder.componentRows = activeComponentRows;
     final message = await respond(builder, level: level);
 
+    final listeners =
+        idToValue.keys.map((id) => commands.eventManager.nextButtonEvent(id)).toList();
+
     try {
-      ButtonComponentContext context = await commands.contextManager.createButtonComponentContext(
-        await _getInteractionEvent(
-          interactions.events.onButtonEvent,
-          componentIds: idToValue.keys.toList(),
-          timeout: timeout,
-          authorOnly: authorOnly,
-        ),
-      );
+      ButtonComponentContext context = await Future.any(listeners);
 
       context._parent = this;
       _delegate = context;
 
       return idToValue[context.componentId]!;
+    } on TimeoutException catch (e, s) {
+      throw InteractionTimeoutException(
+        'Timed out waiting for button selection',
+        _nearestCommandContext,
+      )..stackTrace = s;
     } finally {
+      for (final id in idToValue.keys) {
+        commands.eventManager.stopListeningFor(id);
+      }
+
       builder.componentRows = disabledComponentRows;
       await message.edit(builder);
     }
@@ -480,17 +447,17 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
 
     MultiselectOptionBuilder prevPageOption = MultiselectOptionBuilder(
       'Previous page',
-      createId(),
+      ComponentId.generate().toString(),
     );
 
     MultiselectOptionBuilder nextPageOption = MultiselectOptionBuilder(
       'Next page',
-      createId(),
+      ComponentId.generate().toString(),
     );
 
     builder = builderToComponentBuilder(builder);
 
-    MultiselectComponentContext<String>? context;
+    MultiselectComponentContext<List<String>>? context;
     int currentOffset = 0;
 
     late MultiselectBuilder menu;
@@ -506,7 +473,12 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
           itemsPerPage -= 1;
         }
 
-        menu = MultiselectBuilder(createId(), [
+        final menuId = ComponentId.generate(
+          expirationTime: timeout,
+          allowedUser: authorOnly ? user.id : null,
+        );
+
+        menu = MultiselectBuilder(menuId.toString(), [
           if (hasPreviousPage) prevPageOption,
           ...options.skip(currentOffset).take(itemsPerPage),
           if (hasNextPage) nextPageOption,
@@ -525,21 +497,22 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
 
         message = await respond(builder, level: level);
 
-        context = await awaitSelection(
-          menu.customId,
-          authorOnly: authorOnly,
-          timeout: timeout,
-        );
+        context = await commands.eventManager.nextMultiselectEvent(menuId);
 
-        if (context.selected == nextPageOption.value) {
+        if (context.selected.single == nextPageOption.value) {
           currentOffset += itemsPerPage;
-        } else if (context.selected == prevPageOption.value) {
+        } else if (context.selected.single == prevPageOption.value) {
           currentOffset -= itemsPerPage;
         }
-      } while (
-          context.selected == nextPageOption.value || context.selected == prevPageOption.value);
+      } while (context.selected.single == nextPageOption.value ||
+          context.selected.single == prevPageOption.value);
 
-      return idToValue[context.selected]!;
+      return idToValue[context.selected.single]!;
+    } on TimeoutException catch (e, s) {
+      throw InteractionTimeoutException(
+        'TImed out waiting for selection',
+        _nearestCommandContext,
+      )..stackTrace = s;
     } finally {
       menu.disabled = true;
       await message.edit(builder);
@@ -589,7 +562,12 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
 
     builder = builderToComponentBuilder(builder);
 
-    MultiselectBuilder menu = MultiselectBuilder(createId(), options);
+    ComponentId menuId = ComponentId.generate(
+      expirationTime: timeout,
+      allowedUser: authorOnly ? user.id : null,
+    );
+
+    MultiselectBuilder menu = MultiselectBuilder(menuId.toString(), options);
     ComponentRowBuilder row = ComponentRowBuilder()..addComponent(menu);
 
     (builder as ComponentMessageBuilder).addComponentRow(row);
@@ -597,13 +575,15 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     IMessage message = await respond(builder, level: level);
 
     try {
-      MultiselectComponentContext<List<String>> context = await awaitMultiSelection(
-        menu.customId,
-        authorOnly: authorOnly,
-        timeout: timeout,
-      );
+      MultiselectComponentContext<List<String>> context =
+          await commands.eventManager.nextMultiselectEvent(menuId);
 
       return context.selected.map((id) => idToValue[id]!).toList();
+    } on TimeoutException catch (e, s) {
+      throw InteractionTimeoutException(
+        'TImed out waiting for selection',
+        _nearestCommandContext,
+      )..stackTrace = s;
     } finally {
       menu.disabled = true;
       await message.edit(builder);
@@ -739,7 +719,7 @@ mixin InteractionRespondMixin
       );
     }
 
-    ModalBuilder builder = ModalBuilder(createId(), title);
+    ModalBuilder builder = ModalBuilder(ComponentId.generate().toString(), title);
     builder.componentRows = [
       for (final input in components) ComponentRowBuilder()..addComponent(input),
     ];

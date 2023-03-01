@@ -1,7 +1,8 @@
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/context/base.dart';
-import 'package:nyxx_commands/src/util/mixins.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+
+import '../context/base.dart';
+import '../util/mixins.dart';
 
 /// A context in which a user submitted a modal.
 class ModalContext extends ContextBase

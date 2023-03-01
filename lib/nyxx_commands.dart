@@ -31,6 +31,7 @@ export 'src/commands/user_command.dart' show UserCommand;
 export 'src/context/autocomplete_context.dart' show AutocompleteContext;
 export 'src/context/chat_context.dart'
     show IChatContext, IChatContextData, InteractionChatContext, MessageChatContext;
+export 'src/context/context_manager.dart' show ContextManager;
 export 'src/context/base.dart'
     show
         ICommandContext,
@@ -62,17 +63,22 @@ export 'src/errors.dart'
         CommandsException,
         ContextualException,
         ConverterFailedException,
+        InteractionTimeoutException,
         NoConverterException,
         NotEnoughArgumentsException,
         ParsingException,
         UncaughtCommandsException,
-        UncaughtException;
+        UncaughtException,
+        UnhandledInteractionException;
+export 'src/event_manager.dart' show EventManager;
 export 'src/mirror_utils/mirror_utils.dart' show RuntimeType;
 export 'src/options.dart' show CommandsOptions;
 export 'src/util/util.dart'
     show
         Autocomplete,
         Choices,
+        ComponentId,
+        ComponentIdStatus,
         Description,
         Name,
         UseConverter,
