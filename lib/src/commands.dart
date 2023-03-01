@@ -549,7 +549,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
       if (logWarn) {
         logger.warning('Using assembled converter for type $type. If this is intentional, you '
             'should register a custom converter for that type using '
-            '`addConverter(getConverter(const DartType<$type>(), logWarn: false))`');
+            '`addConverter(getConverter(RuntimeType<$type>(), logWarn: false))`');
       }
       return FallbackConverter(assignable);
     }

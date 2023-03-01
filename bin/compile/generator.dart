@@ -303,7 +303,7 @@ void writeFunctionData(
       parameterDataSource += '''
         ParameterData(
           name: "${parameter.name}",
-          type: const DartType<${type[1]}>(),
+          type: const RuntimeType<${type[1]}>.allowingDynamic(),
           isOptional: ${parameter.isOptional},
           description: ${parameter.description == null ? 'null' : '"${parameter.description}"'},
           defaultValue: $defaultValueSource,
