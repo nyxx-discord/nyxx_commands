@@ -599,8 +599,12 @@ mixin InteractionRespondMixin
   ResponseLevel? _responseLevel;
   bool _hasResponded = false;
 
+  Future<void> _acknowledgeLock = Future.value();
+
   @override
   Future<IMessage> respond(MessageBuilder builder, {ResponseLevel? level}) async {
+    await _acknowledgeLock;
+
     if (_delegate != null) {
       return _delegate!.respond(builder, level: level);
     }
@@ -614,7 +618,7 @@ mixin InteractionRespondMixin
 
     _hasResponded = true;
 
-    if (_responseLevel != null && !_responseLevel!.hideInteraction != level.hideInteraction) {
+    if (_responseLevel != null && _responseLevel!.hideInteraction != level.hideInteraction) {
       // We acknowledged the interaction but our original acknowledgement doesn't correspond to
       // what's being requested here.
       // It's a bit ugly, but send an empty response and delete it to match [level].
@@ -641,7 +645,7 @@ mixin InteractionRespondMixin
       // Using interactionEvent.respond is actually the same as editing a message in the case where
       // the interaction is a message component. In those cases, leaving `componentRows` as `null`
       // would leave the existing components on the message - which likely isn't what our users
-      // expect. Instead, we override them and set the builder to have to components.
+      // expect. Instead, we override them and set the builder to have no components.
       builder = builderToComponentBuilder(builder)..componentRows ??= [];
 
       await interactionEvent.respond(builder, hidden: level.hideInteraction);
@@ -652,7 +656,7 @@ mixin InteractionRespondMixin
   @override
   Future<void> acknowledge({ResponseLevel? level}) async {
     _responseLevel = level ??= _nearestCommandContext.command.resolvedOptions.defaultResponseLevel!;
-    await interactionEvent.acknowledge(hidden: level.hideInteraction);
+    await (_acknowledgeLock = interactionEvent.acknowledge(hidden: level.hideInteraction));
   }
 
   @override

@@ -357,7 +357,7 @@ List<String>? toExpressionSource(Expression expression) {
         ];
       } else if (referenced.variable is FieldElement) {
         List<String>? typeData =
-            toTypeSource((referenced.variable.enclosingElement as ClassElement).thisType);
+            toTypeSource((referenced.variable.enclosingElement as InterfaceElement).thisType);
 
         if (typeData == null || !referenced.variable.isPublic || !referenced.variable.isStatic) {
           return null;
@@ -391,7 +391,8 @@ List<String>? toExpressionSource(Expression expression) {
         return null; // Cannot handle private functions
       }
     } else if (referenced is MethodElement) {
-      List<String>? typeData = toTypeSource((referenced.enclosingElement as ClassElement).thisType);
+      List<String>? typeData =
+          toTypeSource((referenced.enclosingElement as InterfaceElement).thisType);
 
       if (typeData == null || !referenced.isPublic || !referenced.isStatic) {
         return null;
