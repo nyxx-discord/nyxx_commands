@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+import 'package:runtime_type/runtime_type.dart';
 
 import '../context/autocomplete_context.dart';
 import '../converters/converter.dart';
-import 'mirror_utils.dart';
 
 class FunctionData {
   final List<ParameterData<dynamic>> parametersData;
@@ -19,7 +19,7 @@ class ParameterData<T> {
 
   final Map<Locale, String>? localizedNames;
 
-  final DartType<T> type;
+  final RuntimeType<T> type;
 
   final bool isOptional;
 

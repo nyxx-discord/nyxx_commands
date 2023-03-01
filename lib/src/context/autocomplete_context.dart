@@ -1,4 +1,5 @@
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+import 'package:runtime_type/runtime_type.dart';
 
 import '../commands/chat_command.dart';
 import '../converters/converter.dart' as converters show parse;
@@ -110,7 +111,7 @@ class AutocompleteContext extends ContextBase implements IInteractionContextData
       ),
     );
 
-    if (!DartType<T>().isSupertypeOf(parameterData.type)) {
+    if (!RuntimeType<T>().isSupertypeOf(parameterData.type)) {
       throw CommandsException('Type $T is not a supertype of ${parameterData.type}');
     }
 
@@ -154,7 +155,7 @@ class AutocompleteContext extends ContextBase implements IInteractionContextData
   /// You might also be interested in:
   /// - [parseWithType], for parsing a single value with a given type.
   Stream<T?> parseAllWithType<T>() {
-    DartType<T> type = DartType<T>();
+    RuntimeType<T> type = RuntimeType<T>();
 
     return Stream.fromIterable(
       _functionData.parametersData.where((element) => element.type.isSubtypeOf(type)),

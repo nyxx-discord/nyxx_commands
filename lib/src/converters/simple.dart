@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:fuzzywuzzy/fuzzywuzzy.dart' as fuzzy;
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+import 'package:runtime_type/runtime_type.dart';
 
 import '../context/autocomplete_context.dart';
 import '../context/base.dart';
-import '../mirror_utils/mirror_utils.dart';
 import '../util/view.dart';
 import 'converter.dart';
 
@@ -56,7 +56,7 @@ abstract class SimpleConverter<T> implements Converter<T> {
   final int sensitivity;
 
   @override
-  DartType<T> get output => DartType<T>();
+  RuntimeType<T> get output => RuntimeType<T>();
 
   @override
   CommandOptionType get type => CommandOptionType.string;
