@@ -3,7 +3,6 @@ import 'dart:mirrors';
 
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 import 'package:runtime_type/mirrors.dart';
-import 'package:runtime_type/runtime_type.dart';
 
 import '../commands.dart';
 import '../context/autocomplete_context.dart';
