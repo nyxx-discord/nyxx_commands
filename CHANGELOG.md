@@ -1,3 +1,23 @@
+## 5.0.0-dev.2
+__Breaking changes__
+- The `DartType` class introduced in 5.0.0-dev.0 has been replaced with `RuntimeType` from [`package:runtime_type`](https://pub.dev/packages/runtime_type).
+- All errors thrown by command callbacks are now caught instead of only subclasses of `Exception`. The relevant fields on `UncaughtException` and `AutocompleteFailedException` have therefore been changed from `Exception` to `Object`.
+- APIs that took a combination of user, timeout and component id have been changed to use the new `ComponentId` class.
+
+__New features__
+- Errors will now be added to `CommandsPlugin.onCommandError` when a message component created by nyxx_commands enters an invalid state (e.g no handler found or the user was not allowed to use the component). See the docs for `UnhandledInteractionException` for more.
+- Added `ComponentId` as a way for nyxx_commands to generate an ID for message components that contains information about the component's state in nyxx_commands.
+- Added a new `InteractionTimeoutException` thrown when an interaction times out instead of Dart's `TimeoutException`.
+- Added a `stackTrace` getter to all `CommandsExceptions`.
+
+__Bug fixes__
+- Fixed an issue where enum values in annotations caused the compiler to crash.
+
+__Miscellaneous__
+- Added documentation with instructions on how to compile nyxx_commands to the README.
+- Correctly export `ContextManager`.
+- Changed the log message for uncaught exceptions. The message no longer contains the error description, instead passing the error object through the log record's error field. Versions of nyxx after 4.5.0 contain a `Logging` plugin that will display this error for you.
+
 ## 5.0.0-dev.1
 __Breaking changes__:
 - `CommandsPlugin` has been made more type safe, making the `interactions` field nullable. To use the `IInteractions` instance from your commands, see `IContextData.interactions`. `client` has also been changed to be read-only.
