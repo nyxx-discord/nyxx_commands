@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:nyxx_interactions/nyxx_interactions.dart';
-import 'package:runtime_type/runtime_type.dart';
 
 import '../checks/checks.dart';
 import '../commands.dart';

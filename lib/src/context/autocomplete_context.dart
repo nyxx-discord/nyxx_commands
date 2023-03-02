@@ -1,5 +1,4 @@
 import 'package:nyxx_interactions/nyxx_interactions.dart';
-import 'package:runtime_type/runtime_type.dart';
 
 import '../commands/chat_command.dart';
 import '../converters/converter.dart' as converters show parse;
