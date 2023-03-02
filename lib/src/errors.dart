@@ -104,7 +104,7 @@ class AutocompleteFailedException extends CommandsException {
   final AutocompleteContext context;
 
   /// The exception that occurred.
-  final Exception exception;
+  final Object exception;
 
   /// Create a new [AutocompleteFailedException].
   AutocompleteFailedException(this.exception, this.context) : super(exception.toString());

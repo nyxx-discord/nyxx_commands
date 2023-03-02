@@ -238,7 +238,7 @@ class EventManager {
       Iterable<ArgChoiceBuilder>? choices = await callback(context);
 
       interactionEvent.respond(choices?.toList() ?? []);
-    } on Exception catch (e) {
+    } catch (e) {
       throw AutocompleteFailedException(e, context);
     }
   }
