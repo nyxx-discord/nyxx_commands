@@ -84,7 +84,7 @@ class MessageCommand
 
     try {
       await execute(context);
-    } on Exception catch (e) {
+    } catch (e) {
       throw UncaughtException(e, context);
     }
 
