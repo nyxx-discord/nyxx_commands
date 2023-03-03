@@ -607,7 +607,7 @@ mixin InteractionRespondMixin
   ResponseLevel? _responseLevel;
   bool _hasResponded = false;
 
-  Future<void> _acknowledgeLock = Future.value();
+  Future<void>? _acknowledgeLock;
 
   @override
   Future<IMessage> respond(MessageBuilder builder, {ResponseLevel? level}) async {
@@ -663,8 +663,19 @@ mixin InteractionRespondMixin
 
   @override
   Future<void> acknowledge({ResponseLevel? level}) async {
-    _responseLevel = level ??= _nearestCommandContext.command.resolvedOptions.defaultResponseLevel!;
-    await (_acknowledgeLock = interactionEvent.acknowledge(hidden: level.hideInteraction));
+    await _acknowledgeLock;
+
+    final lockCompleter = Completer<void>();
+    _acknowledgeLock = lockCompleter.future;
+
+    try {
+      _responseLevel =
+          level ??= _nearestCommandContext.command.resolvedOptions.defaultResponseLevel!;
+      await interactionEvent.acknowledge(hidden: level.hideInteraction);
+    } finally {
+      lockCompleter.complete();
+      _acknowledgeLock = null;
+    }
   }
 
   @override
