@@ -507,6 +507,9 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
       } while (context.selected.single == nextPageOption.value ||
           context.selected.single == prevPageOption.value);
 
+      context._parent = this;
+      _delegate = context;
+
       return idToValue[context.selected.single]!;
     } on TimeoutException catch (e, s) {
       throw InteractionTimeoutException(
@@ -577,6 +580,9 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     try {
       MultiselectComponentContext<List<String>> context =
           await commands.eventManager.nextMultiselectEvent(menuId);
+
+      context._parent = this;
+      _delegate = context;
 
       return context.selected.map((id) => idToValue[id]!).toList();
     } on TimeoutException catch (e, s) {
