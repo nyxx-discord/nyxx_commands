@@ -460,8 +460,8 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     MultiselectComponentContext<List<String>>? context;
     int currentOffset = 0;
 
-    late MultiselectBuilder menu;
-    late IMessage message;
+    MultiselectBuilder? menu;
+    IMessage? message;
 
     try {
       do {
@@ -517,8 +517,10 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
         _nearestCommandContext,
       )..stackTrace = s;
     } finally {
-      menu.disabled = true;
-      await message.edit(builder);
+      if (menu != null && message != null) {
+        menu.disabled = true;
+        await message.edit(builder);
+      }
     }
   }
 
