@@ -144,6 +144,26 @@ class ResponseLevel {
     required this.mention,
     required this.preserveComponentMessages,
   });
+
+  /// Create a new [ResponseLevel] identical to this one with one or more fields changed.
+  ///
+  /// [mention] cannot be updated to be `null` due to a technical limitation with Dart.
+  // We'd need a senitel value to tell if an argument was actually passed to `mention` (to
+  // differentiate between `null` and nothing passed at all). While this is possible, it's overly
+  // verbose and complicated, so we just don't support it.
+  ResponseLevel copyWith({
+    bool? hideInteraction,
+    bool? isDm,
+    bool? mention,
+    bool? preserveComponentMessages,
+  }) {
+    return ResponseLevel(
+      hideInteraction: hideInteraction ?? this.hideInteraction,
+      isDm: isDm ?? this.isDm,
+      mention: mention ?? this.mention,
+      preserveComponentMessages: preserveComponentMessages ?? this.preserveComponentMessages,
+    );
+  }
 }
 
 /// A context that can be interacted with.

@@ -488,14 +488,20 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
         if (context == null) {
           // This is the first time we're sending a message, just append the component row.
           (builder as ComponentMessageBuilder).addComponentRow(row);
+
+          message = await respond(builder, level: level);
         } else {
           // On later iterations, replace the last row with our newly created one.
           List<ComponentRowBuilder> rows = (builder as ComponentMessageBuilder).componentRows!;
 
           rows[rows.length - 1] = row;
-        }
 
-        message = await respond(builder, level: level);
+          await context.respond(
+            builder,
+            level: (level ?? _nearestCommandContext.command.resolvedOptions.defaultResponseLevel)!
+                .copyWith(preserveComponentMessages: false),
+          );
+        }
 
         context = await commands.eventManager.nextMultiselectEvent(menuId);
 
