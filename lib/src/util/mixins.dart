@@ -665,6 +665,7 @@ mixin InteractionRespondMixin
           level ??= _nearestCommandContext.command.resolvedOptions.defaultResponseLevel!;
       await interactionEvent.acknowledge(hidden: level.hideInteraction);
     } finally {
+      lockCompleter.complete();
       _acknowledgeLock = null;
     }
   }
