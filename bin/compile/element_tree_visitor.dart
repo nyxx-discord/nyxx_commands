@@ -112,11 +112,6 @@ class EntireAstVisitor extends RecursiveAstVisitor<void> {
   Future<void> visitUnit(String source) async {
     logger.finer('Getting AST for source "$source"');
 
-    final uriSource = Uri.parse(source);
-    if (!uriSource.hasAbsolutePath) {
-      return; // Skip private sources
-    }
-
     SomeResolvedUnitResult result =
         _cache[source] ??= await context.currentSession.getResolvedUnit(source);
 
@@ -134,6 +129,6 @@ class EntireAstVisitor extends RecursiveAstVisitor<void> {
     super.visitPartDirective(directive);
 
     // Visit "part-ed" files of interesting sources
-    _interestingSources.add(directive.uri.stringValue!);
+    _interestingSources.add((directive.element!.uri as DirectiveUriWithSource).source.fullName);
   }
 }
