@@ -83,45 +83,45 @@ int getId(DartType type) {
 // We keep track of the IDs of special types
 
 /// The ID of the [Name] class type.
-int get nameId => getId(nameClassElement!.thisType);
-ClassElement? nameClassElement;
+int get nameId => getId(nameInterfaceElement!.thisType);
+InterfaceElement? nameInterfaceElement;
 
 /// The ID of the [Description] class type.
-int get descriptionId => getId(descriptionClassElement!.thisType);
-ClassElement? descriptionClassElement;
+int get descriptionId => getId(descriptionInterfaceElement!.thisType);
+InterfaceElement? descriptionInterfaceElement;
 
 /// The ID of the [Choices] class type.
-int get choicesId => getId(choicesClassElement!.thisType);
-ClassElement? choicesClassElement;
+int get choicesId => getId(choicesInterfaceElement!.thisType);
+InterfaceElement? choicesInterfaceElement;
 
 /// The ID of the [UseConverter] class type.
-int get useConverterId => getId(useConverterClassElement!.thisType);
-ClassElement? useConverterClassElement;
+int get useConverterId => getId(useConverterInterfaceElement!.thisType);
+InterfaceElement? useConverterInterfaceElement;
 
 /// The ID of the [Autocomplete] class type.
-int get autocompleteId => getId(autocompleteClassElement!.thisType);
-ClassElement? autocompleteClassElement;
+int get autocompleteId => getId(autocompleteInterfaceElement!.thisType);
+InterfaceElement? autocompleteInterfaceElement;
 
 /// The ID of the [Object] class type.
-int get objectId => getId(objectClassElement!.thisType);
-ClassElement? objectClassElement;
+int get objectId => getId(objectInterfaceElement!.thisType);
+InterfaceElement? objectInterfaceElement;
 
 /// The ID of the [Function] class type,
-int get functionId => getId(functionClassElement!.thisType);
-ClassElement? functionClassElement;
+int get functionId => getId(functionInterfaceElement!.thisType);
+InterfaceElement? functionInterfaceElement;
 
-Map<List<String>, void Function(ClassElement)> _specialInterfaceTypeSetters = {
+Map<List<String>, void Function(InterfaceElement)> _specialInterfaceTypeSetters = {
   ['package:nyxx_commands/src/util/util.dart', 'Description']: (element) =>
-      descriptionClassElement = element,
-  ['package:nyxx_commands/src/util/util.dart', 'Name']: (element) => nameClassElement = element,
+      descriptionInterfaceElement = element,
+  ['package:nyxx_commands/src/util/util.dart', 'Name']: (element) => nameInterfaceElement = element,
   ['package:nyxx_commands/src/util/util.dart', 'Choices']: (element) =>
-      choicesClassElement = element,
+      choicesInterfaceElement = element,
   ['package:nyxx_commands/src/util/util.dart', 'UseConverter']: (element) =>
-      useConverterClassElement = element,
+      useConverterInterfaceElement = element,
   ['package:nyxx_commands/src/util/util.dart', 'Autocomplete']: (element) =>
-      autocompleteClassElement = element,
-  ['dart:core/object.dart', 'Object']: (element) => objectClassElement = element,
-  ['dart:core/function.dart', 'Function']: (element) => functionClassElement = element,
+      autocompleteInterfaceElement = element,
+  ['dart:core/object.dart', 'Object']: (element) => objectInterfaceElement = element,
+  ['dart:core/function.dart', 'Function']: (element) => functionInterfaceElement = element,
 };
 
 /// Update the special types if needed.
