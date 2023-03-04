@@ -1,3 +1,7 @@
+## 4.4.1
+__Bug fixes__:
+- Fix `part` directives breaking compilation.
+
 ## 4.4.0
 __Miscellaneous__:
 - Bump `analyzer` to 5.7.1, `args` to 2.4.0, `dart_style` to 2.2.5, `logging` to 1.1.1, `meta` to 1.9.0, `nyxx` to 4.5.0, `nyxx_interactions` to 4.5.0, `path` to 1.8.3 `build_runner` to 2.1.0, `coverage` to 1.6.3, `lints` to 2.0.1, `mockito` to 5.3.2, and `test` to 1.23.1.

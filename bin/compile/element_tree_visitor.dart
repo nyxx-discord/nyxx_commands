@@ -129,6 +129,6 @@ class EntireAstVisitor extends RecursiveAstVisitor<void> {
     super.visitPartDirective(directive);
 
     // Visit "part-ed" files of interesting sources
-    _interestingSources.add(directive.uri.stringValue!);
+    _interestingSources.add((directive.element!.uri as DirectiveUriWithSource).source.fullName);
   }
 }
