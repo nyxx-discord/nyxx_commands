@@ -112,6 +112,11 @@ class EntireAstVisitor extends RecursiveAstVisitor<void> {
   Future<void> visitUnit(String source) async {
     logger.finer('Getting AST for source "$source"');
 
+    final uriSource = Uri.parse(source);
+    if (!uriSource.hasAbsolutePath) {
+      return; // Skip private sources
+    }
+
     SomeResolvedUnitResult result =
         _cache[source] ??= await context.currentSession.getResolvedUnit(source);
 
