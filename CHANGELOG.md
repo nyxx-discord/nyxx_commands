@@ -1,3 +1,10 @@
+## 5.0.0-dev.3
+__Bug fixes__
+- Fixed a bug which caused `IInteractiveContext.respond` to error after auto-acknowledge.
+- Fixed a bug where `getSelection` and `getMultiSelection` would result in an "Interaction failed" error, despite the response being sent.
+- Fixed a bug that caused a late initialization error to occur if an error occurred in `respond`.
+- Fixed `getSelection` sending a new message for different pages instead of editing the same message.
+
 ## 5.0.0-dev.2
 __Breaking changes__
 - The `DartType` class introduced in 5.0.0-dev.0 has been replaced with `RuntimeType` from [`package:runtime_type`](https://pub.dev/packages/runtime_type).
