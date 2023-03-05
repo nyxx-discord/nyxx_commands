@@ -362,7 +362,10 @@ ChatCommand? getCommandHelper(StringView view, Map<String, IChatCommandComponent
 /// This class contains the data needed for nyxx_commands to find the correct handler for a
 /// component interaction event, and throw an error if no handler is found.
 ///
-/// [ComponentId]s should not be stored. See [expiresAt] for the reason why.
+/// Call [toString] to get the custom id to use on a component. A new [ComponentId] shhould be used
+/// for each component.
+///
+/// [ComponentId]s should not be stored before use. See [expiresAt] for the reason why.
 class ComponentId {
   /// A unique identifier (in this process) for this component.
   ///
@@ -427,6 +430,8 @@ class ComponentId {
       );
 
   /// Parse a [ComponentId] received from the API.
+  ///
+  /// This method parses the string returned by a call to [toString].
   ///
   /// If [id] was not a [ComponentId] created by nyxx_commands, such as a manually set custom id,
   /// this method will return `null`.
