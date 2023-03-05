@@ -14,8 +14,8 @@ dependencies:
   args: ^2.3.0
   dart_style: ^2.2.1
   logging: ^1.0.2
-  nyxx: ^4.0.0
-  nyxx_interactions: ^4.3.1
+  nyxx: ^5.0.0
+  nyxx_interactions: ^4.6.0
   path: ^1.8.1
   fuzzywuzzy: ^0.2.0
   runtime_type: ^1.0.0+1
