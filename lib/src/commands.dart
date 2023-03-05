@@ -468,9 +468,11 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
 
     if (assignable.isNotEmpty) {
       if (logWarn) {
-        logger.warning('Using assembled converter for type $type. If this is intentional, you '
-            'should register a custom converter for that type using '
-            '`addConverter(getConverter(RuntimeType<$type>(), logWarn: false))`');
+        logger.warning(
+          'Using assembled converter for type ${type.internalType}. If this is intentional, you '
+          'should register a custom converter for that type using '
+          '`addConverter(getConverter(RuntimeType<${type.internalType}>(), logWarn: false))`',
+        );
       }
       return FallbackConverter(assignable);
     }
