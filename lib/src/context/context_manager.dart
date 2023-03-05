@@ -1,5 +1,5 @@
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_interactions/nyxx_interactions.dart';
+import 'package:nyxx_interactions/nyxx_interactions.dart' hide CommandNotFoundException;
 
 import '../commands.dart';
 import '../commands/chat_command.dart';
