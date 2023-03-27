@@ -29,7 +29,7 @@ class GuildCheck extends Check {
   /// You might also be interested in:
   /// - [GuildCheck.id], for creating this same check without an instance of [IGuild];
   /// - [GuildCheck.any], for checking if the context originated in any of a set of guilds.
-  GuildCheck(IGuild guild, [String? name]) : this.id(guild.id, name: name);
+  GuildCheck(IGuild guild, {String? name}) : this.id(guild.id, name: name);
 
   /// Create a [GuildCheck] that succeeds if the ID of the guild the context originated in is [id].
   GuildCheck.id(Snowflake id, {String? name})
