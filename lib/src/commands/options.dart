@@ -1,18 +1,5 @@
-//  Copyright 2021 Abitofevrything and others.
-//
-//  Licensed under the Apache License, Version 2.0 (the "License");
-//  you may not use this file except in compliance with the License.
-//  You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-//  Unless required by applicable law or agreed to in writing, software
-//  distributed under the License is distributed on an "AS IS" BASIS,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//  See the License for the specific language governing permissions and
-//  limitations under the License.
-
-import 'package:nyxx_commands/src/commands/chat_command.dart';
+import '../context/base.dart';
+import 'chat_command.dart';
 
 /// Options that modify how a command behaves.
 ///
@@ -30,8 +17,19 @@ class CommandOptions {
   /// Setting this to false means that you must acknowledge the interaction yourself.
   ///
   /// You might also be interested in:
-  /// - [IInteractionContext.acknowledge], for manually acknowledging interactions.
+  /// - [autoAcknowledgeDuration], for setting the time after which interactions will be
+  ///   acknowledged.
+  /// - [IInteractionInteractiveContext.acknowledge], for manually acknowledging interactions.
   final bool? autoAcknowledgeInteractions;
+
+  /// The duration after which to automatically acknowledge interactions.
+  ///
+  /// Has no effect if [autoAcknowledgeInteractions] is `false`.
+  ///
+  /// If this is `null`, the timeout for interactions is calculated based on the bot's latency. On
+  /// unstable networks, this might result in some interactions not being acknowledged, in which
+  /// case setting this option might help.
+  final Duration? autoAcknowledgeDuration;
 
   /// Whether to accept messages sent by bot accounts as possible commands.
   ///
@@ -54,25 +52,36 @@ class CommandOptions {
   /// command loops.
   final bool? acceptSelfCommands;
 
-  /// Whether to hide the response from other users when the command is invoked from an interaction.
+  /// The [ResponseLevel] to use in commands if not explicit.
   ///
-  /// This sets the EPHEMERAL flag on interactions responses when [IContext.respond] is used.
+  /// Defaults to [ResponseLevel.public].
+  final ResponseLevel? defaultResponseLevel;
+
+  /// The type of [ChatCommand]s that are children of this entity.
+  ///
+  /// The type of a [ChatCommand] influences how it can be invoked and can be used to make chat
+  /// commands executable only through Slash Commands, or only through text messages.
+  final CommandType? type;
+
+  /// Whether command fetching should be case insensitive.
+  ///
+  /// If this is `true`, [ChatCommand]s may be invoked by users without the command name matching
+  /// the case of the input.
   ///
   /// You might also be interested in:
-  /// - [IInteractionContext.respond], which can override this setting by setting the `hidden` flag.
-  final bool? hideOriginalResponse;
-
-  /// The default [CommandType] for [ChatCommand]s that are children of this entity.
-  final CommandType? defaultCommandType;
+  /// - [IChatCommandComponent.aliases], for invoking a single command from multiple names.
+  final bool? caseInsensitiveCommands;
 
   /// Create a set of command options.
   ///
   /// Options set to `null` will be inherited from the parent.
   const CommandOptions({
     this.autoAcknowledgeInteractions,
+    this.autoAcknowledgeDuration,
     this.acceptBotCommands,
     this.acceptSelfCommands,
-    this.hideOriginalResponse,
-    this.defaultCommandType,
+    this.defaultResponseLevel,
+    this.type,
+    this.caseInsensitiveCommands,
   });
 }

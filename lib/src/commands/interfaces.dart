@@ -1,29 +1,16 @@
-//  Copyright 2021 Abitofevrything and others.
-//
-//  Licensed under the Apache License, Version 2.0 (the "License");
-//  you may not use this file except in compliance with the License.
-//  You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-//  Unless required by applicable law or agreed to in writing, software
-//  distributed under the License is distributed on an "AS IS" BASIS,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//  See the License for the specific language governing permissions and
-//  limitations under the License.
-
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../checks/checks.dart';
 import '../commands.dart';
+import '../commands/chat_command.dart';
+import '../context/base.dart';
 import '../context/chat_context.dart';
-import '../context/context.dart';
 import '../errors.dart';
 import '../util/view.dart';
 import 'options.dart';
 
 /// Represents an entity which can handle command callback hooks.
-abstract class ICallHooked<T extends IContext> {
+abstract class ICallHooked<T extends ICommandContext> {
   /// A stream that emits contexts *before* the command callback is executed.
   ///
   /// This stream emits before the callback is executed, but after checks and argument parsing is
@@ -58,7 +45,7 @@ abstract class IChecked {
 
 /// Represents an entity that supports command options.
 ///
-/// Command options can influence a command's behaviour and how it can be invoked. Options are
+/// Command options can influence a command's behavior and how it can be invoked. Options are
 /// inherited.
 abstract class IOptions {
   /// The options to use for this entity.
@@ -69,7 +56,7 @@ abstract class IOptions {
 ///
 /// You might also be interested in:
 /// - [ICommandGroup], the interface for groups that [ICommandRegisterable]s can be added to.
-abstract class ICommandRegisterable<T extends IContext>
+abstract class ICommandRegisterable<T extends ICommandContext>
     implements ICallHooked<T>, IChecked, IOptions {
   /// The name of this child.
   ///
@@ -82,13 +69,13 @@ abstract class ICommandRegisterable<T extends IContext>
   /// Once a parent is added to a group, that group is considered to be this child's parent and this
   /// child cannot be added to any more groups. Attempting to do so will result in a
   /// [CommandsError].
-  ICommandGroup<IContext>? get parent;
+  ICommandGroup<ICommandContext>? get parent;
 
   /// Set the parent of this child. Should not be used unless you are implementing your own command
   /// group.
-  set parent(ICommandGroup<IContext>? parent);
+  set parent(ICommandGroup<ICommandContext>? parent);
 
-  /// Get the resolvec options for this child.
+  /// Get the resolved options for this child.
   ///
   /// Since [ICommandRegisterable] implements [IOptions], any class implementing this interface can
   /// provide options. However, since options are designed to be inherited, this getter provides a
@@ -122,7 +109,8 @@ abstract class ICommandRegisterable<T extends IContext>
 /// You might also be interested in:
 /// - [ICommandRegisterable], the type that all children must implement;
 /// - [ICommand], the executable command type.
-abstract class ICommandGroup<T extends IContext> implements ICallHooked<T>, IChecked, IOptions {
+abstract class ICommandGroup<T extends ICommandContext>
+    implements ICallHooked<T>, IChecked, IOptions {
   /// A list of all the children of this group
   Iterable<ICommandRegisterable<T>> get children;
 
@@ -157,7 +145,7 @@ abstract class ICommandGroup<T extends IContext> implements ICallHooked<T>, IChe
 /// You might also be interested in:
 /// - [ChatCommand], [MessageCommand] and [UserCommand], the three types of commands nyxx_commands
 ///   supports.
-abstract class ICommand<T extends IContext> implements ICommandRegisterable<T> {
+abstract class ICommand<T extends ICommandContext> implements ICommandRegisterable<T> {
   /// The function called to execute this command.
   ///
   /// If any exception occurs while calling this function, it will be caught and added to
@@ -168,8 +156,8 @@ abstract class ICommand<T extends IContext> implements ICommandRegisterable<T> {
   ///
   /// This method might throw uncaught [CommandsException]s and should be handled with care. Thrown
   /// exceptions will not be added to [CommandsPlugin.onCommandError] unless called from within a
-  /// "safe" context where uncuaght exceptions are caught anyways.
-  void invoke(T context);
+  /// "safe" context where uncaught exceptions are caught anyways.
+  Future<void> invoke(T context);
 }
 
 /// An entity that is part of a chat command tree.
@@ -243,4 +231,13 @@ abstract class IChatCommandComponent
 
   /// Return the [CommandOptionBuilder]s that represent this entity for slash command registration.
   Iterable<CommandOptionBuilder> getOptions(CommandsPlugin commands);
+
+  @override
+  ChatCommand? getCommand(StringView view);
+
+  @override
+  Iterable<ChatCommand> walkCommands();
+
+  @override
+  Iterable<IChatCommandComponent> get children;
 }

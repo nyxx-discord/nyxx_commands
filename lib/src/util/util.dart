@@ -1,22 +1,10 @@
-//  Copyright 2021 Abitofevrything and others.
-//
-//  Licensed under the Apache License, Version 2.0 (the "License");
-//  you may not use this file except in compliance with the License.
-//  You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-//  Unless required by applicable law or agreed to in writing, software
-//  distributed under the License is distributed on an "AS IS" BASIS,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//  See the License for the specific language governing permissions and
-//  limitations under the License.
-
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
+import '../commands/chat_command.dart';
+import '../commands/interfaces.dart';
 import '../context/autocomplete_context.dart';
 import '../converters/converter.dart';
 import 'view.dart';
@@ -243,7 +231,7 @@ class UseConverter {
 /// ```
 ///
 /// You might also be interested in:
-/// - [Converter.autoCompleteCallback], the way to register autocomplete handlers for all arguments
+/// - [Converter.autocompleteCallback], the way to register autocomplete handlers for all arguments
 ///   of a given type.
 class Autocomplete {
   /// The autocomplete handler to use.
@@ -311,7 +299,7 @@ String Function(IMessage) dmOr(String Function(IMessage) defaultPrefix) {
 
 /// A pattern all command and argument names should match.
 ///
-/// For more inforrmation on naming restrictions, check the
+/// For more information on naming restrictions, check the
 /// [Discord documentation](https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-naming).
 final RegExp commandNameRegexp = RegExp(
   r'^[-_\p{L}\p{N}\p{sc=Deva}\p{sc=Thai}]{1,32}$',
@@ -321,7 +309,7 @@ final RegExp commandNameRegexp = RegExp(
 final Map<Function, dynamic> idMap = {};
 
 /// A special function that can be wrapped around another function in order to tell nyxx_commands
-/// how to identify the funcion at compile time.
+/// how to identify the function at compile time.
 ///
 /// This function is used to identify a callback function so that compiled nyxx_commands can extract
 /// the type & annotation data for that function.
@@ -333,4 +321,239 @@ T id<T extends Function>(dynamic id, T fn) {
   idMap[fn] = id;
 
   return fn;
+}
+
+ChatCommand? getCommandHelper(StringView view, Map<String, IChatCommandComponent> children) {
+  String name = view.getWord();
+  String lowerCaseName = name.toLowerCase();
+
+  try {
+    IChatCommandComponent child = children.entries.singleWhere((childEntry) {
+      bool isCaseInsensitive = childEntry.value.resolvedOptions.caseInsensitiveCommands!;
+
+      if (isCaseInsensitive) {
+        return lowerCaseName == childEntry.key.toLowerCase();
+      }
+
+      return name == childEntry.key;
+    }).value;
+
+    ChatCommand? commandFromChild = child.getCommand(view);
+
+    // If no command further down the tree was found, return the child if it is a chat command
+    // that can be invoked from a text message (not slash only).
+    if (commandFromChild == null &&
+        child is ChatCommand &&
+        child.resolvedOptions.type != CommandType.slashOnly) {
+      return child;
+    }
+
+    return commandFromChild;
+  } on StateError {
+    // Don't consume any input if no command was found.
+    view.undo();
+    return null;
+  }
+}
+
+/// An identifier for message components containing metadata about the handler associated with the
+/// component.
+///
+/// This class contains the data needed for nyxx_commands to find the correct handler for a
+/// component interaction event, and throw an error if no handler is found.
+///
+/// Call [toString] to get the custom id to use on a component. A new [ComponentId] shhould be used
+/// for each component.
+///
+/// [ComponentId]s should not be stored before use. See [expiresAt] for the reason why.
+class ComponentId {
+  /// A unique identifier (in this process) for this component.
+  ///
+  /// Every [ComponentId] will get a new [uniqueIdentifier].
+  final int uniqueIdentifier;
+
+  /// The time at which the process that created this [ComponentId] was started.
+  ///
+  /// This will be the same for all [ComponentId]s created in the same process and allows
+  /// nyxx_commands to tell when an interaction comes from a previous session, meaning no handler
+  /// will be found.
+  final DateTime sessionStartTime;
+
+  /// If the handler associated with this component has an expiration timeout, the time at which it
+  /// will expire, otherwise null.
+  ///
+  /// This is set as soon as this [ComponentId] is created, so [ComponentId]s should be used as soon
+  /// as they are created.
+  final DateTime? expiresAt;
+
+  /// If the handler associated with this component only allows a specific user to use the
+  /// component, the ID of that user, otherwise null.
+  final Snowflake? allowedUser;
+
+  /// The time remaining until the handler for this [ComponentId] expires, if [expiresAt] was set.
+  Duration? get expiresIn => expiresAt != null ? DateTime.now().difference(expiresAt!) : null;
+
+  /// The status of this [ComponentId].
+  ///
+  /// This will always be [ComponentIdStatus.ok] for [ComponentId]s created using
+  /// [ComponentId.generate] but will contain information about the status of the handler if this
+  /// [ComponentId] was received from the API and created using [ComponentId.parse].
+  final ComponentIdStatus status;
+
+  /// The start time of the current session.
+  ///
+  /// This will be the value of [ComponentId.sessionStartTime] for all [ComponentId]s created in
+  /// this process.
+  static final currentSessionStartTime = DateTime.now().toUtc();
+
+  static int _uniqueIdentifier = 0;
+
+  /// Create a new [ComponentId].
+  const ComponentId({
+    required this.uniqueIdentifier,
+    required this.sessionStartTime,
+    required this.expiresAt,
+    required this.status,
+    required this.allowedUser,
+  });
+
+  /// Generate a new unique [ComponentId].
+  ///
+  /// [expirationTime] should be the time after which the handler will expire. [allowedUser] should
+  /// be the ID of the user allows to interact with this component.
+  factory ComponentId.generate({Duration? expirationTime, Snowflake? allowedUser}) => ComponentId(
+        uniqueIdentifier: _uniqueIdentifier++,
+        sessionStartTime: currentSessionStartTime,
+        expiresAt: expirationTime != null ? DateTime.now().add(expirationTime).toUtc() : null,
+        status: ComponentIdStatus.ok,
+        allowedUser: allowedUser,
+      );
+
+  /// Parse a [ComponentId] received from the API.
+  ///
+  /// This method parses the string returned by a call to [toString].
+  ///
+  /// If [id] was not a [ComponentId] created by nyxx_commands, such as a manually set custom id,
+  /// this method will return `null`.
+  static ComponentId? parse(String id) {
+    final parts = id.split('/');
+
+    if (parts.isEmpty || parts.first != 'nyxx_commands') {
+      return null;
+    }
+
+    final uniqueIdentifier = int.parse(parts[1]);
+    final sessionStartTime = DateTime.parse(parts[2]);
+    final expiresAt = parts[3] != 'null' ? DateTime.parse(parts[3]) : null;
+    final allowedUser = parts[4] != 'null' ? Snowflake(parts[4]) : null;
+
+    final ComponentIdStatus? status;
+    if (sessionStartTime != currentSessionStartTime) {
+      status = ComponentIdStatus.fromDifferentSession;
+    } else if (expiresAt?.isBefore(DateTime.now()) ?? false) {
+      status = ComponentIdStatus.expired;
+    } else {
+      status = ComponentIdStatus.ok;
+    }
+
+    return ComponentId(
+      expiresAt: expiresAt,
+      sessionStartTime: sessionStartTime,
+      status: status,
+      uniqueIdentifier: uniqueIdentifier,
+      allowedUser: allowedUser,
+    );
+  }
+
+  /// Copy this [ComponentId] with a new status.
+  ComponentId withStatus(ComponentIdStatus status) => ComponentId(
+        expiresAt: expiresAt,
+        sessionStartTime: sessionStartTime,
+        status: status,
+        uniqueIdentifier: uniqueIdentifier,
+        allowedUser: allowedUser,
+      );
+
+  @override
+  // When adding new fields, ensure we don't go over the maximum length (100).
+  // Current length:
+  //   13 - nyxx_commands prefix
+  //   4  - / separators
+  //   6  - uniqueIdentifier (assume we won't go over 1 000 000 interactions in one session)
+  //   27 - sessionStartTime
+  //   27 - expiresAt
+  //   19 - allowedUser
+  // Total: 96, 4 free (could be used up by uniqueIdentifier)
+  // TODO: Serialize to binary => encode base64?
+  String toString() => 'nyxx_commands/$uniqueIdentifier/$sessionStartTime/$expiresAt/$allowedUser';
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ComponentId &&
+          other.uniqueIdentifier == uniqueIdentifier &&
+          other.sessionStartTime == sessionStartTime &&
+          other.expiresAt == expiresAt &&
+          other.allowedUser == allowedUser);
+
+  @override
+  int get hashCode => Object.hash(uniqueIdentifier, sessionStartTime, expiresAt, allowedUser);
+}
+
+/// The status of the handler associated with a [ComponentId].
+enum ComponentIdStatus {
+  /// No problems.
+  ///
+  /// This status shouldn't ever occur in an error.
+  ok,
+
+  /// The [ComponentId] was created in a different process, so no handler could be found.
+  ///
+  /// This also means that the state associated with the handler is now lost.
+  fromDifferentSession,
+
+  /// The handler for this [ComponentId] has expired.
+  expired,
+
+  /// No handler for this [ComponentId] was found.
+  ///
+  /// This can happen when two instances of nyxx_commands are running at the same time, so the event
+  /// will probably be handled by the other instance.
+  noHandlerFound,
+
+  /// The user who interacted with the component was not allowed to do so.
+  wrongUser;
+
+  @override
+  String toString() {
+    switch (this) {
+      case ComponentIdStatus.ok:
+        return 'OK';
+      case ComponentIdStatus.fromDifferentSession:
+        return 'From different session';
+      case ComponentIdStatus.expired:
+        return 'Expired';
+      case ComponentIdStatus.noHandlerFound:
+        return 'No handler found';
+      case ComponentIdStatus.wrongUser:
+        return 'User not allowed';
+    }
+  }
+}
+
+/// Convert any [MessageBuilder] to a [ComponentMessageBuilder].
+ComponentMessageBuilder builderToComponentBuilder(MessageBuilder builder) {
+  if (builder is ComponentMessageBuilder) {
+    return builder;
+  }
+
+  return ComponentMessageBuilder()
+    ..allowedMentions = builder.allowedMentions
+    ..attachments = builder.attachments
+    ..content = builder.content
+    ..embeds = builder.embeds
+    ..files = builder.files
+    ..nonce = builder.nonce
+    ..replyBuilder = builder.replyBuilder
+    ..tts = builder.tts;
 }

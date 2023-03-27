@@ -12,7 +12,7 @@ import 'package:nyxx/nyxx.dart';
 // nyxx_commands is needed to use the commands plugin
 import 'package:nyxx_commands/nyxx_commands.dart';
 
-// To add these dependancies to your project, run:
+// To add these dependencies to your project, run:
 // - `dart pub add nyxx`;
 // - `dart pub add nyxx_commands`
 
@@ -24,7 +24,7 @@ import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 void main() {
   // ====================================== //
-  // ===== Initialising nyxx_commands ===== //
+  // ===== Initializing nyxx_commands ===== //
   // ====================================== //
 
   // Since v3.0.0, nyxx_commands can be used as a plugin with nyxx v3.0.0
@@ -75,7 +75,7 @@ void main() {
     // plugin.
     //
     // Generally you can just omit this parameter and use the defaults, but if you want to allow for
-    // a specific behaviour you can include this parameter to change the default settings.
+    // a specific behavior you can include this parameter to change the default settings.
     //
     // In this case, we set the option `logErrors` to `true`, meaning errors that occur in commands
     // will be sent to the logger. If you have also added the `Logging` plugin to your client, these
@@ -198,7 +198,7 @@ void main() {
   );
 
   // The other way to add a command to a group is using the `ChatGroup`'s `addCommand` method,
-  // similarly to how we added the `ping` command to the bot earlie.
+  // similarly to how we added the `ping` command to the bot earlier.
   throwGroup.addCommand(ChatCommand(
     'die',
     'Throw a die',
@@ -360,7 +360,7 @@ void main() {
   // To start off, we will create a converter for `Shape`s. We will need to create a brand new
   // converter from scratch for this, since no existing converter can be mapped to a `Shape`.
 
-  // To create the converter, we instanciate the `Converter` class.
+  // To create the converter, we instantiate the `Converter` class.
   // Note that the variable is fully
   // typed, the typed generics on `Converter` are filled in. This allows nyxx_commands to know what
   // the target type of this converter is.
@@ -413,10 +413,10 @@ void main() {
   // to a `Dimension`.
 
   // To extend an existing `Converter`, we can use the `CombineConverter` class. This takes an
-  // exising converter and a function to transform the output of the original converter to the
+  // existing converter and a function to transform the output of the original converter to the
   // target type.
   // Similarly to the shape converter, this variable has to be fully typed. The first type argument
-  // for `CombineConverter` is the target type of the inital `Converter`, and the second is the
+  // for `CombineConverter` is the target type of the initial `Converter`, and the second is the
   // target type of the `CombineConverter`.
   Converter<Dimension> dimensionConverter = CombineConverter<int, Dimension>(
     intConverter,
@@ -437,46 +437,46 @@ void main() {
   commands.addConverter(dimensionConverter);
 
   // Let's create a command to test our converter out:
-  ChatCommand favouriteShape = ChatCommand(
-    'favourite-shape',
-    'Outputs your favourite shape',
-    id('favourite-shape', (IChatContext context, Shape shape, Dimension dimension) {
-      String favourite;
+  ChatCommand favoriteShape = ChatCommand(
+    'favorite-shape',
+    'Outputs your favorite shape',
+    id('favorite-shape', (IChatContext context, Shape shape, Dimension dimension) {
+      String favorite;
 
       switch (shape) {
         case Shape.triangle:
           if (dimension == Dimension.twoD) {
-            favourite = 'triangle';
+            favorite = 'triangle';
           } else {
-            favourite = 'pyramid';
+            favorite = 'pyramid';
           }
           break;
         case Shape.square:
           if (dimension == Dimension.twoD) {
-            favourite = 'square';
+            favorite = 'square';
           } else {
-            favourite = 'cube';
+            favorite = 'cube';
           }
           break;
         case Shape.pentagon:
           if (dimension == Dimension.twoD) {
-            favourite = 'pentagon';
+            favorite = 'pentagon';
           } else {
-            favourite = 'pentagonal prism';
+            favorite = 'pentagonal prism';
           }
       }
 
-      context.respond(MessageBuilder.content('Your favourite shape is $favourite!'));
+      context.respond(MessageBuilder.content('Your favorite shape is $favorite!'));
     }),
   );
 
-  commands.addCommand(favouriteShape);
+  commands.addCommand(favoriteShape);
 
-  // At this point, if you run the file you will see that the `favourite-shape` command has been
+  // At this point, if you run the file you will see that the `favorite-shape` command has been
   // added to the slash command menu.
   // Selecting this command, you will be prompted to select a shape from the choices we outlined
   // earlier and a dimension. Note that in this case Discord isn't able to give us choices since we
-  // haven't told it what dimensions are availible.
+  // haven't told it what dimensions are available.
   //
   // If you run the command, you will see that your input will automatically be converted to a
   // `Shape` and `Dimension` by using the converters we defined earlier.
@@ -506,19 +506,19 @@ void main() {
   // better to provide a default for your optional parameters instead of making them nullable.
 
   // As an example for using optional arguments, let's create a command with an optional argument:
-  ChatCommand favouriteFruit = ChatCommand(
-    'favourite-fruit',
-    'Outputs your favourite fruit',
-    id('favourite-fruit', (IChatContext context, [String favourite = 'apple']) {
-      context.respond(MessageBuilder.content('Your favourite fruit is $favourite!'));
+  ChatCommand favoriteFruit = ChatCommand(
+    'favorite-fruit',
+    'Outputs your favorite fruit',
+    id('favorite-fruit', (IChatContext context, [String favorite = 'apple']) {
+      context.respond(MessageBuilder.content('Your favorite fruit is $favorite!'));
     }),
   );
 
-  commands.addCommand(favouriteFruit);
+  commands.addCommand(favoriteFruit);
 
-  // At this point, if you run the file you will be able to use the `favourite-fruit` command. Once
+  // At this point, if you run the file you will be able to use the `favorite-fruit` command. Once
   // you've selected the command in the slash command menu, you'll be given an option to provide a
-  // value for the `favourite` argument.
+  // value for the `favorite` argument.
   // If you don't specify a value for the argument, the default value of `'apple'` will be used. If
   // you do specify a value, that value will be used instead.
   //
@@ -616,7 +616,7 @@ enum Dimension {
 // ---------- Global functions ---------- //
 // -------------------------------------- //
 
-String? filterInput(String input, IContext context) {
+String? filterInput(String input, IContextData context) {
   if (input.isNotEmpty) {
     return input;
   }

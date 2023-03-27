@@ -1,17 +1,3 @@
-//  Copyright 2021 Abitofevrything and others.
-//
-//  Licensed under the Apache License, Version 2.0 (the "License");
-//  you may not use this file except in compliance with the License.
-//  You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-//  Unless required by applicable law or agreed to in writing, software
-//  distributed under the License is distributed on an "AS IS" BASIS,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//  See the License for the specific language governing permissions and
-//  limitations under the License.
-
 /// A framework for easily creating slash commands and text commands for Discord using the nyxx library.
 library nyxx_commands;
 
@@ -44,37 +30,27 @@ export 'src/commands/options.dart' show CommandOptions;
 export 'src/commands/user_command.dart' show UserCommand;
 export 'src/context/autocomplete_context.dart' show AutocompleteContext;
 export 'src/context/chat_context.dart'
-    show IChatContext, InteractionChatContext, MessageChatContext;
-export 'src/context/context.dart' show IContext, IContextBase;
-export 'src/context/interaction_context.dart' show IInteractionContext, IInteractionContextBase;
-export 'src/context/message_context.dart' show MessageContext;
-export 'src/context/user_context.dart' show UserContext;
-export 'src/converters/converter.dart'
+    show IChatContext, IChatContextData, InteractionChatContext, MessageChatContext;
+export 'src/context/context_manager.dart' show ContextManager;
+export 'src/context/base.dart'
     show
-        CombineConverter,
-        Converter,
-        DoubleConverter,
-        FallbackConverter,
-        GuildChannelConverter,
-        IntConverter,
-        NumConverter,
-        attachmentConverter,
-        boolConverter,
-        categoryGuildChannelConverter,
-        doubleConverter,
-        guildChannelConverter,
-        intConverter,
-        memberConverter,
-        mentionableConverter,
-        roleConverter,
-        snowflakeConverter,
-        stageVoiceChannelConverter,
-        stringConverter,
-        textGuildChannelConverter,
-        userConverter,
-        voiceGuildChannelConverter,
-        registerDefaultConverters,
-        parse;
+        ICommandContext,
+        ICommandContextData,
+        IContextData,
+        IInteractionCommandContext,
+        IInteractionContextData,
+        IInteractionCommandContextData,
+        IInteractionInteractiveContext,
+        IInteractiveContext,
+        ResponseLevel;
+export 'src/context/message_context.dart' show MessageContext;
+export 'src/context/modal_context.dart' show ModalContext;
+export 'src/context/user_context.dart' show UserContext;
+export 'src/converters/built_in.dart'; // Barrel file, exports are already filtered
+export 'src/converters/combine.dart' show CombineConverter;
+export 'src/converters/converter.dart' show Converter, registerDefaultConverters, parse;
+export 'src/converters/fallback.dart' show FallbackConverter;
+export 'src/converters/simple.dart' show SimpleConverter;
 export 'src/errors.dart'
     show
         AutocompleteFailedException,
@@ -85,15 +61,24 @@ export 'src/errors.dart'
         CommandRegistrationError,
         CommandsError,
         CommandsException,
+        ContextualException,
+        ConverterFailedException,
+        InteractionTimeoutException,
         NoConverterException,
         NotEnoughArgumentsException,
         ParsingException,
-        UncaughtException;
+        UncaughtCommandsException,
+        UncaughtException,
+        UnhandledInteractionException;
+export 'src/event_manager.dart' show EventManager;
+export 'src/mirror_utils/mirror_utils.dart' show RuntimeType;
 export 'src/options.dart' show CommandsOptions;
 export 'src/util/util.dart'
     show
         Autocomplete,
         Choices,
+        ComponentId,
+        ComponentIdStatus,
         Description,
         Name,
         UseConverter,

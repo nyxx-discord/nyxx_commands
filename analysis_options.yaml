@@ -9,5 +9,4 @@ analyzer:
   exclude: [build/**, "*.g.dart"]
   language:
     strict-raw-types: true
-  strong-mode:
-    implicit-casts: false
+    strict-casts: false

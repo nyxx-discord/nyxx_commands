@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
 
-import '../context/context.dart';
+import '../context/base.dart';
 import 'checks.dart';
 
 /// An enum that represents the different ways to sort contexts into buckets.
 ///
-/// Coolown types can be combined with the binary OR operator (`|`). For details on how this affects
+/// Cooldown types can be combined with the binary OR operator (`|`). For details on how this affects
 /// how contexts are sorted into buckets, see [CooldownCheck.getKey].
 ///
 /// You might also be interested in:
@@ -45,7 +45,7 @@ class CooldownType extends IEnum<int> {
 
   /// Create a new [CooldownType].
   ///
-  /// Using a [value] other than the predefined ones will not result in any new behaviour, so using
+  /// Using a [value] other than the predefined ones will not result in any new behavior, so using
   /// this constructor is discouraged.
   const CooldownType(int value) : super(value);
 
@@ -156,7 +156,7 @@ class CooldownCheck extends AbstractCheck {
   ///
   /// [tokensPer] is optional and defaults to one, meaning a bucket can execute one before it is
   /// considered "on cooldown" for a given bucket.
-  CooldownCheck(this.type, this.duration, [this.tokensPer = 1, String? name])
+  CooldownCheck(this.type, this.duration, {this.tokensPer = 1, String? name})
       : super(name ?? 'Cooldown Check on $type');
 
   /// The number of times a bucket can execute commands before this check fails.
@@ -174,7 +174,7 @@ class CooldownCheck extends AbstractCheck {
   late DateTime _currentStart = DateTime.now();
 
   @override
-  FutureOr<bool> check(IContext context) {
+  FutureOr<bool> check(ICommandContextData context) {
     if (DateTime.now().isAfter(_currentStart.add(duration))) {
       _previousBucket = _currentBucket;
       _currentBucket = {};
@@ -215,7 +215,7 @@ class CooldownCheck extends AbstractCheck {
   ///
   /// You might also be interested in:
   /// - [type], which determines which values from [context] are combined to create a key.
-  int getKey(IContext context) {
+  int getKey(ICommandContextData context) {
     List<int> keys = [];
 
     if (CooldownType.applies(type, CooldownType.category)) {
@@ -267,7 +267,7 @@ class CooldownCheck extends AbstractCheck {
   ///
   /// You might also be interested in:
   /// - [getKey], for getting the ID of the bucket the context was sorted into.
-  Duration remaining(IContext context) {
+  Duration remaining(ICommandContextData context) {
     if (check(context) as bool) {
       return Duration.zero;
     }
@@ -291,7 +291,7 @@ class CooldownCheck extends AbstractCheck {
   }
 
   @override
-  late Iterable<void Function(IContext)> preCallHooks = [
+  late Iterable<void Function(ICommandContextData)> preCallHooks = [
     (context) {
       int key = getKey(context);
 
@@ -306,7 +306,7 @@ class CooldownCheck extends AbstractCheck {
   ];
 
   @override
-  Iterable<void Function(IContext p1)> get postCallHooks => [];
+  Iterable<void Function(ICommandContextData p1)> get postCallHooks => [];
 
   @override
   bool get allowsDm => true;

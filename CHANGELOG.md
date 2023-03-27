@@ -1,3 +1,110 @@
+## 5.0.0
+__Breaking changes__
+- Removed all deprecated APIs.
+- APIs which used to take `Type` objects now take `RuntimeType`s for the relevant type.
+- APIs which used to take the `customId` of a component now take a `ComponentId`.
+- Context types have been reorganized. See the docs for `IContextData`, `ICommandContext` and `IInteractiveContext` for more.
+- Converter & check APIs now take `IContextData` objects instead of `IContext` objects.
+- Checks now use named parameters instead of positional ones in their constructors.
+- `IInteractiveContext.respond` (formerly `IContext.respond`) now takes a `ResponseLevel` object instead of `private` and `hidden`.
+- The `interactions` field on `CommandsPlugin` is now nullable to avoid a `late` modifier. Use `IContextData.interactions` instead for a non nullable field.
+
+__New features__
+- Contexts are now managed by a `ContextManager` which allows users to create their own contexts.
+- Added support for modal helpers. See `IInteractionInteractiveContext.getModal` for more.
+- Added new errors: `ConverterFailedException`, `InteractionTimeoutException`, `UncaughtCommandsException` and `UnhandledInteractionException`.
+- Events & listeners are now handled by an `EventManager` and `ComponentId`s.
+- Prefix callbacks can now be asynchronous and return any `Pattern`.
+- Added `autoAcknowledgeDuration` for more control over auto-acknowledge.
+- Added parsing utilities on `AutocompleteContext` for parsing arguments.
+- Contexts in a command are now chained, so interaction expiry and inconsistent formatting of responses to commands are no longer an issue. See `IInteractiveContext.delegate` for more.
+- Added many helpers for handling message components:
+  - `awaitButtonPress`, `awaitSelection` and `awaitMultiSelection` for using fully custom components with nyxx_commands;
+  - `getButtonPress`, `getButtonSelection` and `getConfirmation` for handling buttons;
+  - `getSelection` and `getMultiSelection` for handling multiselect menus.
+- Added `SimpleConverter` to simplify creating custom converters.
+- The prefix callback can now be set to null to disable message commands. This will change the default command type to `slashOnly` unless `CommandsOptions.inferDefaultCommandType` is set to `false`.
+- Added `skipPattern` to `StringView`, similar to `skipString`.
+
+__Bug fixes__
+- Fixed a bug that prevented `part` files from being compiled.
+- Fixed a bug that prevented enum parameters from being compiled.
+- Fixed nested command `fullName`s not being correct.
+
+__Miscellaneous__
+- Optimized the compilation script to generate less code and use a more reliable subtype checking method.
+- Instructions for compilation can now be found at the package README.
+- Bump `nyxx` to 5.0.0 and `nyxx_interactions` to 4.6.0.
+
+## 5.0.0-dev.3
+__Bug fixes__
+- Fixed a bug which caused `IInteractiveContext.respond` to error after auto-acknowledge.
+- Fixed a bug where `getSelection` and `getMultiSelection` would result in an "Interaction failed" error, despite the response being sent.
+- Fixed a bug that caused a late initialization error to occur if an error occurred in `respond`.
+- Fixed `getSelection` sending a new message for different pages instead of editing the same message.
+
+## 5.0.0-dev.2
+__Breaking changes__
+- The `DartType` class introduced in 5.0.0-dev.0 has been replaced with `RuntimeType` from [`package:runtime_type`](https://pub.dev/packages/runtime_type).
+- All errors thrown by command callbacks are now caught instead of only subclasses of `Exception`. The relevant fields on `UncaughtException` and `AutocompleteFailedException` have therefore been changed from `Exception` to `Object`.
+- APIs that took a combination of user, timeout and component id have been changed to use the new `ComponentId` class.
+
+__New features__
+- Errors will now be added to `CommandsPlugin.onCommandError` when a message component created by nyxx_commands enters an invalid state (e.g no handler found or the user was not allowed to use the component). See the docs for `UnhandledInteractionException` for more.
+- Added `ComponentId` as a way for nyxx_commands to generate an ID for message components that contains information about the component's state in nyxx_commands.
+- Added a new `InteractionTimeoutException` thrown when an interaction times out instead of Dart's `TimeoutException`.
+- Added a `stackTrace` getter to all `CommandsExceptions`.
+
+__Bug fixes__
+- Fixed an issue where enum values in annotations caused the compiler to crash.
+
+__Miscellaneous__
+- Added documentation with instructions on how to compile nyxx_commands to the README.
+- Correctly export `ContextManager`.
+- Changed the log message for uncaught exceptions. The message no longer contains the error description, instead passing the error object through the log record's error field. Versions of nyxx after 4.5.0 contain a `Logging` plugin that will display this error for you.
+
+## 5.0.0-dev.1
+__Breaking changes__:
+- `CommandsPlugin` has been made more type safe, making the `interactions` field nullable. To use the `IInteractions` instance from your commands, see `IContextData.interactions`. `client` has also been changed to be read-only.
+
+__New features__:
+- A helper for using modals has been added. See `IInteractionInteractiveContext.getModal` for more.
+- `getSelection` and `getMultiSelection` from `IInteractiveContext` can now be used without a converter, using the `toMultiSelect` parameter.
+- Failed converters now throw a `ConverterFailedException` instead of a `BadInputException`.
+- `SimpleConverter.provider` can now be async.
+
+__Bug fixes__:
+- `IChatCommandComponent.fullName` now correctly returns the full command name.
+- Responding to a component context now correctly clears components on the message.
+
+__Miscellaneous__:
+- `package:analyzer` has been bumped to 5.0.0.
+- A few elements that were previously unexported are now correctly exported.
+
+## 5.0.0-dev.0
+__Breaking changes__:
+- `ChatCommand.type` has been moved to `CommandOptions`. Use `ChatCommand(options: CommandOptions(type: ...))` instead  of `ChatCommand(type: ...)` to set a commands type. With this change, the `textOnly` and `slashOnly` constructors have been removed from `ChatCommand`.
+- `Converter`s no longer take an `IContext` as a parameter but now take an `ICommandContextData`.
+- Some of the arguments in `Check` constructors have been changed from positional to named arguments.
+- All deprecated fields have been removed.
+- `IInteractiveContext.respond` (previously `IContext.respond`) now takes a `ResponseLevel` instead of the context-type-specific named parameters. See `ResponseLevel` for more.
+- All uses of `Type`s in the package have been replaced with `DartType`s. This wrapper class allows for sound type safety and simplifies compilation. Notable places this change has an effect are in `CommandsPlugin.getConverter` and `NoConverterException.type`.
+- The old component wrappers have been replaced with newer, more versatile methods.
+
+__New features__:
+- The `prefix` function used to determine the prefix for a given text message can now return a `Pattern` and be asynchronous. This allows the use of `RegExp`s to determine command prefixes.
+- `CommandsPlugin.contextManager` can be used to create your own contexts from raw events.
+- `SimpleConverter` is a new `Converter` that simplifies the creation of custom converters. Providing a function to generate items and a function to stringify each item will create a converter with support for basic conversion, autocompletion and more.
+- The prefix is now nullable in the `CommandsPlugin` constructor. Setting it to `null` will make the default command type automatically be `slashOnly` if `CommandsOptions.inferDefaultCommandType` is `true`.
+- Commands will now respond to the latest interaction instead of the original interaction if the component wrappers on `IInteractiveContext` are used. See `IInteractiveContext.delegate` for more.
+- `CommandOptions.preserveComponentMessages` can be used to choose whether Message Component responses should overwrite the message.
+- `CommandOptions.autoAcknowledgeDuration` can be used to manually set the auto-acknowledge timeout.
+- `CommandOptions.caseInsensitiveCommands` can be used to allow commands to be invoked case-insensitively.
+- `AutocompleteContext` has new methods for parsing values in the autocompletion event.
+
+__Bug fixes__:
+- Returning `null` in an autocomplete handler no longer displays an error in the Discord UI.
+
 ## 4.4.1
 __Bug fixes__:
 - Fix `part` directives breaking compilation.
@@ -23,7 +130,7 @@ __New features__:
 - Added a script which allows `nyxx_commands` to be compiled. For more information, run `dart pub global activate nyxx_commands` and `nyxx-compile --help`.
 - Implemented support for permissions V2. See `PermissionsCheck` for more.
 
-__Deprecaations__:
+__Deprecations__:
 - Deprecated `AbstractCheck.permissions` and all associated features.
 
 ## 4.2.0-dev.1
@@ -35,7 +142,7 @@ __Deprecations__:
 - Deprecated `AbstractCheck.permissions` and all associated features.
 
 __New features__:
-- Added `AbtractCheck.allowsDm` and `AbstractCheck.requiredPermissions` for integrating checks with permissions v2.
+- Added `AbstractCheck.allowsDm` and `AbstractCheck.requiredPermissions` for integrating checks with permissions v2.
 - Updated `Check.deny`, `Check.any` and `Check.all` to work with permissions v2.
 - Added `PermissionsCheck`, for checking if users have a specific permission.
 
@@ -61,7 +168,7 @@ __New features__:
 - Added `GUildChannelConverter` for converting more specific types of guild channels.
 
 __Bug fixes__:
-- Fixed an issue with `IContext.getButtonPress` not behaving correectly when `authorOnly` or `timeout` was specified.
+- Fixed an issue with `IContext.getButtonPress` not behaving correctly when `authorOnly` or `timeout` was specified.
 - Fixed the default converters for guild channels accepting all channels in the Discord UI even if they were not the correct type.
 
 __Miscellaneous__:
@@ -98,7 +205,7 @@ __Breaking changes__:
 
 __Bug fixes__
 - Fix `UserCommandCheck` always failing.
-- Fix parsing muultiple arguments at once leading to race conditions.
+- Fix parsing multiple arguments at once leading to race conditions.
 - Fix a casting error that occurred when a text command was not found.
 
 __Documentation__:
@@ -106,7 +213,7 @@ __Documentation__:
 
 __New features__:
 - Added support for the `attachment` command option type. Use `IAttachment` (from `nyxx_interactions`) as the argument type in your commands callback for `nyxx_commands` to register it as an attachment command option.
-- Added `IInteractionContext`, an interface implemented by all contexts originating from intetractions.
+- Added `IInteractionContext`, an interface implemented by all contexts originating from interactions.
 
 ## 4.0.0-dev.1.2
 __Bug fixes__:
@@ -119,7 +226,7 @@ __Bug fixes__:
 ## 4.0.0-dev.1
 __New features__:
 - Export the command types for better typing. See the documentation for `ICallHooked`, `IChatCommandComponent`, `IChecked`, `ICommand`, `ICommandGroup`, `ICommandRegisterable` and `IOptions` for more information.
-- Add new checks for allowing certain checks to be bypassed by certain command types. See the documentation for `ChatCommandCheck`, `InteractionCommandCheck`, `InterationChatCommandCheck`, `MessageChatCommandCheck`, `MessageCommandCheck` and `UserCommandCheck` for more info.
+- Add new checks for allowing certain checks to be bypassed by certain command types. See the documentation for `ChatCommandCheck`, `InteractionCommandCheck`, `InteractionChatCommandCheck`, `MessageChatCommandCheck`, `MessageCommandCheck` and `UserCommandCheck` for more info.
 - Export `registerDefaultConverters` and `parse` for users wanting to implement their own commands plugin.
 
 ## 4.0.0-dev.0
@@ -132,8 +239,8 @@ __Breaking changes__:
 If you find any more breaking changes please notify us on the official nyxx Discord server, or open an issue on GitHub.
 
 __New features__:
-- Support for User Application Commands has been addded. They can be created through the `UserCommand` class similarly to `ChatCommand`s, and must be added with `CommandsPlugin.addCommand()` as `ChatCommand`s are.
-- Support for Message Application Commands has been addded. They can be created through the `MessageCommand` class similarly to `ChatCommand`s, and must be added with `CommandsPlugin.addCommand()` as `ChatCommand`s are.
+- Support for User Application Commands has been added. They can be created through the `UserCommand` class similarly to `ChatCommand`s, and must be added with `CommandsPlugin.addCommand()` as `ChatCommand`s are.
+- Support for Message Application Commands has been added. They can be created through the `MessageCommand` class similarly to `ChatCommand`s, and must be added with `CommandsPlugin.addCommand()` as `ChatCommand`s are.
 - Better support for command configuration has been added. Users can now specify options to apply only to specific commands through the `options` parameter in all command constructors with the new `CommandOptions` class. Similarly to checks, these options are inherited but can be overridden by children.
 - Added a few simple functions for easier interaction with `nyxx_interactions` covering common use cases for interactions.
 
@@ -168,7 +275,7 @@ __New features__:
 - Added a new `hideOriginalResponse` option to `CommandsOptions` that allows you to hide the automatic acknowledgement of interactions with `autoAcknowledgeInteractions`.
 - Added a new `acknowledge` method to `InteractionContext` that allows you to override `hideOriginalResponse`.
 - Added a new `hideOriginalResponse` parameter to `Command` constructors that allows you to override `CommandsOptions.hideOriginalResponse` on a per-command basis.
-- Added a new `hidden` parameter to `InteractionContext.respond` that allows you to send an ephemeral response. The hidden state of the response sent is guaranteed to match the `hidden` parameter, however to avoid strange behaviour it is recommended to acknowledge the interaction with `InteractionContext.acknowledge` if the response is delayed.
+- Added a new `hidden` parameter to `InteractionContext.respond` that allows you to send an ephemeral response. The hidden state of the response sent is guaranteed to match the `hidden` parameter, however to avoid strange behavior it is recommended to acknowledge the interaction with `InteractionContext.acknowledge` if the response is delayed.
 - Added a new `mention` parameter to `MessageContext.respond` that allows you to specify whether the reply to the command should mention the user or not.
 - Added a new `UseConverter` decorator that allows you to override the converter used to parse a specific argument.
 - Added converters for `double`s and `Mentionable`s.
@@ -180,14 +287,14 @@ __Miscellaneous__:
 - Argument parsing is now done in parallel, making commands with multiple arguments faster to invoke.
 
 __Deprecations__:
-- Setting the Discord slash command option type to use for a Dart `Type` via the `discordTypes` map is now deprecated. Use the `type` parameter in converter consutrctors instead.
+- Setting the Discord slash command option type to use for a Dart `Type` via the `discordTypes` map is now deprecated. Use the `type` parameter in converter constructors instead.
 - `Context.send` is now deprecated as `Context.respond` is more appropriate for most cases. If `Context.send` was really what you wanted, use `Context.channel.sendMessage` instead.
 
 ## 3.0.0
 __Breaking changes__:
 - The base `Bot` class has been replaced with a `CommandsPlugin` class that can be used as a plugin with nyxx `3.0.0`.
 - `nyxx` and `nyxx_interactions` dependencies have been bumped to `3.0.0`; versions `2.x` are now unsupported.
-- `BotOptions` has been renamed to `CommandsOptions` and no longer supports the options found in `ClientOptions`. Create two seperate instances and pass them to `NyxxFactory.createNyxx...` and `CommandsPlugin` respectively, in the `options` named parameter.
+- `BotOptions` has been renamed to `CommandsOptions` and no longer supports the options found in `ClientOptions`. Create two separate instances and pass them to `NyxxFactory.createNyxx...` and `CommandsPlugin` respectively, in the `options` named parameter.
 - The `bot` field on `Context` has been replaced with a `client` field pointing to the `INyxx` instance and a `commands` field pointing to the `CommandsPlugin` instance.
 
 ## 2.0.0
@@ -198,7 +305,7 @@ __New features__:
 - A new `acceptBotCommands` option has been added to `BotOptions` to allow executing commands from messages sent by other bot users.
 - A new `acceptSelfCommands` options has been added to `BotOptions` to allow executing commands from messages sent by the bot itself.
 - `onPreCall` and `onPostCall` streams on `Commands` and  `Groups` can be used to register pre- and post- call hooks.
-- `AbstractCheck` class can be exetended to implement stateful checks.
+- `AbstractCheck` class can be extended to implement stateful checks.
 - `CooldownCheck` can be used to apply a cooldown to a command based on different criteria.
 - `InteractionCheck` and `MessageCheck` can be used with `Check.any()` to allow slash commands or text commands to bypass other checks.
 - `Check.all()` can be used to group checks.
@@ -215,7 +322,7 @@ __Breaking changes__:
 - Exceptions have been reworked and are no longer named the same.
 
 __New features__:
-- Converters can now specify pre-defined choices for their type, this behaviour can be overridden on a per-command basis with the `@Choices` decorator.
+- Converters can now specify pre-defined choices for their type, this behavior can be overridden on a per-command basis with the `@Choices` decorator.
 - Command arguments can now have custom names with the `@Name` decorator.
 
 ## 0.3.0

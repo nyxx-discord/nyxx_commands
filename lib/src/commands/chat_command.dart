@@ -1,17 +1,3 @@
-//  Copyright 2021 Abitofevrything and others.
-//
-//  Licensed under the Apache License, Version 2.0 (the "License");
-//  you may not use this file except in compliance with the License.
-//  You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-//  Unless required by applicable law or agreed to in writing, software
-//  distributed under the License is distributed on an "AS IS" BASIS,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//  See the License for the specific language governing permissions and
-//  limitations under the License.
-
 import 'dart:async';
 
 import 'package:nyxx_interactions/nyxx_interactions.dart';
@@ -19,7 +5,6 @@ import 'package:nyxx_interactions/nyxx_interactions.dart';
 import '../checks/checks.dart';
 import '../commands.dart';
 import '../context/chat_context.dart';
-import '../context/context.dart';
 import '../converters/converter.dart';
 import '../errors.dart';
 import '../mirror_utils/mirror_utils.dart';
@@ -57,14 +42,6 @@ enum CommandType {
 
   /// Indicates that a [ChatCommand] can be executed by both Slash Commands and text messages.
   all,
-
-  /// Indicates that a [ChatCommand] should use the default type provided by [IOptions.options].
-  ///
-  /// If the default type provided by the options is itself [def], the behaviour is identical to
-  /// [all].
-  // TODO: Instead of having [def], make [ChatCommand.type] be a classical option
-  // ([ChatCommand.options.type]) and have it be inherited.
-  def,
 }
 
 mixin ChatGroupMixin implements IChatCommandComponent {
@@ -123,44 +100,23 @@ mixin ChatGroupMixin implements IChatCommandComponent {
     }
 
     for (final child in children) {
-      yield* child.walkCommands() as Iterable<ChatCommand>;
+      yield* child.walkCommands();
     }
   }
 
   @override
-  ChatCommand? getCommand(StringView view) {
-    String name = view.getWord();
-
-    if (_childrenMap.containsKey(name)) {
-      IChatCommandComponent child = _childrenMap[name]!;
-
-      if (child is ChatCommand && child.resolvedType != CommandType.slashOnly) {
-        ChatCommand? found = child.getCommand(view);
-
-        if (found == null) {
-          return child;
-        }
-
-        return found;
-      } else {
-        return child.getCommand(view) as ChatCommand?;
-      }
-    }
-
-    view.undo();
-    return null;
-  }
+  ChatCommand? getCommand(StringView view) => getCommandHelper(view, _childrenMap);
 
   @override
   String get fullName =>
-      (parent == null || parent is! ICommandRegisterable
+      (parent == null || parent is! IChatCommandComponent
           ? ''
-          : '${(parent as ICommandRegisterable).name} ') +
+          : '${(parent as IChatCommandComponent).fullName} ') +
       name;
 
   @override
   bool get hasSlashCommand => children.any((child) =>
-      (child is ChatCommand && child.resolvedType != CommandType.textOnly) ||
+      (child is ChatCommand && child.resolvedOptions.type != CommandType.textOnly) ||
       child.hasSlashCommand);
 
   @override
@@ -177,7 +133,7 @@ mixin ChatGroupMixin implements IChatCommandComponent {
           localizationsName: child.localizedNames,
           localizationsDescription: child.localizedDescriptions,
         ));
-      } else if (child is ChatCommand && child.resolvedType != CommandType.textOnly) {
+      } else if (child is ChatCommand && child.resolvedOptions.type != CommandType.textOnly) {
         options.add(CommandOptionBuilder(
           CommandOptionType.subCommand,
           child.name,
@@ -195,8 +151,8 @@ mixin ChatGroupMixin implements IChatCommandComponent {
 
 /// Represents a [Subcommand Group](https://discord.com/developers/docs/interactions/application-commands#subcommands-and-subcommand-groups).
 ///
-/// [ChatGroup]s can be used to organise chat commands into groups of similar commands to avoid
-/// filling up a user's UI. Instead, commands are organised into a tree, with only the root of the
+/// [ChatGroup]s can be used to organize chat commands into groups of similar commands to avoid
+/// filling up a user's UI. Instead, commands are organized into a tree, with only the root of the
 /// tree being shown to the user until they select it.
 ///
 /// You might also be interested in:
@@ -293,32 +249,6 @@ class ChatCommand
   @override
   final String description;
 
-  /// The type of this [ChatCommand].
-  ///
-  /// The type of a [ChatCommand] influences how it can be invoked and can be used to make chat
-  /// commands executable only through Slash Commands, or only through text messages.
-  ///
-  /// You might also be interested in:
-  /// - [resolvedType], for getting the resolved type of this command.
-  /// - [ChatCommand.slashOnly], for creating [ChatCommand]s with type [CommandType.slashOnly];
-  /// - [ChatCommand.textOnly], for creating [ChatCommand]s with type [CommandType.textOnly].
-  final CommandType type;
-
-  /// The resolved type of this [ChatCommand].
-  ///
-  /// If [type] is [CommandType.def], this will query the parent of this command for the default
-  /// type. Otherwise, [type] is returned.
-  ///
-  /// If [type] is [CommandType.def] and no parent provides a default type, [CommandType.def] is
-  /// returned.
-  CommandType get resolvedType {
-    if (type != CommandType.def) {
-      return type;
-    }
-
-    return resolvedOptions.defaultCommandType ?? CommandType.def;
-  }
-
   /// The function called to execute this command.
   ///
   /// The argument types for the function are dynamically loaded, so you should specify the types of
@@ -332,9 +262,9 @@ class ChatCommand
   /// [CommandsPlugin.onCommandError], wrapped in an [UncaughtException].
   ///
   /// You might also be interested in:
-  /// - [Name], for explicitely setting an argument's name;
+  /// - [Name], for explicitly setting an argument's name;
   /// - [Description], for adding descriptions to arguments;
-  /// - [Choices], for specifiying the choices for an argument;
+  /// - [Choices], for specifying the choices for an argument;
   /// - [UseConverter], for overriding the [Converter] used for a specific argument.
   @override
   final Function execute;
@@ -352,7 +282,7 @@ class ChatCommand
   final List<AbstractCheck> singleChecks = [];
 
   /// The types of the required and positional arguments of [execute], in the order they appear.
-  final List<Type> argumentTypes = [];
+  final List<RuntimeType<dynamic>> argumentTypes = [];
 
   @override
   final CommandOptions options;
@@ -368,92 +298,14 @@ class ChatCommand
   /// Create a new [ChatCommand].
   ///
   /// You might also be interested in:
-  /// - [ChatCommand.slashOnly], for creating [ChatCommand]s with type [CommandType.slashOnly];
-  /// - [ChatCommand.textOnly], for creating [ChatCommand]s with type [CommandType.textOnly].
+  /// - [MessageCommand], for creating message commands;
+  /// - [UserCommand], for creating user commands;
+  /// - [CommandOptions.type], for changing how a command can be executed.
   ChatCommand(
-    String name,
-    String description,
-    Function execute, {
-    List<String> aliases = const [],
-    CommandType type = CommandType.def,
-    Iterable<IChatCommandComponent> children = const [],
-    Iterable<AbstractCheck> checks = const [],
-    Iterable<AbstractCheck> singleChecks = const [],
-    CommandOptions options = const CommandOptions(),
-    Map<Locale, String>? localizedNames,
-    Map<Locale, String>? localizedDescriptions,
-  }) : this._(
-          name,
-          description,
-          execute,
-          IChatContext,
-          aliases: aliases,
-          type: type,
-          children: children,
-          checks: checks,
-          singleChecks: singleChecks,
-          options: options,
-          localizedNames: localizedNames,
-          localizedDescriptions: localizedDescriptions,
-        );
-
-  /// Create a new [ChatCommand] with type [CommandType.textOnly].
-  ChatCommand.textOnly(
-    String name,
-    String description,
-    Function execute, {
-    List<String> aliases = const [],
-    Iterable<IChatCommandComponent> children = const [],
-    Iterable<AbstractCheck> checks = const [],
-    Iterable<AbstractCheck> singleChecks = const [],
-    CommandOptions options = const CommandOptions(),
-  }) : this._(
-          name,
-          description,
-          execute,
-          MessageChatContext,
-          aliases: aliases,
-          type: CommandType.textOnly,
-          children: children,
-          checks: checks,
-          singleChecks: singleChecks,
-          options: options,
-        );
-
-  /// Create a new [ChatCommand] with type [CommandType.slashOnly].
-  ChatCommand.slashOnly(
-    String name,
-    String description,
-    Function execute, {
-    List<String> aliases = const [],
-    Iterable<IChatCommandComponent> children = const [],
-    Iterable<AbstractCheck> checks = const [],
-    Iterable<AbstractCheck> singleChecks = const [],
-    CommandOptions options = const CommandOptions(),
-    Map<Locale, String>? localizedNames,
-    Map<Locale, String>? localizedDescriptions,
-  }) : this._(
-          name,
-          description,
-          execute,
-          InteractionChatContext,
-          aliases: aliases,
-          type: CommandType.slashOnly,
-          children: children,
-          checks: checks,
-          singleChecks: singleChecks,
-          options: options,
-          localizedNames: localizedNames,
-          localizedDescriptions: localizedDescriptions,
-        );
-
-  ChatCommand._(
     this.name,
     this.description,
-    this.execute,
-    Type contextType, {
+    this.execute, {
     this.aliases = const [],
-    this.type = CommandType.def,
     Iterable<IChatCommandComponent> children = const [],
     Iterable<AbstractCheck> checks = const [],
     Iterable<AbstractCheck> singleChecks = const [],
@@ -471,6 +323,18 @@ class ChatCommand
       throw CommandRegistrationError('Invalid localized name for command "$name".');
     }
 
+    RuntimeType<IChatContext> contextType;
+    switch (resolvedOptions.type) {
+      case CommandType.textOnly:
+        contextType = const RuntimeType<MessageChatContext>.allowingDynamic();
+        break;
+      case CommandType.slashOnly:
+        contextType = const RuntimeType<InteractionChatContext>.allowingDynamic();
+        break;
+      default:
+        contextType = const RuntimeType<IChatContext>.allowingDynamic();
+    }
+
     _loadArguments(execute, contextType);
 
     for (final child in children) {
@@ -486,14 +350,14 @@ class ChatCommand
     }
   }
 
-  void _loadArguments(Function fn, Type contextType) {
+  void _loadArguments(Function fn, RuntimeType<IChatContext> contextType) {
     _functionData = loadFunctionData(fn);
 
     if (_functionData.parametersData.isEmpty) {
       throw CommandRegistrationError('Command callback function must have a Context parameter');
     }
 
-    if (!isAssignableTo(contextType, _functionData.parametersData.first.type)) {
+    if (!contextType.isSupertypeOf(_functionData.parametersData.first.type)) {
       throw CommandRegistrationError(
           'The first parameter of a command callback must be of type $contextType');
     }
@@ -508,7 +372,7 @@ class ChatCommand
       }
 
       if (parameter.converterOverride != null) {
-        if (!isAssignableTo(parameter.converterOverride!.output, parameter.type)) {
+        if (!parameter.type.isSupertypeOf(parameter.converterOverride!.output)) {
           throw CommandRegistrationError('Invalid converter override');
         }
       }
@@ -518,11 +382,7 @@ class ChatCommand
   }
 
   @override
-  Future<void> invoke(IContext context) async {
-    if (context is! IChatContext) {
-      return;
-    }
-
+  Future<void> invoke(IChatContext context) async {
     List<dynamic> arguments = [];
 
     if (context is MessageChatContext) {
@@ -557,11 +417,6 @@ class ChatCommand
 
         dynamic rawArgument = context.rawArguments[kebabCaseName]!;
 
-        if (isAssignableTo(rawArgument.runtimeType, parameter.type)) {
-          arguments.add(rawArgument);
-          continue;
-        }
-
         arguments.add(await parse(
           context.commands,
           context,
@@ -584,8 +439,8 @@ class ChatCommand
 
     try {
       await Function.apply(execute, [context, ...context.arguments]);
-    } on Exception catch (e) {
-      throw UncaughtException(e, context);
+    } catch (e, s) {
+      Error.throwWithStackTrace(UncaughtException(e, context)..stackTrace = s, s);
     }
 
     _onPostCallController.add(context);
@@ -593,7 +448,7 @@ class ChatCommand
 
   @override
   Iterable<CommandOptionBuilder> getOptions(CommandsPlugin commands) {
-    if (resolvedType != CommandType.textOnly) {
+    if (resolvedOptions.type != CommandType.textOnly) {
       List<CommandOptionBuilder> options = [];
 
       for (final parameter in _functionData.parametersData.skip(1)) {
@@ -634,9 +489,9 @@ class ChatCommand
           'All child commands of chat groups or commands must implement IChatCommandComponent');
     }
 
-    if (resolvedType != CommandType.textOnly) {
+    if (resolvedOptions.type != CommandType.textOnly) {
       if (command.hasSlashCommand ||
-          (command is ChatCommand && command.resolvedType != CommandType.textOnly)) {
+          (command is ChatCommand && command.resolvedOptions.type != CommandType.textOnly)) {
         throw CommandRegistrationError('Cannot nest Slash commands!');
       }
     }

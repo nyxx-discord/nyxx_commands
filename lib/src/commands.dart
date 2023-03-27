@@ -1,22 +1,9 @@
-//  Copyright 2021 Abitofevrything and others.
-//
-//  Licensed under the Apache License, Version 2.0 (the "License");
-//  you may not use this file except in compliance with the License.
-//  You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-//  Unless required by applicable law or agreed to in writing, software
-//  distributed under the License is distributed on an "AS IS" BASIS,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//  See the License for the specific language governing permissions and
-//  limitations under the License.
-
 import 'dart:async';
 
 import 'package:logging/logging.dart';
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
+import 'package:runtime_type/runtime_type.dart';
 
 import 'checks/checks.dart';
 import 'checks/guild.dart';
@@ -24,13 +11,14 @@ import 'commands/chat_command.dart';
 import 'commands/interfaces.dart';
 import 'commands/message_command.dart';
 import 'commands/user_command.dart';
-import 'context/chat_context.dart';
 import 'context/autocomplete_context.dart';
-import 'context/context.dart';
-import 'context/message_context.dart';
-import 'context/user_context.dart';
+import 'context/base.dart';
+import 'context/context_manager.dart';
+import 'converters/combine.dart';
 import 'converters/converter.dart';
+import 'converters/fallback.dart';
 import 'errors.dart';
+import 'event_manager.dart';
 import 'mirror_utils/mirror_utils.dart';
 import 'options.dart';
 import 'util/util.dart';
@@ -42,7 +30,7 @@ final Logger logger = Logger('Commands');
 ///
 /// Since nyxx 3.0.0, classes can extend [BasePlugin] and be registered as plugins to an existing
 /// nyxx client by calling [INyxx.registerPlugin]. nyxx_commands uses that interface, which avoids
-/// the need for a seperate wrapper class.
+/// the need for a separate wrapper class.
 ///
 /// Commands can be added to nyxx_commands with the [addCommand] method. Once you've added the
 /// [CommandsPlugin] to your nyxx client, these commands will automatically become available once
@@ -74,10 +62,13 @@ final Logger logger = Logger('Commands');
 /// - [addCommand], for adding commands to your bot;
 /// - [check], for adding checks to your bot;
 /// - [MessageCommand] and [UserCommand], for creating Message and User Commands respectively.
-class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
+class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext> {
   /// A function called to determine the prefix for a specific message.
   ///
-  /// This function should return a [String] representing the prefix to use for a given message.
+  /// This function should return a [Pattern] that should match the start of the message content if
+  /// it begins with the prefix.
+  ///
+  /// If this function is `null`, message commands are disabled.
   ///
   /// For example, for a prefix of `!`:
   /// ```dart
@@ -86,18 +77,18 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
   ///
   /// Or, for either `!` or `$` as a prefix:
   /// ```dart
-  /// (message) => message.content.startsWith('!') ? '!' : '$'
+  /// (_) => RegExp(r'!|\$')
   /// ```
   ///
   /// You might also be interested in:
   /// - [dmOr], which allows for commands in private messages to omit the prefix;
   /// - [mentionOr], which allows for commands to be executed with the client's mention (ping).
-  final String Function(IMessage) prefix;
+  final FutureOr<Pattern> Function(IMessage)? prefix;
 
   final StreamController<CommandsException> _onCommandErrorController =
       StreamController.broadcast();
-  final StreamController<IContext> _onPreCallController = StreamController.broadcast();
-  final StreamController<IContext> _onPostCallController = StreamController.broadcast();
+  final StreamController<ICommandContext> _onPreCallController = StreamController.broadcast();
+  final StreamController<ICommandContext> _onPostCallController = StreamController.broadcast();
 
   /// A stream of [CommandsException]s that occur during a command's execution.
   ///
@@ -111,22 +102,22 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
   /// Exceptions thrown from within a command will be wrapped in an [UncaughtException], allowing
   /// you to access the context in which a command was thrown.
   ///
-  /// By default, nyxx_commands logs all exceptions added to this stream. This behaviour can be
+  /// By default, nyxx_commands logs all exceptions added to this stream. This behavior can be
   /// changed in [options].
   ///
   /// You might also be interested in:
   /// - [CommandsException], the class all exceptions in nyxx_commands subclass;
-  /// - [ICallHooked.onPostCall], a stream that emits [IContext]s once a command completes
+  /// - [ICallHooked.onPostCall], a stream that emits [ICommandContext]s once a command completes
   /// successfully.
   late final Stream<CommandsException> onCommandError = _onCommandErrorController.stream;
 
   @override
-  late final Stream<IContext> onPreCall = _onPreCallController.stream;
+  late final Stream<ICommandContext> onPreCall = _onPreCallController.stream;
 
   @override
-  late final Stream<IContext> onPostCall = _onPostCallController.stream;
+  late final Stream<ICommandContext> onPostCall = _onPostCallController.stream;
 
-  final Map<Type, Converter<dynamic>> _converters = {};
+  final Map<RuntimeType<dynamic>, Converter<dynamic>> _converters = {};
 
   /// The [IInteractions] instance used by this [CommandsPlugin].
   ///
@@ -136,7 +127,8 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
   /// Because [IInteractions] also allows you to use [Message Components](https://discord.com/developers/docs/interactions/message-components),
   /// developers might need to use this instance of [IInteractions]. It is not recommended to create
   /// your own instance alongside nyxx_commands as that might result in commands being deleted.
-  late final IInteractions interactions;
+  IInteractions? get interactions => _interactions;
+  IInteractions? _interactions;
 
   @override
   final CommandsOptions options;
@@ -158,7 +150,14 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
   ///
   /// You might also be interested in:
   /// - [INyxx.registerPlugin], for adding plugins to clients.
-  INyxx? client;
+  INyxx? get client => _client;
+  INyxx? _client;
+
+  /// The [ContextManager] attached to this [CommandsPlugin].
+  late final ContextManager contextManager = ContextManager(this);
+
+  /// The [EventManager] attached to this [CommandsPlugin].
+  late final EventManager eventManager = EventManager(this);
 
   @override
   final List<AbstractCheck> checks = [];
@@ -183,36 +182,42 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     registerDefaultConverters(this);
 
     if (options.logErrors) {
-      onCommandError.listen((error) {
-        logger
-          ..warning('Uncaught exception in command')
-          ..shout(error);
-      });
+      onCommandError.listen(
+        (error) => logger.shout('Uncaught exception in command', error, error.stackTrace),
+      );
     }
   }
 
   @override
-  void onRegister(INyxx nyxx, Logger logger) async {
-    client = nyxx;
+  Future<void> onRegister(INyxx nyxx, Logger logger) async {
+    _client = nyxx;
 
-    if (nyxx is INyxxWebsocket) {
-      nyxx.eventsWs.onMessageReceived.listen((event) => _processMessage(event.message));
-
-      interactions = IInteractions.create(options.backend ?? WebsocketInteractionBackend(nyxx));
-    } else {
-      logger.warning('Commands was not intended for use without NyxxWebsocket.');
-
+    if (nyxx is! INyxxWebsocket) {
       throw CommandsError(
           'Cannot create the Interactions backend for non-websocket INyxx instances.');
     }
 
     if (nyxx.ready) {
-      await _syncWithInteractions();
-    } else {
-      nyxx.onReady.listen((event) async {
-        await _syncWithInteractions();
-      });
+      await onBotStart(nyxx, logger);
     }
+  }
+
+  @override
+  Future<void> onBotStart(INyxx nyxx, Logger logger) async {
+    nyxx = nyxx as INyxxWebsocket;
+    _interactions = IInteractions.create(options.backend ?? WebsocketInteractionBackend(nyxx));
+
+    if (prefix != null) {
+      nyxx.eventsWs.onMessageReceived.listen(_handleErrorsFrom(
+        (event) => eventManager.processMessage(event.message),
+      ));
+    }
+
+    _interactions!.events.onButtonEvent.listen(_handleErrorsFrom(eventManager.processButtonEvent));
+    _interactions!.events.onMultiselectEvent
+        .listen(_handleErrorsFrom(eventManager.processMultiselectEvent));
+
+    await _syncWithInteractions();
   }
 
   @override
@@ -220,304 +225,33 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     await _onPostCallController.close();
     await _onPreCallController.close();
     await _onCommandErrorController.close();
+
+    _interactions = null;
+    _client = null;
   }
 
   Future<void> _syncWithInteractions() async {
     for (final builder in await _getSlashBuilders()) {
-      interactions.registerSlashCommand(builder);
+      interactions!.registerSlashCommand(builder);
     }
 
-    interactions.sync(
-        syncRule: ManualCommandSync(sync: client?.options.shardIds?.contains(0) ?? true));
+    interactions!
+        .sync(syncRule: ManualCommandSync(sync: client!.options.shardIds?.contains(0) ?? true));
   }
 
-  Future<void> _processMessage(IMessage message) async {
-    try {
-      String prefix = this.prefix(message);
-      StringView view = StringView(message.content);
-
-      if (view.skipString(prefix)) {
-        IChatContext context = await _messageChatContext(message, view, prefix);
-
-        if (message.author.bot && !context.command.resolvedOptions.acceptBotCommands!) {
-          return;
-        }
-
-        if (message.author.id == (client as INyxxRest).self.id &&
-            !context.command.resolvedOptions.acceptSelfCommands!) {
-          return;
-        }
-
-        logger.fine('Invoking command ${context.command.name} from message $message');
-
-        await context.command.invoke(context);
-      }
-    } on CommandsException catch (e) {
-      _onCommandErrorController.add(e);
-    }
+  void _handleError(CommandsException error, StackTrace stackTrace) {
+    error.stackTrace ??= stackTrace;
+    _onCommandErrorController.add(error);
   }
 
-  Future<void> _processChatInteraction(
-    ISlashCommandInteractionEvent interactionEvent,
-    ChatCommand command,
-  ) async {
-    try {
-      IChatContext context = await _interactionChatContext(interactionEvent, command);
-
-      if (context.command.resolvedOptions.autoAcknowledgeInteractions!) {
-        Duration latency = Duration.zero;
-        if (client is INyxxWebsocket) {
-          latency = (client as INyxxWebsocket).shardManager.gatewayLatency;
-        }
-
-        Duration timeout = Duration(seconds: 3) - latency * 2;
-
-        Timer(timeout, () async {
-          try {
-            await interactionEvent.acknowledge(
-              hidden: context.command.resolvedOptions.hideOriginalResponse!,
-            );
-          } on AlreadyRespondedError {
-            // ignore: command has responded itself
-          }
-        });
-      }
-
-      logger.fine('Invoking command ${context.command.name} '
-          'from interaction ${interactionEvent.interaction.token}');
-
-      await context.command.invoke(context);
-    } on CommandsException catch (e) {
-      _onCommandErrorController.add(e);
-    }
-  }
-
-  Future<void> _processUserInteraction(
-      ISlashCommandInteractionEvent interactionEvent, UserCommand command) async {
-    try {
-      UserContext context = await _interactionUserContext(interactionEvent, command);
-
-      if (options.autoAcknowledgeInteractions) {
-        Timer(Duration(seconds: 2), () async {
-          try {
-            await interactionEvent.acknowledge(
-              hidden: options.hideOriginalResponse,
-            );
-          } on AlreadyRespondedError {
-            // ignore: command has responded itself
-          }
-        });
-      }
-
-      logger.fine('Invoking command ${context.command.name} '
-          'from interaction ${interactionEvent.interaction.token}');
-
-      await context.command.invoke(context);
-    } on CommandsException catch (e) {
-      _onCommandErrorController.add(e);
-    }
-  }
-
-  Future<void> _processMessageInteraction(
-      ISlashCommandInteractionEvent interactionEvent, MessageCommand command) async {
-    try {
-      MessageContext context = await _interactionMessageContext(interactionEvent, command);
-
-      if (options.autoAcknowledgeInteractions) {
-        Timer(Duration(seconds: 2), () async {
-          try {
-            await interactionEvent.acknowledge(
-              hidden: options.hideOriginalResponse,
-            );
-          } on AlreadyRespondedError {
-            // ignore: command has responded itself
-          }
-        });
-      }
-
-      logger.fine('Invoking command ${context.command.name} '
-          'from interaction ${interactionEvent.interaction.token}');
-
-      await context.command.invoke(context);
-    } on CommandsException catch (e) {
-      _onCommandErrorController.add(e);
-    }
-  }
-
-  Future<void> _processAutocompleteInteraction(
-    IAutocompleteInteractionEvent interactionEvent,
-    FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext) callback,
-    ChatCommand command,
-  ) async {
-    try {
-      AutocompleteContext context = await _autocompleteContext(interactionEvent, command);
-
+  Future<void> Function(T) _handleErrorsFrom<T>(Future<void> Function(T) fn) {
+    return (arg) async {
       try {
-        Iterable<ArgChoiceBuilder>? choices = await callback(context);
-
-        if (choices != null) {
-          interactionEvent.respond(choices.toList());
-        }
-      } on Exception catch (e) {
-        throw AutocompleteFailedException(e, context);
+        await fn(arg);
+      } on CommandsException catch (e, s) {
+        _handleError(e, s);
       }
-    } on CommandsException catch (e) {
-      _onCommandErrorController.add(e);
-    }
-  }
-
-  Future<IChatContext> _messageChatContext(
-      IMessage message, StringView contentView, String prefix) async {
-    ChatCommand command = getCommand(contentView) ?? (throw CommandNotFoundException(contentView));
-
-    ITextChannel channel = await message.channel.getOrDownload();
-
-    IGuild? guild;
-    IMember? member;
-    IUser user;
-    if (message.guild != null) {
-      guild = await message.guild!.getOrDownload();
-
-      member = message.member;
-      user = await member!.user.getOrDownload();
-    } else {
-      user = message.author as IUser;
-    }
-
-    return MessageChatContext(
-      commands: this,
-      guild: guild,
-      channel: channel,
-      member: member,
-      user: user,
-      command: command,
-      client: client!,
-      prefix: prefix,
-      message: message,
-      rawArguments: contentView.remaining,
-    );
-  }
-
-  Future<IChatContext> _interactionChatContext(
-      ISlashCommandInteractionEvent interactionEvent, ChatCommand command) async {
-    ISlashCommandInteraction interaction = interactionEvent.interaction;
-
-    IMember? member = interaction.memberAuthor;
-    IUser user;
-    if (member != null) {
-      user = await member.user.getOrDownload();
-    } else {
-      user = interaction.userAuthor!;
-    }
-
-    Map<String, dynamic> rawArguments = <String, dynamic>{};
-
-    for (final option in interactionEvent.args) {
-      rawArguments[option.name] = option.value;
-    }
-
-    return InteractionChatContext(
-      commands: this,
-      guild: await interaction.guild?.getOrDownload(),
-      channel: await interaction.channel.getOrDownload(),
-      member: member,
-      user: user,
-      command: command,
-      client: client!,
-      interaction: interaction,
-      rawArguments: rawArguments,
-      interactionEvent: interactionEvent,
-    );
-  }
-
-  Future<UserContext> _interactionUserContext(
-      ISlashCommandInteractionEvent interactionEvent, UserCommand command) async {
-    ISlashCommandInteraction interaction = interactionEvent.interaction;
-
-    IMember? member = interaction.memberAuthor;
-    IUser user;
-    if (member != null) {
-      user = await member.user.getOrDownload();
-    } else {
-      user = interaction.userAuthor!;
-    }
-
-    IUser targetUser = client!.users[interaction.targetId] ??
-        await client!.httpEndpoints.fetchUser(interaction.targetId!);
-
-    IGuild? guild = await interaction.guild?.getOrDownload();
-
-    return UserContext(
-      commands: this,
-      client: client!,
-      interactionEvent: interactionEvent,
-      interaction: interaction,
-      command: command,
-      channel: await interaction.channel.getOrDownload(),
-      member: member,
-      user: user,
-      guild: guild,
-      targetUser: targetUser,
-      targetMember: guild?.members[targetUser.id] ?? await guild?.fetchMember(targetUser.id),
-    );
-  }
-
-  Future<MessageContext> _interactionMessageContext(
-      ISlashCommandInteractionEvent interactionEvent, MessageCommand command) async {
-    ISlashCommandInteraction interaction = interactionEvent.interaction;
-
-    IMember? member = interaction.memberAuthor;
-    IUser user;
-    if (member != null) {
-      user = await member.user.getOrDownload();
-    } else {
-      user = interaction.userAuthor!;
-    }
-
-    IGuild? guild = await interaction.guild?.getOrDownload();
-
-    return MessageContext(
-      commands: this,
-      client: client!,
-      interactionEvent: interactionEvent,
-      interaction: interaction,
-      command: command,
-      channel: await interaction.channel.getOrDownload(),
-      member: member,
-      user: user,
-      guild: guild,
-      targetMessage: interaction.channel.getFromCache()!.messageCache[interaction.targetId] ??
-          await interaction.channel.getFromCache()!.fetchMessage(interaction.targetId!),
-    );
-  }
-
-  Future<AutocompleteContext> _autocompleteContext(
-    IAutocompleteInteractionEvent interactionEvent,
-    ChatCommand command,
-  ) async {
-    ISlashCommandInteraction interaction = interactionEvent.interaction;
-
-    IMember? member = interaction.memberAuthor;
-    IUser user;
-    if (member != null) {
-      user = await member.user.getOrDownload();
-    } else {
-      user = interaction.userAuthor!;
-    }
-
-    return AutocompleteContext(
-      commands: this,
-      guild: await interaction.guild?.getOrDownload(),
-      channel: await interaction.channel.getOrDownload(),
-      member: member,
-      user: user,
-      command: command,
-      client: client!,
-      interaction: interaction,
-      interactionEvent: interactionEvent,
-      option: interactionEvent.focusedOption,
-      currentValue: interactionEvent.focusedOption.value.toString(),
-    );
+    };
   }
 
   Future<Iterable<SlashCommandBuilder>> _getSlashBuilders() async {
@@ -554,8 +288,10 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
             localizationsDescription: command.localizedDescriptions,
           );
 
-          if (command is ChatCommand && command.resolvedType != CommandType.textOnly) {
-            builder.registerHandler((interaction) => _processChatInteraction(interaction, command));
+          if (command is ChatCommand && command.resolvedOptions.type != CommandType.textOnly) {
+            builder.registerHandler(_handleErrorsFrom(
+              (interaction) => eventManager.processChatInteraction(interaction, command),
+            ));
 
             _processAutocompleteHandlerRegistration(builder.options, command);
           }
@@ -573,7 +309,10 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
             localizationsName: command.localizedNames,
           );
 
-          builder.registerHandler((interaction) => _processUserInteraction(interaction, command));
+          builder.registerHandler(
+            _handleErrorsFrom(
+                (interaction) => eventManager.processUserInteraction(interaction, command)),
+          );
 
           builders.add(builder);
         } else if (command is MessageCommand) {
@@ -588,8 +327,9 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
             localizationsName: command.localizedNames,
           );
 
-          builder
-              .registerHandler((interaction) => _processMessageInteraction(interaction, command));
+          builder.registerHandler(_handleErrorsFrom(
+            (interaction) => eventManager.processMessageInteraction(interaction, command),
+          ));
 
           builders.add(builder);
         }
@@ -599,13 +339,13 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
     return builders;
   }
 
-  bool _shouldGenerateBuildersFor(ICommandRegisterable<IContext> child) {
+  bool _shouldGenerateBuildersFor(ICommandRegisterable<ICommandContext> child) {
     if (child is IChatCommandComponent) {
       if (child.hasSlashCommand) {
         return true;
       }
 
-      return child is ChatCommand && child.type != CommandType.textOnly;
+      return child is ChatCommand && child.resolvedOptions.type != CommandType.textOnly;
     }
 
     return true;
@@ -620,14 +360,15 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
         ChatCommand command =
             current.children.where((child) => child.name == builder.name).first as ChatCommand;
 
-        builder.registerHandler((interaction) => _processChatInteraction(interaction, command));
+        builder.registerHandler(_handleErrorsFrom(
+          (interaction) => eventManager.processChatInteraction(interaction, command),
+        ));
 
         _processAutocompleteHandlerRegistration(builder.options!, command);
       } else if (builder.type == CommandOptionType.subCommandGroup) {
         _processHandlerRegistration(
           builder.options!,
-          current.children.where((child) => child.name == builder.name).first
-              as IChatCommandComponent,
+          current.children.where((child) => child.name == builder.name).first,
         );
       }
     }
@@ -640,12 +381,12 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
   ) {
     Iterator<CommandOptionBuilder> builderIterator = options.iterator;
 
-    Iterable<ParameterData> parameters = loadFunctionData(command.execute)
+    Iterable<ParameterData<dynamic>> parameters = loadFunctionData(command.execute)
         .parametersData
         // Skip context parameter
         .skip(1);
 
-    Iterator<ParameterData> parameterIterator = parameters.iterator;
+    Iterator<ParameterData<dynamic>> parameterIterator = parameters.iterator;
 
     while (builderIterator.moveNext() && parameterIterator.moveNext()) {
       Converter<dynamic>? converter = parameterIterator.current.converterOverride ??
@@ -655,8 +396,10 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
           parameterIterator.current.autocompleteOverride ?? converter?.autocompleteCallback;
 
       if (autocompleteCallback != null) {
-        builderIterator.current.registerAutocompleteHandler(
-            (event) => _processAutocompleteInteraction(event, autocompleteCallback, command));
+        builderIterator.current.registerAutocompleteHandler(_handleErrorsFrom(
+          (event) =>
+              eventManager.processAutocompleteInteraction(event, autocompleteCallback, command),
+        ));
       }
     }
   }
@@ -673,7 +416,17 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
   /// - [registerDefaultConverters], for adding the default converters to a [CommandsPlugin];
   /// - [getConverter], for retrieving the [Converter] for a specific type.
   void addConverter<T>(Converter<T> converter) {
-    _converters[T] = converter;
+    RuntimeType<T> type = converter.output;
+
+    // If we were given a type argument, use that as the target type.
+    // We're guaranteed by type safety that [converter] will be a subtype
+    // of Converter<T>, so we can assume that the provided type argument
+    // is compatible with the converter.
+    if (T != dynamic) {
+      type = RuntimeType<T>();
+    }
+
+    _converters[type] = converter;
   }
 
   /// Gets a [Converter] for a specific type.
@@ -685,38 +438,41 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
   ///
   /// You might also be interested in:
   /// - [addConverter], for adding converters to this [CommandsPlugin].
-  Converter<dynamic>? getConverter(Type type, {bool logWarn = true}) {
+  Converter<T>? getConverter<T>(RuntimeType<T> type, {bool logWarn = true}) {
     if (_converters.containsKey(type)) {
-      return _converters[type]!;
+      return _converters[type]! as Converter<T>;
     }
 
-    List<Converter<dynamic>> assignable = [];
-    List<Converter<dynamic>> superClasses = [];
+    List<Converter<T>> assignable = [];
+    List<Converter<dynamic>> superTypes = [];
 
     for (final key in _converters.keys) {
-      if (isAssignableTo(key, type)) {
-        assignable.add(_converters[key]!);
-      } else if (isAssignableTo(type, key)) {
-        superClasses.add(_converters[key]!);
+      if (key.isSubtypeOf(type)) {
+        assignable.add(_converters[key]! as Converter<T>);
+      } else if (key.isSupertypeOf(type)) {
+        superTypes.add(_converters[key]!);
       }
     }
 
-    for (final converter in superClasses) {
+    for (final converter in superTypes) {
       // Converters for types that superclass the target type might return an instance of the
       // target type.
       assignable.add(CombineConverter(converter, (superInstance, context) {
-        if (isAssignableTo(superInstance.runtimeType, type)) {
-          return superInstance;
+        if (superInstance.isOfType(type)) {
+          return superInstance as T;
         }
+
         return null;
       }));
     }
 
     if (assignable.isNotEmpty) {
       if (logWarn) {
-        logger.warning('Using assembled converter for type $type. If this is intentional, you '
-            'should register a custom converter for that type using '
-            '`addConverter(getConverter($type, logWarn: false) as Converter<$type>)`');
+        logger.warning(
+          'Using assembled converter for type ${type.internalType}. If this is intentional, you '
+          'should register a custom converter for that type using '
+          '`addConverter(getConverter(RuntimeType<${type.internalType}>(), logWarn: false))`',
+        );
       }
       return FallbackConverter(assignable);
     }
@@ -724,7 +480,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
   }
 
   @override
-  void addCommand(ICommandRegisterable<IContext> command) {
+  void addCommand(ICommandRegisterable<ICommandContext> command) {
     if (command is IChatCommandComponent) {
       if (_chatCommands.containsKey(command.name)) {
         throw CommandRegistrationError('Command with name "${command.name}" already exists');
@@ -743,7 +499,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
         _chatCommands[alias] = command;
       }
 
-      for (final child in command.walkCommands() as Iterable<IChatCommandComponent>) {
+      for (final child in command.walkCommands()) {
         logger.info('Registered command "${child.fullName}"');
       }
     } else if (command is UserCommand) {
@@ -782,28 +538,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<IContext> {
   }
 
   @override
-  ChatCommand? getCommand(StringView view) {
-    String name = view.getWord();
-
-    if (_chatCommands.containsKey(name)) {
-      IChatCommandComponent child = _chatCommands[name]!;
-
-      if (child is ChatCommand && child.resolvedType != CommandType.slashOnly) {
-        ChatCommand? found = child.getCommand(view);
-
-        if (found == null) {
-          return child;
-        }
-
-        return found;
-      } else {
-        return child.getCommand(view) as ChatCommand?;
-      }
-    }
-
-    view.undo();
-    return null;
-  }
+  ChatCommand? getCommand(StringView view) => getCommandHelper(view, _chatCommands);
 
   @override
   Iterable<ICommand> walkCommands() sync* {

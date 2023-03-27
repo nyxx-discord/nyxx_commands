@@ -1,17 +1,3 @@
-//  Copyright 2021 Abitofevrything and others.
-//
-//  Licensed under the Apache License, Version 2.0 (the "License");
-//  you may not use this file except in compliance with the License.
-//  You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-//  Unless required by applicable law or agreed to in writing, software
-//  distributed under the License is distributed on an "AS IS" BASIS,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//  See the License for the specific language governing permissions and
-//  limitations under the License.
-
 import '../errors.dart';
 
 const Map<String, String> _quotes = {
@@ -110,6 +96,7 @@ class StringView {
   ///
   /// You might also be interested in:
   /// - [skipWhitespace], for skipping arbitrary spans of whitespace.
+  /// - [skipPattern], for testing arbitrary patterns.
   bool skipString(String s) {
     if (index + s.length < end && buffer.substring(index, index + s.length) == s) {
       history.add(index);
@@ -117,6 +104,24 @@ class StringView {
       return true;
     }
     return false;
+  }
+
+  /// Match [p] at the text directly after the cursor and skip over the match if it exists, else
+  /// return `null`.
+  ///
+  /// You might also be interested in:
+  /// - [skipWhitespace], for skipping arbitrary spans of whitespace.
+  /// - [skipString], for skipping arbitrary strings.
+  Match? skipPattern(Pattern p) {
+    Match? match = p.matchAsPrefix(buffer.substring(index));
+
+    if (match != null) {
+      history.add(index);
+      // The end of the match is the same as its length since it was matched as a prefix.
+      index += match.end;
+    }
+
+    return match;
   }
 
   /// Skip to the next non-whitespace character in [buffer].
@@ -150,7 +155,7 @@ class StringView {
 
   /// Consume and return the next word in [buffer], disregarding quotes.
   ///
-  /// Developers should use [getQuotedWord] instead unless they specifically want the behaviour
+  /// Developers should use [getQuotedWord] instead unless they specifically want the behavior
   /// described below, as [getWord] can leave [remaining] with unbalanced quotes.
   ///
   /// A *word* is a sequence of non-whitespace characters, themselves surrounded by whitespace. The
@@ -160,7 +165,7 @@ class StringView {
   /// The word is escaped before it is returned.
   ///
   /// You might also be interested in:
-  /// - [escape], for escaping arbitrary postions of [buffer];
+  /// - [escape], for escaping arbitrary portions of [buffer];
   /// - [isWhitespace], for checking if the current character is considered whitespace.
   String getWord() {
     skipWhitespace();
@@ -176,9 +181,9 @@ class StringView {
 
   /// Consume and return the next word or quoted portion in [buffer].
   ///
-  /// See [getWord] for a description of wwhat is considered a *word*.
+  /// See [getWord] for a description of what is considered a *word*.
   ///
-  /// In addition to the behaviour of [getWord], [getQuotedWord] will return the portion of [buffer]
+  /// In addition to the behavior of [getWord], [getQuotedWord] will return the portion of [buffer]
   /// between an opening quote and a corresponding, non-escaped closing quote if the next word
   /// begins with a quote. The quotes are consumed but not returned.
   ///
