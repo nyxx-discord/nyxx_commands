@@ -360,7 +360,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
       context._parent = this;
       _delegate = context;
 
-      return idToValue[context.componentId]!;
+      return idToValue[context.parsedComponentId]!;
     } on TimeoutException catch (e, s) {
       throw InteractionTimeoutException(
         'Timed out waiting for button selection',
@@ -516,10 +516,26 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
       context._parent = this;
       _delegate = context;
 
-      return idToValue[context.selected.single]!;
+      final result = idToValue[context.selected.single] as T;
+
+      final matchingOptionIndex = menu.options.indexWhere(
+        (option) => option.value == context!.selected.single,
+      );
+
+      if (matchingOptionIndex >= 0) {
+        final builder = await toMultiSelect(result);
+
+        menu.options[matchingOptionIndex] = MultiselectOptionBuilder(
+          builder.label,
+          builder.value,
+          true,
+        );
+      }
+
+      return result;
     } on TimeoutException catch (e, s) {
       throw InteractionTimeoutException(
-        'TImed out waiting for selection',
+        'Timed out waiting for selection',
         _nearestCommandContext,
       )..stackTrace = s;
     } finally {
@@ -578,7 +594,8 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
       allowedUser: authorOnly ? user.id : null,
     );
 
-    MultiselectBuilder menu = MultiselectBuilder(menuId.toString(), options);
+    MultiselectBuilder menu = MultiselectBuilder(menuId.toString(), options)
+      ..maxValues = choices.length;
     ComponentRowBuilder row = ComponentRowBuilder()..addComponent(menu);
 
     (builder as ComponentMessageBuilder).addComponentRow(row);
@@ -591,6 +608,18 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
 
       context._parent = this;
       _delegate = context;
+
+      for (final value in context.selected) {
+        final matchingOptionIndex = menu.options.indexWhere((option) => option.value == value);
+
+        if (matchingOptionIndex >= 0) {
+          menu.options[matchingOptionIndex] = MultiselectOptionBuilder(
+            menu.options[matchingOptionIndex].label,
+            value,
+            true,
+          );
+        }
+      }
 
       return context.selected.map((id) => idToValue[id]!).toList();
     } on TimeoutException catch (e, s) {

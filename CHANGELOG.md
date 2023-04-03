@@ -1,3 +1,8 @@
+## 5.0.1
+__Bug fixes__
+- Fix component timeouts triggering instantly
+- Fix component wrappers causing null assertions to trigger
+
 ## 5.0.0
 __Breaking changes__
 - Removed all deprecated APIs.

@@ -391,7 +391,7 @@ class ComponentId {
   final Snowflake? allowedUser;
 
   /// The time remaining until the handler for this [ComponentId] expires, if [expiresAt] was set.
-  Duration? get expiresIn => expiresAt != null ? DateTime.now().difference(expiresAt!) : null;
+  Duration? get expiresIn => expiresAt?.difference(DateTime.now());
 
   /// The status of this [ComponentId].
   ///
