@@ -1,3 +1,4 @@
+import 'package:nyxx_commands/src/util/util.dart';
 import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../util/mixins.dart';
@@ -16,6 +17,9 @@ abstract class IComponentContextData implements IInteractionContextData {
 
   /// The ID of the component that was interacted with.
   String get componentId;
+
+  /// If [componentId] is a valid [ComponentId], this is the parsed version of that.
+  ComponentId? get parsedComponentId;
 }
 
 /// A context in which a component was interacted with.
@@ -42,6 +46,9 @@ class ButtonComponentContext extends ContextBase
 
   @override
   String get componentId => interaction.customId;
+
+  @override
+  ComponentId? get parsedComponentId => ComponentId.parse(componentId);
 
   /// Create a new [ButtonComponentContext].
   ButtonComponentContext({
@@ -77,6 +84,9 @@ class MultiselectComponentContext<T> extends ContextBase
   ///
   /// Will be a [List] if multiple items were selected.
   final T selected;
+
+  @override
+  ComponentId? get parsedComponentId => ComponentId.parse(componentId);
 
   /// Create a new [MultiselectComponentContext].
   MultiselectComponentContext({
