@@ -1,3 +1,7 @@
+## 5.0.2
+__Bug fixes__
+- Fix disposing the plugin partway through command execution causing errors
+
 ## 5.0.1
 __Bug fixes__
 - Fix component timeouts triggering instantly
