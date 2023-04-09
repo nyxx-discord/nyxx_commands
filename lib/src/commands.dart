@@ -220,8 +220,19 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
     await _syncWithInteractions();
   }
 
+  /// A list of subscriptions to the call hooks of commands registered to this plugin.
+  ///
+  /// These should all be cancelled when the plugin is disposed to avoid adding events to closed
+  /// [StreamController]s.
+  ///
+  /// We prefer this over closing the streams in the commands themselves since each command might
+  /// be registered to more than one plugin.
+  final _subscriptionsToCancel = <StreamSubscription<ICommandContext>>[];
+
   @override
   Future<void> onBotStop(INyxx nyxx, Logger logger) async {
+    await Future.wait(_subscriptionsToCancel.map((subscription) => subscription.cancel()));
+
     await _onPostCallController.close();
     await _onPreCallController.close();
     await _onCommandErrorController.close();
@@ -241,7 +252,13 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
 
   void _handleError(CommandsException error, StackTrace stackTrace) {
     error.stackTrace ??= stackTrace;
-    _onCommandErrorController.add(error);
+    if (!_onCommandErrorController.isClosed) {
+      _onCommandErrorController.add(error);
+    } else {
+      // We shouldn't be getting errors after the plugin is disposed. If we do, we should probably
+      // surface it.
+      Error.throwWithStackTrace(error, stackTrace);
+    }
   }
 
   Future<void> Function(T) _handleErrorsFrom<T>(Future<void> Function(T) fn) {
@@ -527,8 +544,8 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
       logger.warning('Unknown command type "${command.runtimeType}"');
     }
 
-    command.onPreCall.listen(_onPreCallController.add);
-    command.onPostCall.listen(_onPostCallController.add);
+    _subscriptionsToCancel.add(command.onPreCall.listen(_onPreCallController.add));
+    _subscriptionsToCancel.add(command.onPostCall.listen(_onPostCallController.add));
 
     if (client?.ready ?? false) {
       logger.warning('Registering commands after bot is ready might cause global commands to be '
