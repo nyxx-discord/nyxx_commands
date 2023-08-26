@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:mirrors';
 
-import 'package:nyxx_interactions/nyxx_interactions.dart';
+import 'package:nyxx/nyxx.dart';
 import 'package:runtime_type/mirrors.dart';
 
 import '../commands.dart';
@@ -99,7 +99,8 @@ FunctionData loadFunctionData(Function fn) {
       throw CommandRegistrationError('parameters may have at most one Autocomplete decorator');
     }
 
-    FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autocompleteOverride;
+    FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext)?
+        autocompleteOverride;
     if (autocompleteAnnotations.isNotEmpty) {
       autocompleteOverride = autocompleteAnnotations.first.callback;
     }

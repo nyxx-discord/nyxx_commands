@@ -1,11 +1,10 @@
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../../context/base.dart';
 import '../../util/view.dart';
 import '../converter.dart';
 
-bool? convertBool(StringView view, IContextData context) {
+bool? convertBool(StringView view, ContextData context) {
   String word = view.getQuotedWord();
 
   const Iterable<String> truthy = ['y', 'yes', '+', '1', 'true'];
@@ -20,15 +19,15 @@ bool? convertBool(StringView view, IContextData context) {
   return null;
 }
 
-MultiselectOptionBuilder boolToMultiselectOption(bool value) => MultiselectOptionBuilder(
-      value ? 'True' : 'False',
-      value.toString(),
+SelectMenuOptionBuilder boolToMultiselectOption(bool value) => SelectMenuOptionBuilder(
+      label: value ? 'True' : 'False',
+      value: value.toString(),
     );
 
 ButtonBuilder boolToButton(bool value) => ButtonBuilder(
-      value ? 'True' : 'False',
-      '',
-      ButtonStyle.primary,
+      style: ButtonStyle.primary,
+      label: value ? 'True' : 'False',
+      customId: '',
     );
 
 /// A [Converter] that converts input to a [bool].

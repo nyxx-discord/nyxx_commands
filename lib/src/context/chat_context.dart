@@ -1,5 +1,4 @@
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands/chat_command.dart';
 import '../util/mixins.dart';
@@ -8,9 +7,9 @@ import 'base.dart';
 /// Data about a context in which a [ChatCommand] was executed.
 ///
 /// You might also be interested in:
-/// - [IChatContext], which exposes functionality for interacting with this context;
-/// - [ICommandContextData], the base class for all contexts representing a command execution.
-abstract class IChatContextData implements ICommandContextData {
+/// - [ChatContext], which exposes functionality for interacting with this context;
+/// - [CommandContext], the base class for all contexts representing a command execution.
+abstract interface class ChatContextData implements CommandContext {
   @override
   ChatCommand get command;
 }
@@ -23,7 +22,7 @@ abstract class IChatContextData implements ICommandContextData {
 /// You might also be interested in:
 /// - [MessageChatContext], a context in which a [ChatCommand] was executed from a text message;
 /// - [InteractionChatContext], a context in which a [ChatCommand] was executed from an interaction.
-abstract class IChatContext implements IChatContextData, ICommandContext {
+abstract interface class ChatContext implements ChatContextData, CommandContext {
   /// The arguments parsed from the user input.
   ///
   /// The arguments are ordered by the order in which they appear in the function declaration. Since
@@ -43,14 +42,14 @@ abstract class IChatContext implements IChatContextData, ICommandContext {
   set arguments(List<dynamic> value);
 }
 
-abstract class ChatContext extends ContextBase with InteractiveMixin implements IChatContext {
+abstract class ChatContextBase extends ContextBase with InteractiveMixin implements ChatContext {
   @override
   late final List<dynamic> arguments;
 
   @override
   final ChatCommand command;
 
-  ChatContext({
+  ChatContextBase({
     required this.command,
     required super.user,
     required super.member,
@@ -58,7 +57,6 @@ abstract class ChatContext extends ContextBase with InteractiveMixin implements 
     required super.channel,
     required super.commands,
     required super.client,
-    required super.interactions,
   });
 }
 
@@ -66,11 +64,11 @@ abstract class ChatContext extends ContextBase with InteractiveMixin implements 
 ///
 /// You might also be interested in:
 /// - [InteractionChatContext], a context in which a [ChatCommand] was executed from an interaction;
-/// - [IChatContext], the base class for all context representing the execution of a [ChatCommand].
-class MessageChatContext extends ChatContext with MessageRespondMixin {
+/// - [ChatContext], the base class for all context representing the execution of a [ChatCommand].
+class MessageChatContext extends ChatContextBase with MessageRespondMixin {
   /// The message that triggered this command.
   @override
-  final IMessage message;
+  final Message message;
 
   /// The prefix that was used to invoke this command.
   ///
@@ -99,7 +97,6 @@ class MessageChatContext extends ChatContext with MessageRespondMixin {
     required super.channel,
     required super.commands,
     required super.client,
-    required super.interactions,
   });
 }
 
@@ -107,15 +104,12 @@ class MessageChatContext extends ChatContext with MessageRespondMixin {
 ///
 /// You might also be interested in:
 /// - [MessageChatContext], a context in which a [ChatCommand] was executed from a text message;
-/// - [IChatContext], the base class for all context representing the execution of a [ChatCommand].
-class InteractionChatContext extends ChatContext
+/// - [ChatContext], the base class for all context representing the execution of a [ChatCommand].
+class InteractionChatContext extends ChatContextBase
     with InteractionRespondMixin
-    implements IInteractionCommandContext {
+    implements InteractionCommandContext {
   @override
-  final ISlashCommandInteraction interaction;
-
-  @override
-  final ISlashCommandInteractionEvent interactionEvent;
+  final ApplicationCommandInteraction interaction;
 
   /// The unparsed arguments from the interaction.
   ///
@@ -127,7 +121,6 @@ class InteractionChatContext extends ChatContext
   InteractionChatContext({
     required this.rawArguments,
     required this.interaction,
-    required this.interactionEvent,
     required super.command,
     required super.user,
     required super.member,
@@ -135,6 +128,5 @@ class InteractionChatContext extends ChatContext
     required super.channel,
     required super.commands,
     required super.client,
-    required super.interactions,
   });
 }

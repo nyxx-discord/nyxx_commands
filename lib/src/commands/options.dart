@@ -19,7 +19,7 @@ class CommandOptions {
   /// You might also be interested in:
   /// - [autoAcknowledgeDuration], for setting the time after which interactions will be
   ///   acknowledged.
-  /// - [IInteractionInteractiveContext.acknowledge], for manually acknowledging interactions.
+  /// - [InteractionInteractiveContext.acknowledge], for manually acknowledging interactions.
   final bool? autoAcknowledgeInteractions;
 
   /// The duration after which to automatically acknowledge interactions.

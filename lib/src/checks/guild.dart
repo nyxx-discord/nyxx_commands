@@ -29,7 +29,7 @@ class GuildCheck extends Check {
   /// You might also be interested in:
   /// - [GuildCheck.id], for creating this same check without an instance of [IGuild];
   /// - [GuildCheck.any], for checking if the context originated in any of a set of guilds.
-  GuildCheck(IGuild guild, {String? name}) : this.id(guild.id, name: name);
+  GuildCheck(Guild guild, {String? name}) : this.id(guild.id, name: name);
 
   /// Create a [GuildCheck] that succeeds if the ID of the guild the context originated in is [id].
   GuildCheck.id(Snowflake id, {String? name})
@@ -51,7 +51,7 @@ class GuildCheck extends Check {
           (context) => context.guild == null,
           name: name ?? 'Guild Check on <none>',
           allowsDm: true,
-          requiredPermissions: 0,
+          requiredPermissions: Permissions(0),
         );
 
   /// Create a [GuildCheck] that succeeds if the context originated in a guild.
@@ -70,7 +70,7 @@ class GuildCheck extends Check {
   ///
   /// You might also be interested in:
   /// - [GuildCheck.anyId], for creating the same check without instances of [IGuild].
-  GuildCheck.any(Iterable<IGuild> guilds, {String? name})
+  GuildCheck.any(Iterable<Guild> guilds, {String? name})
       : this.anyId(guilds.map((guild) => guild.id), name: name);
 
   /// Create a [GuildCheck] that succeeds if the id of the guild the context originated in is in

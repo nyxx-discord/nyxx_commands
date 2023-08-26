@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../../context/base.dart';
 import '../../util/view.dart';
@@ -10,33 +9,25 @@ import '../converter.dart';
 import '../fallback.dart';
 import 'snowflake.dart';
 
-FutureOr<IRole?> snowflakeToRole(Snowflake snowflake, IContextData context) {
-  if (context.guild != null) {
-    IRole? cached = context.guild!.roles[snowflake];
-    if (cached != null) {
-      return cached;
-    }
-
-    try {
-      return context.guild!.fetchRoles().firstWhere((role) => role.id == snowflake);
-    } on StateError {
-      return null;
-    }
+FutureOr<Role?> snowflakeToRole(Snowflake snowflake, ContextData context) {
+  try {
+    return context.guild?.roles.get(snowflake);
+  } on RoleNotFoundException {
+    return null;
   }
-
-  return null;
 }
 
-FutureOr<IRole?> convertRole(StringView view, IContextData context) async {
+FutureOr<Role?> convertRole(StringView view, ContextData context) async {
   String word = view.getQuotedWord();
+
   if (context.guild != null) {
-    Stream<IRole> roles = context.guild!.fetchRoles();
+    List<Role> roles = await context.guild!.roles.list();
 
-    List<IRole> exact = [];
-    List<IRole> caseInsensitive = [];
-    List<IRole> partial = [];
+    List<Role> exact = [];
+    List<Role> caseInsensitive = [];
+    List<Role> partial = [];
 
-    await for (final role in roles) {
+    for (final role in roles) {
       if (role.name == word) {
         exact.add(role);
       }
@@ -57,23 +48,28 @@ FutureOr<IRole?> convertRole(StringView view, IContextData context) async {
   return null;
 }
 
-MultiselectOptionBuilder roleToMultiselectOption(IRole role) {
-  MultiselectOptionBuilder builder = MultiselectOptionBuilder(
-    role.name,
-    role.id.toString(),
+SelectMenuOptionBuilder roleToMultiselectOption(Role role) {
+  SelectMenuOptionBuilder builder = SelectMenuOptionBuilder(
+    label: role.name,
+    value: role.id.toString(),
   );
 
-  if (role.iconEmoji != null) {
-    builder.emoji = UnicodeEmoji(role.iconEmoji!);
+  if (role.unicodeEmoji != null) {
+    builder.emoji = TextEmoji(
+      id: Snowflake.zero,
+      manager: role.manager.client.guilds[Snowflake.zero].emojis,
+      name: role.unicodeEmoji!,
+    );
   }
 
   return builder;
 }
 
-ButtonBuilder roleToButton(IRole role) => ButtonBuilder(
-      role.name,
-      '',
-      ButtonStyle.primary,
+ButtonBuilder roleToButton(Role role) => ButtonBuilder(
+      style: ButtonStyle.primary,
+      label: role.name,
+      emoji: null,
+      customId: '',
     );
 
 /// A converter that converts input to an [IRole].
@@ -82,10 +78,10 @@ ButtonBuilder roleToButton(IRole role) => ButtonBuilder(
 /// [IRole]. If this fails, then the role will be looked up by name in the current guild.
 ///
 /// This converter has a Discord Slash Command argument type of [CommandOptionType.role].
-const Converter<IRole> roleConverter = FallbackConverter<IRole>(
+const Converter<Role> roleConverter = FallbackConverter<Role>(
   [
-    CombineConverter<Snowflake, IRole>(snowflakeConverter, snowflakeToRole),
-    Converter<IRole>(convertRole),
+    CombineConverter<Snowflake, Role>(snowflakeConverter, snowflakeToRole),
+    Converter<Role>(convertRole),
   ],
   type: CommandOptionType.role,
   toMultiselectOption: roleToMultiselectOption,

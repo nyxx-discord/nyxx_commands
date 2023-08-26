@@ -13,7 +13,7 @@ import '../commands.dart';
 ///
 /// You might also be interested in:
 /// - [Check], which allows you to construct checks with a simple callback;
-/// - [IChecked.check], which allows you to add checks to a command or command group;
+/// - [Checked.check], which allows you to add checks to a command or command group;
 /// - [CheckFailedException], the exception that is thrown and added to
 ///   [CommandsPlugin.onCommandError] when a check fails.
 abstract class AbstractCheck {
@@ -37,7 +37,7 @@ abstract class AbstractCheck {
   ///
   /// This check's state should not be changed in [check]; instead, developers should use
   /// [preCallHooks] and [postCallHooks] to update the check's state.
-  FutureOr<bool> check(ICommandContextData context);
+  FutureOr<bool> check(CommandContext context);
 
   /// Whether this check will allow commands to be executed in DM channels.
   ///
@@ -60,7 +60,7 @@ abstract class AbstractCheck {
   /// You might also be interested in:
   /// - [allowsDm], for controlling whether a command can be executed in a DM;
   /// - [PermissionsConstants], for finding the integer that represents a certain permission.
-  FutureOr<int?> get requiredPermissions;
+  FutureOr<Flags<Permissions>?> get requiredPermissions;
 
   /// An iterable of callbacks executed before a command is executed but after all the checks for
   /// that command have succeeded.
@@ -68,20 +68,20 @@ abstract class AbstractCheck {
   /// These callbacks should be used to update this check's state.
   ///
   /// You might also be interested in:
-  /// - [ICallHooked.onPreCall], for registering arbitrary callbacks to be executed before a command
+  /// - [CallHooked.onPreCall], for registering arbitrary callbacks to be executed before a command
   ///   is executed but after all checks have succeeded;
   /// - [CommandsPlugin.onCommandError], where a [CheckFailedException] is added when a check for a
   ///   command fails.
-  Iterable<void Function(ICommandContextData)> get preCallHooks;
+  Iterable<void Function(CommandContext)> get preCallHooks;
 
   /// An iterable of callbacks executed after a command is executed.
   ///
   /// These callbacks should be used to update this check's state.
   ///
   /// You might also be interested in:
-  /// - [ICallHooked.onPostCall], for registering arbitrary callbacks to be executed after a command
+  /// - [CallHooked.onPostCall], for registering arbitrary callbacks to be executed after a command
   ///   is executed but after all checks have succeeded.
-  Iterable<void Function(ICommandContextData)> get postCallHooks;
+  Iterable<void Function(CommandContext)> get postCallHooks;
 
   @override
   String toString() => 'Check[name=$name]';
@@ -91,7 +91,7 @@ abstract class AbstractCheck {
 ///
 /// See [AbstractCheck] for a description of what a *check* is.
 ///
-/// A [Check] is a simple check with no state, which validates [ICommandContext]s with a single
+/// A [Check] is a simple check with no state, which validates [CommandContext]s with a single
 /// callback.
 /// The check succeeds if the callback returns `true` and fails if the callback returns `false`.
 ///
@@ -126,13 +126,13 @@ abstract class AbstractCheck {
 /// - [Check.any], [Check.deny] and [Check.all], for modifying the behaviour of checks;
 /// - [AbstractCheck], which allows developers to create checks with state.
 class Check extends AbstractCheck {
-  final FutureOr<bool> Function(ICommandContextData) _check;
+  final FutureOr<bool> Function(CommandContext) _check;
 
   @override
   final FutureOr<bool> allowsDm;
 
   @override
-  final FutureOr<int?> requiredPermissions;
+  final FutureOr<Flags<Permissions>?> requiredPermissions;
 
   /// Create a new [Check].
   ///
@@ -204,13 +204,13 @@ class Check extends AbstractCheck {
       _GroupCheck(checks, name: name);
 
   @override
-  FutureOr<bool> check(ICommandContextData context) => _check(context);
+  FutureOr<bool> check(CommandContext context) => _check(context);
 
   @override
-  Iterable<void Function(ICommandContextData context)> get postCallHooks => [];
+  Iterable<void Function(CommandContext context)> get postCallHooks => [];
 
   @override
-  Iterable<void Function(ICommandContextData context)> get preCallHooks => [];
+  Iterable<void Function(CommandContext context)> get preCallHooks => [];
 }
 
 class _AnyCheck extends AbstractCheck {
@@ -226,7 +226,7 @@ class _AnyCheck extends AbstractCheck {
   }
 
   @override
-  FutureOr<bool> check(ICommandContextData context) async {
+  FutureOr<bool> check(CommandContext context) async {
     for (final check in checks) {
       FutureOr<bool> result = check.check(context);
 
@@ -242,7 +242,7 @@ class _AnyCheck extends AbstractCheck {
   }
 
   @override
-  Iterable<void Function(ICommandContextData)> get preCallHooks => [
+  Iterable<void Function(CommandContext)> get preCallHooks => [
         (context) {
           AbstractCheck? actualCheck = _successfulChecks[context];
 
@@ -258,7 +258,7 @@ class _AnyCheck extends AbstractCheck {
       ];
 
   @override
-  Iterable<void Function(ICommandContextData)> get postCallHooks => [
+  Iterable<void Function(CommandContext)> get postCallHooks => [
         (context) {
           AbstractCheck? actualCheck = _successfulChecks[context];
 
@@ -285,11 +285,11 @@ class _AnyCheck extends AbstractCheck {
   }
 
   @override
-  Future<int?> get requiredPermissions async {
-    int result = 0;
+  Future<Flags<Permissions>?> get requiredPermissions async {
+    Flags<Permissions> result = Permissions(0);
 
     for (final check in checks) {
-      int? permissions = await check.requiredPermissions;
+      final permissions = await check.requiredPermissions;
 
       if (permissions == null) {
         return null;
@@ -315,23 +315,23 @@ class _DenyCheck extends Check {
   // a situation where there is no proper solution. Here, we assume that the source check will
   // reset its state on failure after failure, so calling the hooks is desireable.
   @override
-  Iterable<void Function(ICommandContextData)> get preCallHooks => source.preCallHooks;
+  Iterable<void Function(CommandContext)> get preCallHooks => source.preCallHooks;
 
   @override
-  Iterable<void Function(ICommandContextData)> get postCallHooks => source.postCallHooks;
+  Iterable<void Function(CommandContext)> get postCallHooks => source.postCallHooks;
 
   @override
   FutureOr<bool> get allowsDm async => !await source.allowsDm;
 
   @override
-  FutureOr<int?> get requiredPermissions async {
-    int? permissions = await source.requiredPermissions;
+  FutureOr<Flags<Permissions>?> get requiredPermissions async {
+    final permissions = await source.requiredPermissions;
 
     if (permissions == null) {
       return null;
     }
 
-    return ~permissions & PermissionsConstants.allPermissions;
+    return ~permissions & Permissions.allPermissions;
   }
 }
 
@@ -353,11 +353,11 @@ class _GroupCheck extends Check {
         );
 
   @override
-  Iterable<void Function(ICommandContextData)> get preCallHooks =>
+  Iterable<void Function(CommandContext)> get preCallHooks =>
       checks.map((e) => e.preCallHooks).expand((_) => _);
 
   @override
-  Iterable<void Function(ICommandContextData)> get postCallHooks =>
+  Iterable<void Function(CommandContext)> get postCallHooks =>
       checks.map((e) => e.postCallHooks).expand((_) => _);
 
   @override
@@ -372,14 +372,21 @@ class _GroupCheck extends Check {
   }
 
   @override
-  FutureOr<int?> get requiredPermissions async {
-    Iterable<int> permissions = checks.whereType<int>();
+  FutureOr<Flags<Permissions>?> get requiredPermissions async {
+    Iterable<Flags<Permissions>> permissions = (await Future.wait(
+      checks.map(
+        (e) => Future.value(
+          e.requiredPermissions,
+        ),
+      ),
+    ))
+        .whereType<Flags<Permissions>>();
 
     if (permissions.isEmpty) {
       return null;
     }
 
-    int result = PermissionsConstants.allPermissions;
+    Flags<Permissions> result = Permissions.allPermissions;
 
     for (final permission in permissions) {
       result &= permission;

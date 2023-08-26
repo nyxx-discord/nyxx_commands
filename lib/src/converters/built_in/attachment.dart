@@ -1,5 +1,4 @@
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../../context/base.dart';
 import '../../context/chat_context.dart';
@@ -9,49 +8,43 @@ import '../converter.dart';
 import '../fallback.dart';
 import 'snowflake.dart';
 
-IAttachment? snowflakeToAttachment(Snowflake id, IContextData context) {
-  Iterable<IAttachment>? attachments;
-  if (context is InteractionChatContext) {
-    attachments = context.interaction.resolved?.attachments ?? [];
-  } else if (context is MessageChatContext) {
-    attachments = context.message.attachments;
-  }
-
-  if (attachments == null) {
-    return null;
-  }
+Attachment? snowflakeToAttachment(Snowflake id, ContextData context) {
+  Iterable<Attachment>? attachments = switch (context) {
+    InteractionChatContext(:final interaction) => interaction.data.resolved?.attachments?.values,
+    MessageChatContext(:final message) => message.attachments,
+    _ => null,
+  };
 
   try {
-    return attachments.singleWhere((attachment) => attachment.id == id);
+    return attachments?.singleWhere((attachment) => attachment.id == id);
   } on StateError {
     return null;
   }
 }
 
-IAttachment? convertAttachment(StringView view, IContextData context) {
+Attachment? convertAttachment(StringView view, ContextData context) {
   String fileName = view.getQuotedWord();
 
-  Iterable<IAttachment>? attachments;
-  if (context is InteractionChatContext) {
-    attachments = context.interaction.resolved?.attachments;
-  } else if (context is MessageChatContext) {
-    attachments = context.message.attachments;
-  }
+  Iterable<Attachment>? attachments = switch (context) {
+    InteractionChatContext(:final interaction) => interaction.data.resolved?.attachments?.values,
+    MessageChatContext(:final message) => message.attachments,
+    _ => null,
+  };
 
   if (attachments == null) {
     return null;
   }
 
-  Iterable<IAttachment> exactMatch = attachments.where(
-    (attachment) => attachment.filename == fileName,
+  Iterable<Attachment> exactMatch = attachments.where(
+    (attachment) => attachment.fileName == fileName,
   );
 
-  Iterable<IAttachment> caseInsensitive = attachments.where(
-    (attachment) => attachment.filename.toLowerCase() == fileName.toLowerCase(),
+  Iterable<Attachment> caseInsensitive = attachments.where(
+    (attachment) => attachment.fileName.toLowerCase() == fileName.toLowerCase(),
   );
 
-  Iterable<IAttachment> partialMatch = attachments.where(
-    (attachment) => attachment.filename.toLowerCase().startsWith(fileName.toLowerCase()),
+  Iterable<Attachment> partialMatch = attachments.where(
+    (attachment) => attachment.fileName.toLowerCase().startsWith(fileName.toLowerCase()),
   );
 
   for (final list in [exactMatch, caseInsensitive, partialMatch]) {
@@ -63,16 +56,16 @@ IAttachment? convertAttachment(StringView view, IContextData context) {
   return null;
 }
 
-MultiselectOptionBuilder attachmentToMultiselectOption(IAttachment attachment) =>
-    MultiselectOptionBuilder(
-      attachment.filename,
-      attachment.id.toString(),
+SelectMenuOptionBuilder attachmentToMultiselectOption(Attachment attachment) =>
+    SelectMenuOptionBuilder(
+      label: attachment.fileName,
+      value: attachment.id.toString(),
     );
 
-ButtonBuilder attachmentToButton(IAttachment attachment) => ButtonBuilder(
-      attachment.filename,
-      '',
-      ButtonStyle.primary,
+ButtonBuilder attachmentToButton(Attachment attachment) => ButtonBuilder(
+      style: ButtonStyle.primary,
+      label: attachment.fileName,
+      customId: '',
     );
 
 /// A converter that converts input to an [IAttachment].
@@ -82,9 +75,9 @@ ButtonBuilder attachmentToButton(IAttachment attachment) => ButtonBuilder(
 /// be looked up by name.
 ///
 /// This converter has a Discord Slash Command argument type of [CommandOptionType.attachment].
-const Converter<IAttachment> attachmentConverter = FallbackConverter(
+const Converter<Attachment> attachmentConverter = FallbackConverter(
   [
-    CombineConverter<Snowflake, IAttachment>(snowflakeConverter, snowflakeToAttachment),
+    CombineConverter<Snowflake, Attachment>(snowflakeConverter, snowflakeToAttachment),
     Converter(convertAttachment),
   ],
   type: CommandOptionType.attachment,

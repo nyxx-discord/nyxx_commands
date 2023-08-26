@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_interactions/nyxx_interactions.dart';
+
 import 'package:runtime_type/runtime_type.dart';
 
 import 'commands.dart';
@@ -44,7 +44,7 @@ class EventManager {
     if (id.expiresAt != null) {
       Timer(id.expiresIn!, () {
         if (!completer.isCompleted) {
-          completer.completeError(TimeoutException(null), StackTrace.current);
+          completer.completeError(TimeoutException(null, id.expiresIn), StackTrace.current);
         }
 
         stopListeningFor(id);
@@ -54,18 +54,17 @@ class EventManager {
     return completer.future;
   }
 
-  Future<void>
-      _processComponentEvent<T extends IComponentInteractionEvent, U extends IComponentContext>(
-    T event,
-    FutureOr<U> Function(T) converter,
+  Future<void> _processComponentEvent<U extends ComponentContext>(
+    MessageComponentInteraction interaction,
+    FutureOr<U> Function(MessageComponentInteraction) converter,
   ) async {
-    final id = ComponentId.parse(event.interaction.customId);
+    final id = ComponentId.parse(interaction.data.customId);
 
     if (id == null) {
       return;
     }
 
-    U context = await converter(event);
+    U context = await converter(interaction);
 
     if (id.status != ComponentIdStatus.ok) {
       throw UnhandledInteractionException(context, id);
@@ -98,7 +97,7 @@ class EventManager {
   ///
   /// If [id] has an expiration time, the future will complete with an error once that time is
   /// elapsed.
-  Future<MultiselectComponentContext<List<String>>> nextMultiselectEvent(ComponentId id) =>
+  Future<SelectMenuContext<List<String>>> nextSelectMenuEvent(ComponentId id) =>
       _nextComponentEvent(id);
 
   /// Stop listening for events from the component with id [id].
@@ -111,38 +110,41 @@ class EventManager {
   }
 
   /// The handler for [IButtonInteractionEvent]s. Attach to [IEventController.onButtonEvent].
-  Future<void> processButtonEvent(IButtonInteractionEvent event) => _processComponentEvent(
-        event,
+  Future<void> processButtonInteraction(MessageComponentInteraction interaction) =>
+      _processComponentEvent(
+        interaction,
         commands.contextManager.createButtonComponentContext,
       );
 
   /// The handler for [IMultiselectInteractionEvent]s. Attach to
   /// [IEventController.onMultiselectEvent].
-  Future<void> processMultiselectEvent(IMultiselectInteractionEvent event) =>
-      _processComponentEvent<IMultiselectInteractionEvent,
-          MultiselectComponentContext<List<String>>>(
-        event,
-        (event) => commands.contextManager
-            .createMultiselectComponentContext(event, event.interaction.values),
+  Future<void> processSelectMenuInteraction(MessageComponentInteraction interaction) =>
+      _processComponentEvent<SelectMenuContext<List<String>>>(
+        interaction,
+        (event) => commands.contextManager.createSelectMenuContext(event, event.data.values!),
       );
 
   /// A handler for [IMessageReceivedEvent]s. Attach to
   /// [IWebsocketEventController.onMessageReceived], and pass in the inner [IMessage] object.
-  Future<void> processMessage(IMessage message) async {
-    Pattern prefix = await commands.prefix!(message);
+  Future<void> processMessageCreateEvent(MessageCreateEvent event) async {
+    final message = event.message;
+
+    Pattern prefix = await commands.prefix!(event);
     StringView view = StringView(message.content);
 
     Match? matchedPrefix = view.skipPattern(prefix);
 
     if (matchedPrefix != null) {
-      IChatContext context = await commands.contextManager
+      ChatContext context = await commands.contextManager
           .createMessageChatContext(message, view, matchedPrefix.group(0)!);
 
-      if (message.author.bot && !context.command.resolvedOptions.acceptBotCommands!) {
+      if (message.author is User &&
+          (message.author as User).isBot &&
+          !context.command.resolvedOptions.acceptBotCommands!) {
         return;
       }
 
-      if (message.author.id == (commands.client as INyxxRest).self.id &&
+      if (message.author.id == await event.gateway.client.users.fetchCurrentUser() &&
           !context.command.resolvedOptions.acceptSelfCommands!) {
         return;
       }
@@ -157,34 +159,26 @@ class EventManager {
   ///
   /// This handler takes in a context created by another handler and executes the associated
   /// command.
-  Future<void> processInteractionCommand(IInteractionCommandContext context) async {
+  Future<void> processInteractionCommand(InteractionCommandContext context) async {
     if (context.command.resolvedOptions.autoAcknowledgeInteractions!) {
       Duration? timeout = context.command.resolvedOptions.autoAcknowledgeDuration;
 
       if (timeout == null) {
-        Duration latency = const Duration(seconds: 1);
-
-        final client = commands.client;
-        if (client is INyxxWebsocket) {
-          latency = client.shardManager.gatewayLatency;
-        }
-
+        final latency = context.client.httpHandler.realLatency;
         timeout = const Duration(seconds: 3) - latency * 2;
       }
-
-      timeout -= DateTime.now().difference(context.interactionEvent.receivedAt);
 
       Timer(timeout, () async {
         try {
           await context.acknowledge();
-        } on AlreadyRespondedError {
+        } on AlreadyAcknowledgedError {
           // ignore: command has responded itself
         }
       });
     }
 
     logger.fine('Invoking command ${context.command.name} '
-        'from interaction ${context.interactionEvent.interaction.token}');
+        'from interaction ${context.interaction.token}');
 
     await context.command.invoke(context);
   }
@@ -193,18 +187,23 @@ class EventManager {
   /// [IEventController.onSlashCommand] and pass the [ChatCommand] for which the event was
   /// triggered, or use [SlashCommandBuilder.registerHandler].
   Future<void> processChatInteraction(
-    ISlashCommandInteractionEvent interactionEvent,
+    ApplicationCommandInteraction interactionEvent,
+    List<InteractionOption> options,
     ChatCommand command,
   ) async =>
       processInteractionCommand(
-        await commands.contextManager.createInteractionChatContext(interactionEvent, command),
+        await commands.contextManager.createInteractionChatContext(
+          interactionEvent,
+          options,
+          command,
+        ),
       );
 
   /// A handler for user [ISlashCommandInteractionEvent]s. Attach to
   /// [IEventController.onSlashCommand] and pass the [UserCommand] for which the event was
   /// triggered, or use [SlashCommandBuilder.registerHandler].
   Future<void> processUserInteraction(
-    ISlashCommandInteractionEvent interactionEvent,
+    ApplicationCommandInteraction interactionEvent,
     UserCommand command,
   ) async =>
       processInteractionCommand(
@@ -215,7 +214,7 @@ class EventManager {
   /// [IEventController.onSlashCommand] and pass the [MessageCommand] for which the event was
   /// triggered, or use [SlashCommandBuilder.registerHandler].
   Future<void> processMessageInteraction(
-    ISlashCommandInteractionEvent interactionEvent,
+    ApplicationCommandInteraction interactionEvent,
     MessageCommand command,
   ) async =>
       processInteractionCommand(
@@ -227,15 +226,15 @@ class EventManager {
   /// for which the argument is being autocompleted, or use
   /// [CommandOptionBuilder.registerAutocompleteHandler].
   Future<void> processAutocompleteInteraction(
-    IAutocompleteInteractionEvent interactionEvent,
-    FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext) callback,
+    ApplicationCommandAutocompleteInteraction interactionEvent,
+    FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext) callback,
     ChatCommand command,
   ) async {
     AutocompleteContext context =
         await commands.contextManager.createAutocompleteContext(interactionEvent, command);
 
     try {
-      Iterable<ArgChoiceBuilder>? choices = await callback(context);
+      Iterable<CommandOptionChoiceBuilder<dynamic>>? choices = await callback(context);
 
       interactionEvent.respond(choices?.toList() ?? []);
     } catch (e) {

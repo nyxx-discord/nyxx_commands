@@ -1,9 +1,6 @@
 import 'dart:async';
 
-import 'package:logging/logging.dart';
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_interactions/nyxx_interactions.dart';
-import 'package:runtime_type/runtime_type.dart';
 
 import 'checks/checks.dart';
 import 'checks/guild.dart';
@@ -11,7 +8,6 @@ import 'commands/chat_command.dart';
 import 'commands/interfaces.dart';
 import 'commands/message_command.dart';
 import 'commands/user_command.dart';
-import 'context/autocomplete_context.dart';
 import 'context/base.dart';
 import 'context/context_manager.dart';
 import 'converters/combine.dart';
@@ -62,7 +58,7 @@ final Logger logger = Logger('Commands');
 /// - [addCommand], for adding commands to your bot;
 /// - [check], for adding checks to your bot;
 /// - [MessageCommand] and [UserCommand], for creating Message and User Commands respectively.
-class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext> {
+class CommandsPlugin extends NyxxPlugin implements CommandGroup<CommandContext> {
   /// A function called to determine the prefix for a specific message.
   ///
   /// This function should return a [Pattern] that should match the start of the message content if
@@ -83,12 +79,12 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
   /// You might also be interested in:
   /// - [dmOr], which allows for commands in private messages to omit the prefix;
   /// - [mentionOr], which allows for commands to be executed with the client's mention (ping).
-  final FutureOr<Pattern> Function(IMessage)? prefix;
+  final FutureOr<Pattern> Function(MessageCreateEvent)? prefix;
 
   final StreamController<CommandsException> _onCommandErrorController =
       StreamController.broadcast();
-  final StreamController<ICommandContext> _onPreCallController = StreamController.broadcast();
-  final StreamController<ICommandContext> _onPostCallController = StreamController.broadcast();
+  final StreamController<CommandContext> _onPreCallController = StreamController.broadcast();
+  final StreamController<CommandContext> _onPostCallController = StreamController.broadcast();
 
   /// A stream of [CommandsException]s that occur during a command's execution.
   ///
@@ -107,28 +103,17 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
   ///
   /// You might also be interested in:
   /// - [CommandsException], the class all exceptions in nyxx_commands subclass;
-  /// - [ICallHooked.onPostCall], a stream that emits [ICommandContext]s once a command completes
+  /// - [CallHooked.onPostCall], a stream that emits [CommandContext]s once a command completes
   /// successfully.
   late final Stream<CommandsException> onCommandError = _onCommandErrorController.stream;
 
   @override
-  late final Stream<ICommandContext> onPreCall = _onPreCallController.stream;
+  late final Stream<CommandContext> onPreCall = _onPreCallController.stream;
 
   @override
-  late final Stream<ICommandContext> onPostCall = _onPostCallController.stream;
+  late final Stream<CommandContext> onPostCall = _onPostCallController.stream;
 
   final Map<RuntimeType<dynamic>, Converter<dynamic>> _converters = {};
-
-  /// The [IInteractions] instance used by this [CommandsPlugin].
-  ///
-  /// [IInteractions] is the backend for the [Discord Application Command API](https://discord.com/developers/docs/interactions/application-commands)
-  /// and is used by nyxx_commands to register and handle slash commands.
-  ///
-  /// Because [IInteractions] also allows you to use [Message Components](https://discord.com/developers/docs/interactions/message-components),
-  /// developers might need to use this instance of [IInteractions]. It is not recommended to create
-  /// your own instance alongside nyxx_commands as that might result in commands being deleted.
-  IInteractions? get interactions => _interactions;
-  IInteractions? _interactions;
 
   @override
   final CommandsOptions options;
@@ -144,15 +129,6 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
   ///   to.
   Snowflake? guild;
 
-  /// The client this [CommandsPlugin] instance is attached to.
-  ///
-  /// Will be `null` if the plugin has not been added to a client.
-  ///
-  /// You might also be interested in:
-  /// - [INyxx.registerPlugin], for adding plugins to clients.
-  INyxx? get client => _client;
-  INyxx? _client;
-
   /// The [ContextManager] attached to this [CommandsPlugin].
   late final ContextManager contextManager = ContextManager(this);
 
@@ -164,11 +140,19 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
 
   final Map<String, UserCommand> _userCommands = {};
   final Map<String, MessageCommand> _messageCommands = {};
-  final Map<String, IChatCommandComponent> _chatCommands = {};
+  final Map<String, ChatCommandComponent> _chatCommands = {};
 
   @override
-  Iterable<ICommandRegisterable> get children =>
+  Iterable<CommandRegisterable> get children =>
       {..._userCommands.values, ..._messageCommands.values, ..._chatCommands.values};
+
+  @override
+  String get name => 'Commands';
+
+  /// A list of commands registered by this [CommandsPlugin] to the Discord API.
+  final List<ApplicationCommand> registeredCommands = [];
+
+  final Set<NyxxGateway> _attachedClients = {};
 
   /// Create a new [CommandsPlugin].
   ///
@@ -189,236 +173,190 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
   }
 
   @override
-  Future<void> onRegister(INyxx nyxx, Logger logger) async {
-    _client = nyxx;
+  Future<ClientType> connect<ClientType extends Nyxx>(
+    ApiOptions apiOptions,
+    ClientOptions clientOptions,
+    Future<ClientType> Function() connect,
+  ) async {
+    final client = await super.connect(apiOptions, clientOptions, connect);
 
-    if (nyxx is! INyxxWebsocket) {
-      throw CommandsError(
-          'Cannot create the Interactions backend for non-websocket INyxx instances.');
+    if (client is! NyxxGateway) {
+      throw CommandsError('CommandsPlugin must be used with NyxxGateway');
     }
 
-    if (nyxx.ready) {
-      await onBotStart(nyxx, logger);
-    }
-  }
+    _attachedClients.add(client);
 
-  @override
-  Future<void> onBotStart(INyxx nyxx, Logger logger) async {
-    nyxx = nyxx as INyxxWebsocket;
-    _interactions = IInteractions.create(options.backend ?? WebsocketInteractionBackend(nyxx));
+    client.onMessageComponentInteraction
+        .map((event) => event.interaction)
+        .where((interaction) => interaction.data.type == MessageComponentType.button)
+        .listen(eventManager.processButtonInteraction);
 
-    if (prefix != null) {
-      nyxx.eventsWs.onMessageReceived.listen(_handleErrorsFrom(
-        (event) => eventManager.processMessage(event.message),
-      ));
-    }
+    client.onMessageComponentInteraction
+        .map((event) => event.interaction)
+        .where((interaction) => interaction.data.type == MessageComponentType.stringSelect)
+        .listen(eventManager.processSelectMenuInteraction);
 
-    _interactions!.events.onButtonEvent.listen(_handleErrorsFrom(eventManager.processButtonEvent));
-    _interactions!.events.onMultiselectEvent
-        .listen(_handleErrorsFrom(eventManager.processMultiselectEvent));
+    client.onMessageCreate.listen(eventManager.processMessageCreateEvent);
 
-    await _syncWithInteractions();
-  }
+    client.onApplicationCommandInteraction.map((event) => event.interaction).listen((interaction) {
+      final applicationCommand = registeredCommands.singleWhere(
+        (command) => command.id == interaction.data.id,
+      );
 
-  /// A list of subscriptions to the call hooks of commands registered to this plugin.
-  ///
-  /// These should all be cancelled when the plugin is disposed to avoid adding events to closed
-  /// [StreamController]s.
-  ///
-  /// We prefer this over closing the streams in the commands themselves since each command might
-  /// be registered to more than one plugin.
-  final _subscriptionsToCancel = <StreamSubscription<ICommandContext>>[];
+      if (interaction.data.type == ApplicationCommandType.user) {
+        eventManager.processUserInteraction(
+          interaction,
+          _userCommands[applicationCommand.name]!,
+        );
+      } else if (interaction.data.type == ApplicationCommandType.message) {
+        eventManager.processMessageInteraction(
+          interaction,
+          _messageCommands[applicationCommand.name]!,
+        );
+      } else if (interaction.data.type == ApplicationCommandType.chatInput) {
+        final (command, options) = _resolveChatCommand(interaction, applicationCommand);
 
-  @override
-  Future<void> onBotStop(INyxx nyxx, Logger logger) async {
-    await Future.wait(_subscriptionsToCancel.map((subscription) => subscription.cancel()));
-
-    await _onPostCallController.close();
-    await _onPreCallController.close();
-    await _onCommandErrorController.close();
-
-    _interactions = null;
-    _client = null;
-  }
-
-  Future<void> _syncWithInteractions() async {
-    for (final builder in await _getSlashBuilders()) {
-      interactions!.registerSlashCommand(builder);
-    }
-
-    interactions!
-        .sync(syncRule: ManualCommandSync(sync: client!.options.shardIds?.contains(0) ?? true));
-  }
-
-  void _handleError(CommandsException error, StackTrace stackTrace) {
-    error.stackTrace ??= stackTrace;
-    if (!_onCommandErrorController.isClosed) {
-      _onCommandErrorController.add(error);
-    } else {
-      // We shouldn't be getting errors after the plugin is disposed. If we do, we should probably
-      // surface it.
-      Error.throwWithStackTrace(error, stackTrace);
-    }
-  }
-
-  Future<void> Function(T) _handleErrorsFrom<T>(Future<void> Function(T) fn) {
-    return (arg) async {
-      try {
-        await fn(arg);
-      } on CommandsException catch (e, s) {
-        _handleError(e, s);
+        eventManager.processChatInteraction(
+          interaction,
+          options,
+          command,
+        );
       }
-    };
+    });
+
+    client.onApplicationCommandAutocompleteInteraction
+        .map((event) => event.interaction)
+        .listen((interaction) {
+      final applicationCommand = registeredCommands.singleWhere(
+        (command) => command.id == interaction.data.id,
+      );
+
+      final (command, options) = _resolveChatCommand(interaction, applicationCommand);
+
+      final functionData = loadFunctionData(command.execute);
+      final focusedOption = options.singleWhere((element) => element.isFocused == true);
+      final focusedParameter =
+          functionData.parametersData.singleWhere((element) => element.name == focusedOption.name);
+
+      final converter = focusedParameter.converterOverride ?? getConverter(focusedParameter.type);
+
+      eventManager.processAutocompleteInteraction(
+        interaction,
+        (focusedParameter.autocompleteOverride ?? converter?.autocompleteCallback)!,
+        command,
+      );
+    });
+
+    if (children.isNotEmpty) {
+      _syncCommands(client);
+    }
+
+    return client;
   }
 
-  Future<Iterable<SlashCommandBuilder>> _getSlashBuilders() async {
-    List<SlashCommandBuilder> builders = [];
+  (ChatCommand, List<InteractionOption>) _resolveChatCommand(
+    Interaction<ApplicationCommandInteractionData> interaction,
+    ApplicationCommand applicationCommand,
+  ) {
+    List<InteractionOption> options = interaction.data.options ?? [];
+    ChatCommandComponent command = _chatCommands[applicationCommand.name]!;
+
+    while (command is! ChatCommand) {
+      assert(options.isNotEmpty);
+
+      final subcommandOption = options.single;
+
+      options = subcommandOption.options ?? [];
+      command = command.children.singleWhere((element) => element.name == subcommandOption.name);
+    }
+
+    return (command, options);
+  }
+
+  @override
+  Future<void> close(Nyxx client, Future<void> Function() close) {
+    registeredCommands.removeWhere((command) => command.manager.client == client);
+    _attachedClients.remove(client);
+
+    return close();
+  }
+
+  Future<void> _syncCommands(NyxxGateway client) async {
+    final builders = await _buildCommands();
+
+    final commands = await Future.wait(builders.entries.map(
+      (e) => e.key == null
+          ? client.commands.bulkOverride(e.value)
+          : client.guilds[e.key!].commands.bulkOverride(e.value),
+    ));
+
+    registeredCommands.addAll(commands.expand((_) => _));
+
+    logger.info('Synced ${builders.values.fold(0, (p, e) => p + e.length)} commands to Discord');
+  }
+
+  Future<Map<Snowflake?, List<ApplicationCommandBuilder>>> _buildCommands() async {
+    final result = <Snowflake?, List<ApplicationCommandBuilder>>{null: []};
 
     for (final command in children) {
-      if (!_shouldGenerateBuildersFor(command)) {
+      final shouldRegister = command is! ChatCommandComponent ||
+          command.hasSlashCommand ||
+          (command is ChatCommand && command.resolvedOptions.type != CommandType.textOnly);
+      if (!shouldRegister) {
         continue;
       }
 
-      AbstractCheck allChecks = Check.all(command.checks);
+      final checks = Check.all(command.checks);
 
-      Iterable<GuildCheck> guildChecks = command.checks.whereType<GuildCheck>();
+      final ApplicationCommandType type;
+      final String? description;
+      final Map<Locale, String>? localizedDescriptions;
+      final List<CommandOptionBuilder>? options;
+
+      switch (command) {
+        case ChatCommandComponent():
+          type = ApplicationCommandType.chatInput;
+          description = command.description;
+          localizedDescriptions = command.localizedDescriptions;
+          options = command.getOptions(this);
+        case MessageCommand():
+          type = ApplicationCommandType.message;
+          description = null;
+          localizedDescriptions = null;
+          options = null;
+        case UserCommand():
+          type = ApplicationCommandType.user;
+          description = null;
+          localizedDescriptions = null;
+          options = null;
+        case _:
+          throw CommandsError('Unknown command type ${command.runtimeType}');
+      }
+
+      final builder = ApplicationCommandBuilder(
+        type: type,
+        name: command.name,
+        nameLocalizations: command.localizedNames,
+        description: description,
+        descriptionLocalizations: localizedDescriptions,
+        options: options,
+        defaultMemberPermissions: await checks.requiredPermissions,
+        hasDmPermission: await checks.allowsDm,
+      );
+
+      final guildChecks = command.checks.whereType<GuildCheck>();
 
       if (guildChecks.length > 1) {
-        throw Exception('Cannot have more than one Guild Check per Command');
+        throw CommandsError('Cannot have more than one GuildCheck per command');
       }
 
-      Iterable<Snowflake?> guildIds = guildChecks.isNotEmpty ? guildChecks.first.guildIds : [null];
-
-      for (final guildId in guildIds) {
-        if (command is IChatCommandComponent) {
-          SlashCommandBuilder builder = SlashCommandBuilder(
-            command.name,
-            command.description,
-            List.of(
-              _processHandlerRegistration(command.getOptions(this), command),
-            ),
-            canBeUsedInDm: await allChecks.allowsDm,
-            requiredPermissions: await allChecks.requiredPermissions,
-            guild: guildId ?? guild,
-            type: SlashCommandType.chat,
-            localizationsName: command.localizedNames,
-            localizationsDescription: command.localizedDescriptions,
-          );
-
-          if (command is ChatCommand && command.resolvedOptions.type != CommandType.textOnly) {
-            builder.registerHandler(_handleErrorsFrom(
-              (interaction) => eventManager.processChatInteraction(interaction, command),
-            ));
-
-            _processAutocompleteHandlerRegistration(builder.options, command);
-          }
-
-          builders.add(builder);
-        } else if (command is UserCommand) {
-          SlashCommandBuilder builder = SlashCommandBuilder(
-            command.name,
-            null,
-            [],
-            canBeUsedInDm: await allChecks.allowsDm,
-            requiredPermissions: await allChecks.requiredPermissions,
-            guild: guildId ?? guild,
-            type: SlashCommandType.user,
-            localizationsName: command.localizedNames,
-          );
-
-          builder.registerHandler(
-            _handleErrorsFrom(
-                (interaction) => eventManager.processUserInteraction(interaction, command)),
-          );
-
-          builders.add(builder);
-        } else if (command is MessageCommand) {
-          SlashCommandBuilder builder = SlashCommandBuilder(
-            command.name,
-            null,
-            [],
-            canBeUsedInDm: await allChecks.allowsDm,
-            requiredPermissions: await allChecks.requiredPermissions,
-            guild: guildId ?? guild,
-            type: SlashCommandType.message,
-            localizationsName: command.localizedNames,
-          );
-
-          builder.registerHandler(_handleErrorsFrom(
-            (interaction) => eventManager.processMessageInteraction(interaction, command),
-          ));
-
-          builders.add(builder);
-        }
+      final guilds = guildChecks.singleOrNull?.guildIds ?? [null];
+      for (final id in guilds) {
+        (result[id] ??= []).add(builder);
       }
     }
 
-    return builders;
-  }
-
-  bool _shouldGenerateBuildersFor(ICommandRegisterable<ICommandContext> child) {
-    if (child is IChatCommandComponent) {
-      if (child.hasSlashCommand) {
-        return true;
-      }
-
-      return child is ChatCommand && child.resolvedOptions.type != CommandType.textOnly;
-    }
-
-    return true;
-  }
-
-  Iterable<CommandOptionBuilder> _processHandlerRegistration(
-    Iterable<CommandOptionBuilder> options,
-    IChatCommandComponent current,
-  ) {
-    for (final builder in options) {
-      if (builder.type == CommandOptionType.subCommand) {
-        ChatCommand command =
-            current.children.where((child) => child.name == builder.name).first as ChatCommand;
-
-        builder.registerHandler(_handleErrorsFrom(
-          (interaction) => eventManager.processChatInteraction(interaction, command),
-        ));
-
-        _processAutocompleteHandlerRegistration(builder.options!, command);
-      } else if (builder.type == CommandOptionType.subCommandGroup) {
-        _processHandlerRegistration(
-          builder.options!,
-          current.children.where((child) => child.name == builder.name).first,
-        );
-      }
-    }
-    return options;
-  }
-
-  void _processAutocompleteHandlerRegistration(
-    Iterable<CommandOptionBuilder> options,
-    ChatCommand command,
-  ) {
-    Iterator<CommandOptionBuilder> builderIterator = options.iterator;
-
-    Iterable<ParameterData<dynamic>> parameters = loadFunctionData(command.execute)
-        .parametersData
-        // Skip context parameter
-        .skip(1);
-
-    Iterator<ParameterData<dynamic>> parameterIterator = parameters.iterator;
-
-    while (builderIterator.moveNext() && parameterIterator.moveNext()) {
-      Converter<dynamic>? converter = parameterIterator.current.converterOverride ??
-          getConverter(parameterIterator.current.type);
-
-      FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autocompleteCallback =
-          parameterIterator.current.autocompleteOverride ?? converter?.autocompleteCallback;
-
-      if (autocompleteCallback != null) {
-        builderIterator.current.registerAutocompleteHandler(_handleErrorsFrom(
-          (event) =>
-              eventManager.processAutocompleteInteraction(event, autocompleteCallback, command),
-        ));
-      }
-    }
+    return result;
   }
 
   /// Adds a converter to this [CommandsPlugin].
@@ -496,9 +434,27 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
     return null;
   }
 
+  bool _scheduledSync = false;
+
   @override
-  void addCommand(ICommandRegisterable<ICommandContext> command) {
-    if (command is IChatCommandComponent) {
+  void addCommand(CommandRegisterable<CommandContext> command) {
+    if (_attachedClients.isNotEmpty && !_scheduledSync) {
+      _scheduledSync = true;
+      scheduleMicrotask(() {
+        logger.warning(
+          'Registering commands after bot is ready might trigger rate limits when syncing commands',
+        );
+        _attachedClients.forEach(_syncCommands);
+        _scheduledSync = false;
+      });
+    }
+
+    command.parent = this;
+
+    command.onPreCall.listen(_onPreCallController.add);
+    command.onPostCall.listen(_onPostCallController.add);
+
+    if (command is ChatCommandComponent) {
       if (_chatCommands.containsKey(command.name)) {
         throw CommandRegistrationError('Command with name "${command.name}" already exists');
       }
@@ -508,8 +464,6 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
           throw CommandRegistrationError('Command with alias "$alias" already exists');
         }
       }
-
-      command.parent = this;
 
       _chatCommands[command.name] = command;
       for (final alias in command.aliases) {
@@ -526,8 +480,6 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
 
       _userCommands[command.name] = command;
 
-      command.parent = this;
-
       logger.info('Registered User Command "${command.name}"');
     } else if (command is MessageCommand) {
       if (_messageCommands.containsKey(command.name)) {
@@ -537,20 +489,9 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
 
       _messageCommands[command.name] = command;
 
-      command.parent = this;
-
       logger.info('Registered Message Command "${command.name}"');
     } else {
       logger.warning('Unknown command type "${command.runtimeType}"');
-    }
-
-    _subscriptionsToCancel.add(command.onPreCall.listen(_onPreCallController.add));
-    _subscriptionsToCancel.add(command.onPostCall.listen(_onPostCallController.add));
-
-    if (client?.ready ?? false) {
-      logger.warning('Registering commands after bot is ready might cause global commands to be '
-          'deleted');
-      _syncWithInteractions();
     }
   }
 
@@ -558,7 +499,7 @@ class CommandsPlugin extends BasePlugin implements ICommandGroup<ICommandContext
   ChatCommand? getCommand(StringView view) => getCommandHelper(view, _chatCommands);
 
   @override
-  Iterable<ICommand> walkCommands() sync* {
+  Iterable<Command> walkCommands() sync* {
     yield* _userCommands.values;
     yield* _messageCommands.values;
 

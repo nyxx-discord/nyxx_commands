@@ -18,30 +18,30 @@ export 'src/commands.dart' show CommandsPlugin;
 export 'src/commands/chat_command.dart' show ChatCommand, ChatGroup, CommandType;
 export 'src/commands/interfaces.dart'
     show
-        ICallHooked,
-        IChatCommandComponent,
-        IChecked,
-        ICommand,
-        ICommandGroup,
-        ICommandRegisterable,
-        IOptions;
+        CallHooked,
+        ChatCommandComponent,
+        Checked,
+        Command,
+        CommandGroup,
+        CommandRegisterable,
+        Options;
 export 'src/commands/message_command.dart' show MessageCommand;
 export 'src/commands/options.dart' show CommandOptions;
 export 'src/commands/user_command.dart' show UserCommand;
 export 'src/context/autocomplete_context.dart' show AutocompleteContext;
 export 'src/context/chat_context.dart'
-    show IChatContext, IChatContextData, InteractionChatContext, MessageChatContext;
+    show ChatContext, ChatContextData, InteractionChatContext, MessageChatContext;
 export 'src/context/context_manager.dart' show ContextManager;
 export 'src/context/base.dart'
     show
-        ICommandContext,
-        ICommandContextData,
-        IContextData,
-        IInteractionCommandContext,
-        IInteractionContextData,
-        IInteractionCommandContextData,
-        IInteractionInteractiveContext,
-        IInteractiveContext,
+        CommandContext,
+        CommandContextData,
+        ContextData,
+        InteractionCommandContext,
+        InteractionContextData,
+        InteractionCommandContextData,
+        InteractionInteractiveContext,
+        InteractiveContext,
         ResponseLevel;
 export 'src/context/message_context.dart' show MessageContext;
 export 'src/context/modal_context.dart' show ModalContext;

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_interactions/nyxx_interactions.dart';
+
 import 'package:runtime_type/runtime_type.dart';
 
 import '../checks/checks.dart';
@@ -18,14 +18,14 @@ import '../errors.dart';
 import '../util/util.dart';
 import '../util/view.dart';
 
-mixin ParentMixin<T extends ICommandContext> implements ICommandRegisterable<T> {
-  ICommandGroup<ICommandContext>? _parent;
+mixin ParentMixin<T extends CommandContext> implements CommandRegisterable<T> {
+  CommandGroup<CommandContext>? _parent;
 
   @override
-  ICommandGroup<ICommandContext>? get parent => _parent;
+  CommandGroup<CommandContext>? get parent => _parent;
 
   @override
-  set parent(ICommandGroup<ICommandContext>? parent) {
+  set parent(CommandGroup<CommandContext>? parent) {
     if (_parent != null) {
       throw CommandRegistrationError('Cannot register command "$name" again');
     }
@@ -33,7 +33,7 @@ mixin ParentMixin<T extends ICommandContext> implements ICommandRegisterable<T> 
   }
 }
 
-mixin CheckMixin<T extends ICommandContext> on ICommandRegisterable<T> implements IChecked {
+mixin CheckMixin<T extends CommandContext> on CommandRegisterable<T> implements Checked {
   final List<AbstractCheck> _checks = [];
 
   @override
@@ -53,15 +53,15 @@ mixin CheckMixin<T extends ICommandContext> on ICommandRegisterable<T> implement
   }
 }
 
-mixin OptionsMixin<T extends ICommandContext> on ICommandRegisterable<T> implements IOptions {
+mixin OptionsMixin<T extends CommandContext> on CommandRegisterable<T> implements Options {
   @override
   CommandOptions get resolvedOptions {
     if (parent == null) {
       return options;
     }
 
-    CommandOptions parentOptions = parent is ICommandRegisterable
-        ? (parent as ICommandRegisterable).resolvedOptions
+    CommandOptions parentOptions = parent is CommandRegisterable
+        ? (parent as CommandRegisterable).resolvedOptions
         : parent!.options;
 
     CommandType? parentType = parentOptions.type;
@@ -86,23 +86,23 @@ mixin OptionsMixin<T extends ICommandContext> on ICommandRegisterable<T> impleme
   }
 }
 
-mixin InteractiveMixin implements IInteractiveContext, IContextData {
+mixin InteractiveMixin implements InteractiveContext, ContextData {
   @override
-  IInteractiveContext? get parent => _parent;
+  InteractiveContext? get parent => _parent;
 
   // Must narrow type to use [_nearestCommandContext].
   InteractiveMixin? _parent;
 
   @override
-  IInteractiveContext? get delegate => _delegate;
-  IInteractiveContext? _delegate;
+  InteractiveContext? get delegate => _delegate;
+  InteractiveContext? _delegate;
 
   @override
-  IInteractiveContext get latestContext => delegate?.latestContext ?? this;
+  InteractiveContext get latestContext => delegate?.latestContext ?? this;
 
-  ICommandContext get _nearestCommandContext {
-    if (this is ICommandContext) {
-      return this as ICommandContext;
+  CommandContext get _nearestCommandContext {
+    if (this is CommandContext) {
+      return this as CommandContext;
     }
 
     if (parent == null) {
@@ -139,7 +139,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
   }
 
   @override
-  Future<MultiselectComponentContext<T>> awaitSelection<T>(
+  Future<SelectMenuContext<T>> awaitSelection<T>(
     ComponentId componentId, {
     Converter<T>? converterOverride,
   }) async {
@@ -150,12 +150,11 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
       );
     }
 
-    MultiselectComponentContext<List<String>> rawContext =
-        await commands.eventManager.nextMultiselectEvent(componentId);
+    SelectMenuContext<List<String>> rawContext =
+        await commands.eventManager.nextSelectMenuEvent(componentId);
 
-    MultiselectComponentContext<T> context =
-        await commands.contextManager.createMultiselectComponentContext(
-      rawContext.interactionEvent,
+    SelectMenuContext<T> context = await commands.contextManager.createSelectMenuContext(
+      rawContext.interaction,
       await parse(
         commands,
         _nearestCommandContext,
@@ -171,7 +170,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
   }
 
   @override
-  Future<MultiselectComponentContext<List<T>>> awaitMultiSelection<T>(
+  Future<SelectMenuContext<List<T>>> awaitMultiSelection<T>(
     ComponentId componentId, {
     Converter<T>? converterOverride,
   }) async {
@@ -182,12 +181,11 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
       );
     }
 
-    MultiselectComponentContext<List<String>> rawContext =
-        await commands.eventManager.nextMultiselectEvent(componentId);
+    SelectMenuContext<List<String>> rawContext =
+        await commands.eventManager.nextSelectMenuEvent(componentId);
 
-    MultiselectComponentContext<List<T>> context =
-        await commands.contextManager.createMultiselectComponentContext(
-      rawContext.interactionEvent,
+    SelectMenuContext<List<T>> context = await commands.contextManager.createSelectMenuContext(
+      rawContext.interaction,
       await Future.wait(rawContext.selected.map(
         (value) => parse(
           commands,
@@ -205,16 +203,19 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
   }
 
   @override
-  Future<ButtonComponentContext> getButtonPress(IMessage message) async {
+  Future<ButtonComponentContext> getButtonPress(Message message) async {
     if (_delegate != null) {
       return _delegate!.getButtonPress(message);
     }
 
     final componentIds = message.components
-        .expand((_) => _)
-        .where((element) => element.type == ComponentType.button)
-        .map((component) => ComponentId.parse(component.customId))
-        .toList();
+            ?.expand(
+                (component) => component is ActionRowComponent ? component.components : [component])
+            .whereType<ButtonComponent>()
+            .where((element) => element.customId != null)
+            .map((component) => ComponentId.parse(component.customId!))
+            .toList() ??
+        [];
 
     if (componentIds.any((element) => element == null)) {
       throw UncaughtCommandsException(
@@ -312,33 +313,35 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
 
       // We have to copy since the fields on ButtonBuilder are final.
       return ButtonBuilder(
-        builder.label,
-        id.toString(),
-        style ?? builder.style,
-      )
-        ..disabled = builder.disabled
-        ..emoji = builder.emoji;
+        style: style ?? builder.style,
+        label: builder.label,
+        emoji: builder.emoji,
+        customId: id.toString(),
+        isDisabled: builder.isDisabled,
+      );
     }));
 
-    builder = builderToComponentBuilder(builder);
-
-    final activeComponentRows = [...?(builder as ComponentMessageBuilder).componentRows];
-    final disabledComponentRows = [...?builder.componentRows];
+    final activeComponentRows = [...?builder.components];
+    final disabledComponentRows = [...?builder.components];
 
     while (buttons.isNotEmpty) {
       // Max 5 buttons per row
       int count = min(5, buttons.length);
 
-      ComponentRowBuilder activeRow = ComponentRowBuilder();
-      ComponentRowBuilder disabledRow = ComponentRowBuilder();
+      ActionRowBuilder activeRow = ActionRowBuilder(components: []);
+      ActionRowBuilder disabledRow = ActionRowBuilder(components: []);
 
       for (final button in buttons.take(count)) {
-        activeRow.addComponent(button);
+        activeRow.components.add(button);
 
-        disabledRow.addComponent(
-          ButtonBuilder(button.label, button.customId, button.style)
-            ..disabled = true
-            ..emoji = button.emoji,
+        disabledRow.components.add(
+          ButtonBuilder(
+            style: button.style,
+            label: button.label,
+            emoji: button.emoji,
+            customId: button.customId,
+            isDisabled: true,
+          ),
         );
       }
 
@@ -348,7 +351,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
       buttons.removeRange(0, count);
     }
 
-    builder.componentRows = activeComponentRows;
+    builder.components = activeComponentRows;
     final message = await respond(builder, level: level);
 
     final listeners =
@@ -371,8 +374,9 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
         commands.eventManager.stopListeningFor(id);
       }
 
-      builder.componentRows = disabledComponentRows;
-      await message.edit(builder);
+      await message.update(
+        MessageUpdateBuilder(components: disabledComponentRows),
+      );
     }
   }
 
@@ -389,9 +393,9 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
         [true, false],
         builder,
         toButton: (value) => ButtonBuilder(
-          values[value] ?? (value ? 'Yes' : 'No'),
-          '',
-          ButtonStyle.primary,
+          style: ButtonStyle.primary,
+          label: values[value] ?? (value ? 'Yes' : 'No'),
+          customId: '',
         ),
         styles: styles,
         authorOnly: authorOnly,
@@ -406,7 +410,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     ResponseLevel? level,
     Duration? timeout,
     bool authorOnly = true,
-    FutureOr<MultiselectOptionBuilder> Function(T)? toMultiSelect,
+    FutureOr<SelectMenuOptionBuilder> Function(T)? toMultiSelect,
     Converter<T>? converterOverride,
   }) async {
     if (_delegate != null) {
@@ -437,31 +441,29 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     }
 
     Map<String, T> idToValue = {};
-    List<MultiselectOptionBuilder> options = await Future.wait(choices.map(
+    List<SelectMenuOptionBuilder> options = await Future.wait(choices.map(
       (value) async {
-        MultiselectOptionBuilder builder = await toMultiSelect!(value);
+        SelectMenuOptionBuilder builder = await toMultiSelect!(value);
         idToValue[builder.value] = value;
         return builder;
       },
     ));
 
-    MultiselectOptionBuilder prevPageOption = MultiselectOptionBuilder(
-      'Previous page',
-      ComponentId.generate().toString(),
+    SelectMenuOptionBuilder prevPageOption = SelectMenuOptionBuilder(
+      label: 'Previous page',
+      value: ComponentId.generate().toString(),
     );
 
-    MultiselectOptionBuilder nextPageOption = MultiselectOptionBuilder(
-      'Next page',
-      ComponentId.generate().toString(),
+    SelectMenuOptionBuilder nextPageOption = SelectMenuOptionBuilder(
+      label: 'Next page',
+      value: ComponentId.generate().toString(),
     );
 
-    builder = builderToComponentBuilder(builder);
-
-    MultiselectComponentContext<List<String>>? context;
+    SelectMenuContext<List<String>>? context;
     int currentOffset = 0;
 
-    MultiselectBuilder? menu;
-    IMessage? message;
+    SelectMenuBuilder? menu;
+    Message? message;
 
     try {
       do {
@@ -478,21 +480,25 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
           allowedUser: authorOnly ? user.id : null,
         );
 
-        menu = MultiselectBuilder(menuId.toString(), [
-          if (hasPreviousPage) prevPageOption,
-          ...options.skip(currentOffset).take(itemsPerPage),
-          if (hasNextPage) nextPageOption,
-        ]);
+        menu = SelectMenuBuilder(
+          type: MessageComponentType.stringSelect,
+          customId: menuId.toString(),
+          options: [
+            if (hasPreviousPage) prevPageOption,
+            ...options.skip(currentOffset).take(itemsPerPage),
+            if (hasNextPage) nextPageOption,
+          ],
+        );
 
-        ComponentRowBuilder row = ComponentRowBuilder()..addComponent(menu);
+        ActionRowBuilder row = ActionRowBuilder(components: [menu]);
         if (context == null) {
           // This is the first time we're sending a message, just append the component row.
-          (builder as ComponentMessageBuilder).addComponentRow(row);
+          (builder.components ??= []).add(row);
 
           message = await respond(builder, level: level);
         } else {
           // On later iterations, replace the last row with our newly created one.
-          List<ComponentRowBuilder> rows = (builder as ComponentMessageBuilder).componentRows!;
+          List<ActionRowBuilder> rows = builder.components!;
 
           rows[rows.length - 1] = row;
 
@@ -503,7 +509,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
           );
         }
 
-        context = await commands.eventManager.nextMultiselectEvent(menuId);
+        context = await commands.eventManager.nextSelectMenuEvent(menuId);
 
         if (context.selected.single == nextPageOption.value) {
           currentOffset += itemsPerPage;
@@ -518,17 +524,16 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
 
       final result = idToValue[context.selected.single] as T;
 
-      final matchingOptionIndex = menu.options.indexWhere(
+      final matchingOptionIndex = menu.options!.indexWhere(
         (option) => option.value == context!.selected.single,
       );
 
       if (matchingOptionIndex >= 0) {
         final builder = await toMultiSelect(result);
 
-        menu.options[matchingOptionIndex] = MultiselectOptionBuilder(
-          builder.label,
-          builder.value,
-          true,
+        menu.options![matchingOptionIndex] = SelectMenuOptionBuilder(
+          label: builder.label,
+          value: builder.value,
         );
       }
 
@@ -540,8 +545,8 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
       )..stackTrace = s;
     } finally {
       if (menu != null && message != null) {
-        menu.disabled = true;
-        await message.edit(builder);
+        menu.isDisabled = true;
+        await message.edit(MessageCreateUpdateBuilder.fromMessageBuilder(builder));
       }
     }
   }
@@ -553,7 +558,7 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     ResponseLevel? level,
     Duration? timeout,
     bool authorOnly = true,
-    FutureOr<MultiselectOptionBuilder> Function(T)? toMultiSelect,
+    FutureOr<SelectMenuOptionBuilder> Function(T)? toMultiSelect,
     Converter<T>? converterOverride,
   }) async {
     if (_delegate != null) {
@@ -579,44 +584,45 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
     }
 
     Map<String, T> idToValue = {};
-    List<MultiselectOptionBuilder> options = await Future.wait(choices.map(
+    List<SelectMenuOptionBuilder> options = await Future.wait(choices.map(
       (value) async {
-        MultiselectOptionBuilder builder = await toMultiSelect!(value);
+        SelectMenuOptionBuilder builder = await toMultiSelect!(value);
         idToValue[builder.value] = value;
         return builder;
       },
     ));
-
-    builder = builderToComponentBuilder(builder);
 
     ComponentId menuId = ComponentId.generate(
       expirationTime: timeout,
       allowedUser: authorOnly ? user.id : null,
     );
 
-    MultiselectBuilder menu = MultiselectBuilder(menuId.toString(), options)
-      ..maxValues = choices.length;
-    ComponentRowBuilder row = ComponentRowBuilder()..addComponent(menu);
+    SelectMenuBuilder menu = SelectMenuBuilder(
+      type: MessageComponentType.stringSelect,
+      customId: menuId.toString(),
+      options: options,
+      minValues: choices.length,
+    );
+    ActionRowBuilder row = ActionRowBuilder(components: [menu]);
 
-    (builder as ComponentMessageBuilder).addComponentRow(row);
+    (builder.components ??= []).add(row);
 
-    IMessage message = await respond(builder, level: level);
+    Message message = await respond(builder, level: level);
 
     try {
-      MultiselectComponentContext<List<String>> context =
-          await commands.eventManager.nextMultiselectEvent(menuId);
+      SelectMenuContext<List<String>> context =
+          await commands.eventManager.nextSelectMenuEvent(menuId);
 
       context._parent = this;
       _delegate = context;
 
       for (final value in context.selected) {
-        final matchingOptionIndex = menu.options.indexWhere((option) => option.value == value);
+        final matchingOptionIndex = menu.options!.indexWhere((option) => option.value == value);
 
         if (matchingOptionIndex >= 0) {
-          menu.options[matchingOptionIndex] = MultiselectOptionBuilder(
-            menu.options[matchingOptionIndex].label,
-            value,
-            true,
+          menu.options![matchingOptionIndex] = SelectMenuOptionBuilder(
+            label: menu.options![matchingOptionIndex].label,
+            value: value,
           );
         }
       }
@@ -628,16 +634,16 @@ mixin InteractiveMixin implements IInteractiveContext, IContextData {
         _nearestCommandContext,
       )..stackTrace = s;
     } finally {
-      menu.disabled = true;
-      await message.edit(builder);
+      menu.isDisabled = true;
+      await message.edit(MessageCreateUpdateBuilder.fromMessageBuilder(builder));
     }
   }
 }
 
 mixin InteractionRespondMixin
-    implements IInteractionInteractiveContext, IInteractionContextData, InteractiveMixin {
+    implements InteractionInteractiveContext, InteractionContextData, InteractiveMixin {
   @override
-  IInteractionEventWithAcknowledge get interactionEvent;
+  MessageResponse<dynamic> get interaction;
 
   ResponseLevel? _responseLevel;
   bool _hasResponded = false;
@@ -645,7 +651,7 @@ mixin InteractionRespondMixin
   Future<void>? _acknowledgeLock;
 
   @override
-  Future<IMessage> respond(MessageBuilder builder, {ResponseLevel? level}) async {
+  Future<Message> respond(MessageBuilder builder, {ResponseLevel? level}) async {
     await _acknowledgeLock;
 
     if (_delegate != null) {
@@ -656,7 +662,7 @@ mixin InteractionRespondMixin
 
     if (_hasResponded) {
       // We've already responded, just send a followup.
-      return interactionEvent.sendFollowup(builder, hidden: level.hideInteraction);
+      return interaction.createFollowup(builder, isEphemeral: level.hideInteraction);
     }
 
     _hasResponded = true;
@@ -666,34 +672,35 @@ mixin InteractionRespondMixin
       // what's being requested here.
       // It's a bit ugly, but send an empty response and delete it to match [level].
 
-      await interactionEvent.respond(MessageBuilder.content(MessageBuilder.clearCharacter));
-      await interactionEvent.deleteOriginalResponse();
+      await interaction.respond(MessageBuilder(content: '‎'));
+      await interaction.deleteOriginalResponse();
 
-      return interactionEvent.sendFollowup(builder, hidden: level.hideInteraction);
+      return interaction.createFollowup(builder, isEphemeral: level.hideInteraction);
     }
 
     // If we want to preserve the original message a component is attached to, we can just send a
     // followup instead of a response.
     // Also, if we are requested to hide interactions, also send a followup, or
     // components will just edit the original message (making it public).
-    if (level.preserveComponentMessages ||
-        (level.hideInteraction == true && interaction is IComponentInteraction)) {
-      if (_responseLevel == null) {
-        // Need to acknowledge before we send a followup.
-        await acknowledge(level: level);
-      }
+    if (level.hideInteraction) {
+      await interaction.respond(builder, isEphemeral: level.hideInteraction);
+      return interaction.fetchOriginalResponse();
+    }
 
-      return interactionEvent.sendFollowup(builder, hidden: level.hideInteraction);
-    } else {
+    if (interaction is MessageComponentInteraction) {
       // Using interactionEvent.respond is actually the same as editing a message in the case where
       // the interaction is a message component. In those cases, leaving `componentRows` as `null`
       // would leave the existing components on the message - which likely isn't what our users
       // expect. Instead, we override them and set the builder to have no components.
-      builder = builderToComponentBuilder(builder)..componentRows ??= [];
+      builder.components ??= [];
 
-      await interactionEvent.respond(builder, hidden: level.hideInteraction);
-      return interactionEvent.getOriginalResponse();
+      await (interaction as MessageComponentInteraction)
+          .respond(builder, updateMessage: !level.preserveComponentMessages);
+      return interaction.fetchOriginalResponse();
     }
+
+    await interaction.respond(builder, isEphemeral: level.hideInteraction);
+    return interaction.fetchOriginalResponse();
   }
 
   @override
@@ -706,7 +713,14 @@ mixin InteractionRespondMixin
     try {
       _responseLevel =
           level ??= _nearestCommandContext.command.resolvedOptions.defaultResponseLevel!;
-      await interactionEvent.acknowledge(hidden: level.hideInteraction);
+      if (interaction is MessageComponentInteraction) {
+        await (interaction as MessageComponentInteraction).acknowledge(
+          isEphemeral: level.hideInteraction,
+          updateMessage: !level.preserveComponentMessages,
+        );
+      } else {
+        await interaction.acknowledge(isEphemeral: level.hideInteraction);
+      }
     } finally {
       lockCompleter.complete();
       _acknowledgeLock = null;
@@ -716,19 +730,20 @@ mixin InteractionRespondMixin
   @override
   Future<ModalContext> awaitModal(String customId, {Duration? timeout}) async {
     if (_delegate != null) {
-      if (_delegate is! IInteractionInteractiveContext) {
+      if (_delegate is! InteractionInteractiveContext) {
         throw UncaughtCommandsException(
           "Couldn't delegate awaitModal() to non-interaction context",
           _nearestCommandContext,
         );
       }
 
-      return (_delegate as IInteractionInteractiveContext).awaitModal(customId, timeout: timeout);
+      return (_delegate as InteractionInteractiveContext).awaitModal(customId, timeout: timeout);
     }
 
-    Future<IModalInteractionEvent> event = interactions.events.onModalEvent
+    Future<ModalSubmitInteraction> event = client.onModalSubmitInteraction
+        .map((e) => e.interaction)
         .where(
-          (event) => event.interaction.customId == customId,
+          (event) => event.data.customId == customId,
         )
         .first;
 
@@ -751,44 +766,45 @@ mixin InteractionRespondMixin
     Duration? timeout,
   }) async {
     if (_delegate != null) {
-      if (_delegate is! IInteractionInteractiveContext) {
+      if (_delegate is! InteractionInteractiveContext) {
         throw UncaughtCommandsException(
           "Couldn't delegate getModal() to non-interaction context",
           _nearestCommandContext,
         );
       }
 
-      return (_delegate as IInteractionInteractiveContext).getModal(
+      return (_delegate as InteractionInteractiveContext).getModal(
         title: title,
         components: components,
         timeout: timeout,
       );
     }
 
-    final interactionEvent = this.interactionEvent;
-    if (interactionEvent is! IModalResponseMixin) {
+    final interaction = this.interaction;
+    if (interaction is! ModalResponse) {
       throw UncaughtCommandsException(
         'Cannot respond to a context of type $runtimeType with a modal',
         _nearestCommandContext,
       );
     }
 
-    ModalBuilder builder = ModalBuilder(ComponentId.generate().toString(), title);
-    builder.componentRows = [
-      for (final input in components) ComponentRowBuilder()..addComponent(input),
-    ];
+    ModalBuilder builder = ModalBuilder(
+      customId: ComponentId.generate().toString(),
+      title: title,
+      components: components,
+    );
 
-    await (interactionEvent as IModalResponseMixin).respondModal(builder);
+    await (interaction as ModalResponse).respondModal(builder);
 
     return awaitModal(builder.customId, timeout: timeout);
   }
 }
 
 mixin MessageRespondMixin implements InteractiveMixin {
-  IMessage get message;
+  Message get message;
 
   @override
-  Future<IMessage> respond(MessageBuilder builder, {ResponseLevel? level}) async {
+  Future<Message> respond(MessageBuilder builder, {ResponseLevel? level}) async {
     if (_delegate != null) {
       return _delegate!.respond(builder, level: level);
     }
@@ -796,17 +812,17 @@ mixin MessageRespondMixin implements InteractiveMixin {
     level ??= _nearestCommandContext.command.resolvedOptions.defaultResponseLevel!;
 
     if (level.isDm) {
-      return user.sendMessage(builder);
+      final dmChannel = await client.users.createDm(user.id);
+      return dmChannel.sendMessage(builder);
     }
 
-    if (builder.replyBuilder == null) {
-      builder.replyBuilder = ReplyBuilder.fromMessage(message);
+    if (builder.replyId == null) {
+      builder.replyId = message.id;
 
-      // Only update the allowed mentions if they weren't explicitly set.
-      builder.allowedMentions ??= client.options.allowedMentions ?? AllowedMentions();
       // Calling [AllowedMentions.allow] here will only change anything if [level.mention] is
       // non-null, in which case we want to change it. Otherwise, this does nothing.
-      builder.allowedMentions!.allow(reply: level.mention);
+      builder.allowedMentions!.parse =
+          {...(builder.allowedMentions!.parse ?? <String>[]), 'replied_user'}.toList();
     }
 
     return channel.sendMessage(builder);

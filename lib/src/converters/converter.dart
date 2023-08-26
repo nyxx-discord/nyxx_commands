@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_interactions/nyxx_interactions.dart';
 import 'package:runtime_type/runtime_type.dart';
 
 import '../commands.dart';
@@ -54,13 +53,13 @@ class Converter<T> {
   /// This function should not throw if parsing fails, it should instead return `null` to indicate
   /// failure. A [BadInputException] will then be added to [CommandsPlugin.onCommandError] where it
   /// can be handled appropriately.
-  final FutureOr<T?> Function(StringView view, IContextData context) convert;
+  final FutureOr<T?> Function(StringView view, ContextData context) convert;
 
   /// The choices for this type.
   ///
   /// Choices will be the only options selectable in Slash Commands, however text commands might
   /// still pass any content to this converter.
-  final Iterable<ArgChoiceBuilder>? choices;
+  final Iterable<CommandOptionChoiceBuilder<dynamic>>? choices;
 
   /// The [Discord Slash Command Argument Type](https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-option-type)
   /// of the type that this converter parses.
@@ -87,7 +86,8 @@ class Converter<T> {
   /// message in their client.
   ///
   /// This function should return at most 25 results and should not throw.
-  final FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autocompleteCallback;
+  final FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext)?
+      autocompleteCallback;
 
   /// A function called to provide [MultiselectOptionBuilder]s that can be used to represent an
   /// element converted by this converter.
@@ -96,16 +96,16 @@ class Converter<T> {
   /// convert.
   ///
   /// You might also be interested in:
-  /// - [IInteractiveContext.getSelection] and [IInteractiveContext.getMultiSelection], which make
+  /// - [InteractiveContext.getSelection] and [InteractiveContext.getMultiSelection], which make
   ///   use of this function;
   /// - [toButton], similar to this function but for [ButtonBuilder]s.
-  final FutureOr<MultiselectOptionBuilder> Function(T)? toMultiselectOption;
+  final FutureOr<SelectMenuOptionBuilder> Function(T)? toMultiselectOption;
 
   /// A function called to provide [ButtonBuilder]s that can be used to represent an element
   /// converted by this converter.
   ///
   /// You might also be interested in:
-  /// - [IInteractiveContext.getButtonSelection], which makes use of this function;
+  /// - [InteractiveContext.getButtonSelection], which makes use of this function;
   /// - [toMultiselectOption], similar to this function but for [MultiselectOptionBuilder]s.
   final FutureOr<ButtonBuilder> Function(T)? toButton;
 
@@ -140,7 +140,7 @@ class Converter<T> {
 /// - [ICommand.invoke], which parses multiple arguments and executes a command.
 Future<T> parse<T>(
   CommandsPlugin commands,
-  IContextData context,
+  ContextData context,
   StringView toParse,
   RuntimeType<T> expectedType, {
   Converter<T>? converterOverride,

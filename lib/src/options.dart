@@ -1,4 +1,4 @@
-import 'package:nyxx_interactions/nyxx_interactions.dart';
+import 'package:nyxx/nyxx.dart';
 
 import 'commands/chat_command.dart';
 import 'commands/options.dart';
@@ -18,12 +18,6 @@ class CommandsOptions implements CommandOptions {
   /// You might also be interested in:
   /// - [Logging], a plugin to automatically print logs to the console.
   final bool logErrors;
-
-  /// The [InteractionBackend] to use for creating the [IInteractions] instance.
-  ///
-  /// If this is set to null, then a [WebsocketInteractionBackend] will automatically be created,
-  /// using the client the [CommandsPlugin] was added to as the client.
-  final InteractionBackend? backend;
 
   /// Whether to infer the default command type.
   ///
@@ -60,7 +54,6 @@ class CommandsOptions implements CommandOptions {
     this.autoAcknowledgeDuration,
     this.acceptBotCommands = false,
     this.acceptSelfCommands = false,
-    this.backend,
     this.defaultResponseLevel = ResponseLevel.public,
     this.type = CommandType.all,
     this.inferDefaultCommandType = true,

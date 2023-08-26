@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../commands/chat_command.dart';
 import '../commands/interfaces.dart';
@@ -137,8 +136,8 @@ class Choices {
   const Choices(this.choices);
 
   /// Get the builders that this [Choices] represents.
-  Iterable<ArgChoiceBuilder> get builders =>
-      choices.entries.map((entry) => ArgChoiceBuilder(entry.key, entry.value));
+  Iterable<CommandOptionChoiceBuilder<dynamic>> get builders => choices.entries
+      .map((entry) => CommandOptionChoiceBuilder(name: entry.key, value: entry.value));
 
   @override
   String toString() => 'Choices[choices=$choices]';
@@ -235,7 +234,8 @@ class UseConverter {
 ///   of a given type.
 class Autocomplete {
   /// The autocomplete handler to use.
-  final FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext) callback;
+  final FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext)
+      callback;
 
   /// Create a new [Autocomplete].
   ///
@@ -258,17 +258,20 @@ final RegExp _mentionPattern = RegExp(r'^<@!?([0-9]{15,20})>');
 /// ```
 ///
 /// ![](https://user-images.githubusercontent.com/54505189/156937410-73d19cc5-c018-40e4-97dd-b7fcc0be0b7d.png)
-String Function(IMessage) mentionOr(String Function(IMessage) defaultPrefix) {
-  return (message) {
-    RegExpMatch? match = _mentionPattern.firstMatch(message.content);
+Future<String> Function(MessageCreateEvent) mentionOr(
+  FutureOr<String> Function(MessageCreateEvent) defaultPrefix,
+) {
+  return (event) async {
+    RegExpMatch? match = _mentionPattern.firstMatch(event.message.content);
 
-    if (match != null && message.client is INyxxWebsocket) {
-      if (int.parse(match.group(1)!) == (message.client as INyxxWebsocket).self.id.id) {
+    if (match != null) {
+      if (int.parse(match.group(1)!) ==
+          (await event.gateway.client.users.fetchCurrentUser()).id.value) {
         return match.group(0)!;
       }
     }
 
-    return defaultPrefix(message);
+    return defaultPrefix(event);
   };
 }
 
@@ -285,11 +288,12 @@ String Function(IMessage) mentionOr(String Function(IMessage) defaultPrefix) {
 /// ```
 /// ![](https://user-images.githubusercontent.com/54505189/156937528-df54a2ba-627d-4f54-b0bc-ad7cb6321965.png)
 /// ![](https://user-images.githubusercontent.com/54505189/156937561-9df9e6cf-6595-465d-895a-aaca5d6ff066.png)
-String Function(IMessage) dmOr(String Function(IMessage) defaultPrefix) {
-  return (message) {
-    String found = defaultPrefix(message);
+Future<String> Function(MessageCreateEvent) dmOr(
+    FutureOr<String> Function(MessageCreateEvent) defaultPrefix) {
+  return (event) async {
+    String found = await defaultPrefix(event);
 
-    if (message.guild != null || StringView(message.content).skipString(found)) {
+    if (event.guild != null || StringView(event.message.content).skipString(found)) {
       return found;
     }
 
@@ -323,12 +327,12 @@ T id<T extends Function>(dynamic id, T fn) {
   return fn;
 }
 
-ChatCommand? getCommandHelper(StringView view, Map<String, IChatCommandComponent> children) {
+ChatCommand? getCommandHelper(StringView view, Map<String, ChatCommandComponent> children) {
   String name = view.getWord();
   String lowerCaseName = name.toLowerCase();
 
   try {
-    IChatCommandComponent child = children.entries.singleWhere((childEntry) {
+    ChatCommandComponent child = children.entries.singleWhere((childEntry) {
       bool isCaseInsensitive = childEntry.value.resolvedOptions.caseInsensitiveCommands!;
 
       if (isCaseInsensitive) {
@@ -445,7 +449,7 @@ class ComponentId {
     final uniqueIdentifier = int.parse(parts[1]);
     final sessionStartTime = DateTime.parse(parts[2]);
     final expiresAt = parts[3] != 'null' ? DateTime.parse(parts[3]) : null;
-    final allowedUser = parts[4] != 'null' ? Snowflake(parts[4]) : null;
+    final allowedUser = parts[4] != 'null' ? Snowflake.parse(parts[4]) : null;
 
     final ComponentIdStatus? status;
     if (sessionStartTime != currentSessionStartTime) {
@@ -541,19 +545,107 @@ enum ComponentIdStatus {
   }
 }
 
-/// Convert any [MessageBuilder] to a [ComponentMessageBuilder].
-ComponentMessageBuilder builderToComponentBuilder(MessageBuilder builder) {
-  if (builder is ComponentMessageBuilder) {
-    return builder;
+class MessageCreateUpdateBuilder extends MessageBuilder implements MessageUpdateBuilder {
+  MessageCreateUpdateBuilder({
+    super.content,
+    super.nonce,
+    super.tts,
+    super.embeds,
+    super.allowedMentions,
+    super.replyId,
+    super.requireReplyToExist,
+    super.components,
+    super.stickerIds,
+    super.attachments,
+    super.suppressEmbeds,
+    super.suppressNotifications,
+  });
+
+  MessageCreateUpdateBuilder.fromMessageBuilder(MessageBuilder builder)
+      : this(
+          content: builder.content,
+          nonce: builder.nonce,
+          tts: builder.tts,
+          embeds: builder.embeds,
+          allowedMentions: builder.allowedMentions,
+          replyId: builder.replyId,
+          requireReplyToExist: builder.requireReplyToExist,
+          components: builder.components,
+          stickerIds: builder.stickerIds,
+          attachments: builder.attachments,
+          suppressEmbeds: builder.suppressEmbeds,
+          suppressNotifications: builder.suppressNotifications,
+        );
+}
+
+/// Adapted from https://discord.com/developers/docs/topics/permissions
+Future<Permissions> computePermissions(
+  Guild guild,
+  GuildChannel channel,
+  Member member,
+) async {
+  Future<Permissions> computeBasePermissions() async {
+    if (guild.ownerId == member.id) {
+      return Permissions.allPermissions;
+    }
+
+    final everyoneRole = await guild.roles[guild.id].get();
+    Flags<Permissions> permissions = everyoneRole.permissions;
+
+    for (final role in member.roles) {
+      final rolePermissions = (await role.get()).permissions;
+
+      permissions |= rolePermissions;
+    }
+
+    permissions = Permissions(permissions.value);
+    permissions as Permissions;
+
+    if (permissions.isAdministrator) {
+      return Permissions.allPermissions;
+    }
+
+    return permissions;
   }
 
-  return ComponentMessageBuilder()
-    ..allowedMentions = builder.allowedMentions
-    ..attachments = builder.attachments
-    ..content = builder.content
-    ..embeds = builder.embeds
-    ..files = builder.files
-    ..nonce = builder.nonce
-    ..replyBuilder = builder.replyBuilder
-    ..tts = builder.tts;
+  Future<Permissions> computeOverwrites(Permissions basePermissions) async {
+    if (basePermissions.isAdministrator) {
+      return Permissions.allPermissions;
+    }
+
+    Flags<Permissions> permissions = basePermissions;
+
+    final everyoneOverwrite =
+        channel.permissionOverwrites.where((overwrite) => overwrite.id == guild.id).singleOrNull;
+    if (everyoneOverwrite != null) {
+      permissions &= ~everyoneOverwrite.deny;
+      permissions |= everyoneOverwrite.allow;
+    }
+
+    Flags<Permissions> allow = Permissions(0);
+    Flags<Permissions> deny = Permissions(0);
+
+    for (final roleId in member.roleIds) {
+      final roleOverwrite =
+          channel.permissionOverwrites.where((overwrite) => overwrite.id == roleId).singleOrNull;
+      if (roleOverwrite != null) {
+        allow |= roleOverwrite.allow;
+        deny |= roleOverwrite.deny;
+      }
+    }
+
+    permissions &= ~deny;
+    permissions |= allow;
+
+    final memberOverwrite =
+        channel.permissionOverwrites.where((overwrite) => overwrite.id == member.id).singleOrNull;
+    if (memberOverwrite != null) {
+      permissions &= ~memberOverwrite.deny;
+      permissions |= memberOverwrite.allow;
+    }
+
+    return Permissions(permissions.value);
+  }
+
+  return computeOverwrites(await computeBasePermissions());
 }

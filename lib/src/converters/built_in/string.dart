@@ -1,14 +1,21 @@
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../../context/base.dart';
 import '../../util/view.dart';
 import '../converter.dart';
 
-String? convertString(StringView view, IContextData context) => view.getQuotedWord();
-MultiselectOptionBuilder stringToMultiselectOption(String value) =>
-    MultiselectOptionBuilder(value, value);
-ButtonBuilder stringToButton(String value) => ButtonBuilder(value, '', ButtonStyle.primary);
+String? convertString(StringView view, ContextData context) => view.getQuotedWord();
+
+SelectMenuOptionBuilder stringToMultiselectOption(String value) => SelectMenuOptionBuilder(
+      label: value,
+      value: value,
+    );
+
+ButtonBuilder stringToButton(String value) => ButtonBuilder(
+      style: ButtonStyle.primary,
+      label: value,
+      customId: '',
+    );
 
 /// A [Converter] that converts input to a [String].
 ///

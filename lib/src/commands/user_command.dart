@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:nyxx_interactions/nyxx_interactions.dart';
+import 'package:nyxx/nyxx.dart';
 
 import '../checks/checks.dart';
 import '../context/user_context.dart';
@@ -33,7 +33,7 @@ import 'options.dart';
 /// - [MessageCommand], for creating message commands.
 class UserCommand
     with ParentMixin<UserContext>, CheckMixin<UserContext>, OptionsMixin<UserContext>
-    implements ICommand<UserContext> {
+    implements Command<UserContext> {
   @override
   final String name;
 

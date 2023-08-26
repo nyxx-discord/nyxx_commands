@@ -20,23 +20,10 @@ import 'package:nyxx_commands/nyxx_commands.dart';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:nyxx_interactions/nyxx_interactions.dart';
-
-void main() {
+void main() async {
   // ====================================== //
   // ===== Initializing nyxx_commands ===== //
   // ====================================== //
-
-  // Since v3.0.0, nyxx_commands can be used as a plugin with nyxx v3.0.0
-
-  // To use a plugin, we must first obtain an instance of INyxx:
-  // nyxx_commands doesn't yet support using INyxxRest, so we have to use INyxxWebsocket
-  INyxxWebsocket client = NyxxFactory.createNyxxWebsocket(
-    Platform.environment['TOKEN']!,
-    // nyxx_commands runs fine without the guild member intent, but it's useful to have it for
-    // IMember lookup
-    GatewayIntents.allUnprivileged | GatewayIntents.guildMembers,
-  );
 
   // Next, we need to create our plugin. The plugin class used for nyxx_commands is `CommandsPlugin`
   // and we need to store it in a variable to be able to access it for registering commands and
@@ -69,7 +56,7 @@ void main() {
     //
     // If you aren't testing or want your commands to be registered globally, either omit this
     // parameter or set it to `null`.
-    guild: Snowflake(Platform.environment['GUILD']!),
+    guild: Snowflake.parse(Platform.environment['GUILD']!),
 
     // The `options` parameter allows you to specify additional configuration options for the
     // plugin.
@@ -86,18 +73,15 @@ void main() {
     ),
   );
 
-  // Next, we add the commands plugin to our client:
-  client.registerPlugin(commands);
+  // Since v3.0.0, nyxx_commands can be used as a plugin with nyxx v3.0.0
 
-  // We also register a couple other plugins for convenience.
-  // These aren't needed for nyxx_commands to work.
-  client
-    ..registerPlugin(Logging())
-    ..registerPlugin(CliIntegration())
-    ..registerPlugin(IgnoreExceptions());
-
-  // Finally, we tell the client to connect to Discord:
-  client.connect();
+  // To use a plugin, we must first obtain an instance of INyxx:
+  // nyxx_commands doesn't yet support using INyxxRest, so we have to use INyxxWebsocket
+  await Nyxx.connectGateway(
+    Platform.environment['TOKEN']!,
+    GatewayIntents.allUnprivileged | GatewayIntents.guildMembers,
+    options: GatewayClientOptions(plugins: [commands, logging, cliIntegration, ignoreExceptions]),
+  );
 
   // ====================================== //
   // ======= Registering a command ======== //
@@ -133,11 +117,11 @@ void main() {
     //
     // Since a ping command doesn't have any other arguments, we don't add any other parameters to
     // the function.
-    id('ping', (IChatContext context) {
+    id('ping', (ChatContext context) {
       // For a ping command, all we need to do is respond with `pong`.
       // To do that, we can use the `IChatContext`'s `respond` method which responds to the command with
       // a message.
-      context.respond(MessageBuilder.content('pong!'));
+      context.respond(MessageBuilder(content: 'pong!'));
     }),
   );
 
@@ -187,11 +171,11 @@ void main() {
       ChatCommand(
         'coin',
         'Throw a coin',
-        id('throw-coin', (IChatContext context) {
+        id('throw-coin', (ChatContext context) {
           bool heads = Random().nextBool();
 
           context.respond(
-              MessageBuilder.content('The coin landed on its ${heads ? 'head' : 'tail'}!'));
+              MessageBuilder(content: 'The coin landed on its ${heads ? 'head' : 'tail'}!'));
         }),
       ),
     ],
@@ -202,10 +186,10 @@ void main() {
   throwGroup.addCommand(ChatCommand(
     'die',
     'Throw a die',
-    id('throw-die', (IChatContext context) {
+    id('throw-die', (ChatContext context) {
       int number = Random().nextInt(6) + 1;
 
-      context.respond(MessageBuilder.content('The die landed on the $number!'));
+      context.respond(MessageBuilder(content: 'The die landed on the $number!'));
     }),
   ));
 
@@ -240,8 +224,8 @@ void main() {
     // As mentioned earlier, all we need to do to add an argument to our command is add it as a
     // parameter to our execute function. In this case, we take an argument called `message` and of
     // type `String`.
-    id('say', (IChatContext context, String message) {
-      context.respond(MessageBuilder.content(message));
+    id('say', (ChatContext context, String message) {
+      context.respond(MessageBuilder(content: message));
     }),
   );
 
@@ -298,15 +282,15 @@ void main() {
     "Change a user's nickname",
     // Setting the type of the `target` parameter to `IMember` will make nyxx_commands convert user
     // input to instances of `IMember`.
-    id('nick', (IChatContext context, IMember target, String newNick) async {
+    id('nick', (ChatContext context, Member target, String newNick) async {
       try {
-        await target.edit(builder: MemberBuilder()..nick = newNick);
-      } on IHttpResponseError {
-        context.respond(MessageBuilder.content("Couldn't change nickname :/"));
+        await target.update(MemberUpdateBuilder(nick: newNick));
+      } on HttpResponseError {
+        context.respond(MessageBuilder(content: "Couldn't change nickname :/"));
         return;
       }
 
-      context.respond(MessageBuilder.content('Successfully changed nickname!'));
+      context.respond(MessageBuilder(content: 'Successfully changed nickname!'));
     }),
   );
 
@@ -397,9 +381,9 @@ void main() {
     // nyxx_interaction's `ArgChoiceBuilder`, allowing you to specify the choices that will be shown
     // to the user when running this command from a slash command.
     choices: [
-      ArgChoiceBuilder('Triangle', 'triangle'),
-      ArgChoiceBuilder('Square', 'square'),
-      ArgChoiceBuilder('Pentagon', 'pentagon'),
+      CommandOptionChoiceBuilder(name: 'Triangle', value: 'triangle'),
+      CommandOptionChoiceBuilder(name: 'Square', value: 'square'),
+      CommandOptionChoiceBuilder(name: 'Pentagon', value: 'pentagon'),
     ],
   );
 
@@ -440,7 +424,7 @@ void main() {
   ChatCommand favoriteShape = ChatCommand(
     'favorite-shape',
     'Outputs your favorite shape',
-    id('favorite-shape', (IChatContext context, Shape shape, Dimension dimension) {
+    id('favorite-shape', (ChatContext context, Shape shape, Dimension dimension) {
       String favorite;
 
       switch (shape) {
@@ -466,7 +450,7 @@ void main() {
           }
       }
 
-      context.respond(MessageBuilder.content('Your favorite shape is $favorite!'));
+      context.respond(MessageBuilder(content: 'Your favorite shape is $favorite!'));
     }),
   );
 
@@ -509,8 +493,8 @@ void main() {
   ChatCommand favoriteFruit = ChatCommand(
     'favorite-fruit',
     'Outputs your favorite fruit',
-    id('favorite-fruit', (IChatContext context, [String favorite = 'apple']) {
-      context.respond(MessageBuilder.content('Your favorite fruit is $favorite!'));
+    id('favorite-fruit', (ChatContext context, [String favorite = 'apple']) {
+      context.respond(MessageBuilder(content: 'Your favorite fruit is $favorite!'));
     }),
   );
 
@@ -540,8 +524,8 @@ void main() {
   ChatCommand alphabet = ChatCommand(
     'alphabet',
     'Outputs the alphabet',
-    id('alphabet', (IChatContext context) {
-      context.respond(MessageBuilder.content('ABCDEFGHIJKLMNOPQRSTUVWXYZ'));
+    id('alphabet', (ChatContext context) {
+      context.respond(MessageBuilder(content: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'));
     }),
     // Since this command is spammy, we can use a cooldown to restrict its usage:
     checks: [
@@ -583,10 +567,10 @@ void main() {
     'better-say',
     'A better version of the say command',
     id('better-say', (
-      IChatContext context,
+      ChatContext context,
       @UseConverter(nonEmptyStringConverter) String input,
     ) {
-      context.respond(MessageBuilder.content(input));
+      context.respond(MessageBuilder(content: input));
     }),
   );
 
@@ -616,7 +600,7 @@ enum Dimension {
 // ---------- Global functions ---------- //
 // -------------------------------------- //
 
-String? filterInput(String input, IContextData context) {
+String? filterInput(String input, ContextData context) {
   if (input.isNotEmpty) {
     return input;
   }

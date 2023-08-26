@@ -7,7 +7,7 @@ repository: https://github.com/nyxx-discord/nyxx_commands
 issue_tracker: https://github.com/nyxx-discord/nyxx_commands/issues
 
 environment:
-  sdk: '>=2.17.0 <4.0.0'
+  sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
   analyzer: ^5.7.1
@@ -15,8 +15,7 @@ dependencies:
   dart_style: ^2.2.5
   logging: ^1.1.1
   meta: ^1.9.0
-  nyxx: ^5.0.0
-  nyxx_interactions: ^4.6.0
+  nyxx: ^6.0.0-dev.2
   random_string: ^2.3.1
   path: ^1.8.3
   runtime_type: ^1.0.1

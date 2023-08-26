@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../../context/base.dart';
 import '../../util/view.dart';
@@ -11,37 +10,30 @@ import '../fallback.dart';
 import 'member.dart';
 import 'snowflake.dart';
 
-Future<IUser?> snowflakeToUser(Snowflake snowflake, IContextData context) async {
-  IUser? cached = context.client.users[snowflake];
-  if (cached != null) {
-    return cached;
+Future<User?> snowflakeToUser(Snowflake snowflake, ContextData context) async {
+  try {
+    return await context.client.users.get(snowflake);
+  } on HttpResponseError {
+    return null;
   }
-
-  if (context.client is INyxxRest) {
-    try {
-      return await (context.client as INyxxRest).httpEndpoints.fetchUser(snowflake);
-    } on IHttpResponseError {
-      return null;
-    }
-  }
-
-  return null;
 }
 
-FutureOr<IUser?> memberToUser(IMember member, IContextData context) => member.user.getOrDownload();
+FutureOr<User?> memberToUser(Member member, ContextData context) =>
+    member.manager.client.users.get(member.id);
 
-FutureOr<IUser?> convertUser(StringView view, IContextData context) {
+Future<User?> convertUser(StringView view, ContextData context) async {
   String word = view.getWord();
+  TextChannel channel = context.channel;
 
-  if (context.channel.channelType == ChannelType.dm ||
-      context.channel.channelType == ChannelType.groupDm) {
-    List<IUser> exact = [];
-    List<IUser> caseInsensitive = [];
-    List<IUser> start = [];
+  if (channel.type == ChannelType.dm || channel.type == ChannelType.groupDm) {
+    List<User> exact = [];
+    List<User> caseInsensitive = [];
+    List<User> start = [];
 
     for (final user in [
-      ...(context.channel as IDMChannel).participants,
-      if (context.client is INyxxRest) (context.client as INyxxRest).self,
+      if (channel is DmChannel) channel.recipient,
+      if (channel is GroupDmChannel) ...channel.recipients,
+      await context.client.users.fetchCurrentUser(),
     ]) {
       if (user.username == word) {
         exact.add(user);
@@ -62,18 +54,19 @@ FutureOr<IUser?> convertUser(StringView view, IContextData context) {
       }
     }
   }
+
   return null;
 }
 
-MultiselectOptionBuilder userToMultiselectOption(IUser user) => MultiselectOptionBuilder(
-      '${user.username}#${user.formattedDiscriminator}',
-      user.id.toString(),
+SelectMenuOptionBuilder userToMultiselectOption(User user) => SelectMenuOptionBuilder(
+      label: '@${user.username}',
+      value: user.id.toString(),
     );
 
-ButtonBuilder userToButton(IUser user) => ButtonBuilder(
-      '${user.username}#${user.formattedDiscriminator}',
-      '',
-      ButtonStyle.primary,
+ButtonBuilder userToButton(User user) => ButtonBuilder(
+      style: ButtonStyle.primary,
+      label: '@${user.username}',
+      customId: '',
     );
 
 /// A converter that converts input to an [IUser].
@@ -83,11 +76,11 @@ ButtonBuilder userToButton(IUser user) => ButtonBuilder(
 /// an [IUser]. If this fails, the user will be looked up by name.
 ///
 /// This converter has a Discord Slash Command Argument Type of [CommandOptionType.user].
-const Converter<IUser> userConverter = FallbackConverter<IUser>(
+const Converter<User> userConverter = FallbackConverter<User>(
   [
-    CombineConverter<Snowflake, IUser>(snowflakeConverter, snowflakeToUser),
-    CombineConverter<IMember, IUser>(memberConverter, memberToUser),
-    Converter<IUser>(convertUser),
+    CombineConverter<Snowflake, User>(snowflakeConverter, snowflakeToUser),
+    CombineConverter<Member, User>(memberConverter, memberToUser),
+    Converter<User>(convertUser),
   ],
   type: CommandOptionType.user,
   toMultiselectOption: userToMultiselectOption,
