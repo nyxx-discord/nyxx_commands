@@ -7,7 +7,7 @@
 // - Set the environment variable `GUILD` to the ID of the Discord guild (server) you want the
 //   commands to be registered to
 
-// nyxx is needed to create the client & use nyxx classes like IMessage or IGuild
+// nyxx is needed to create the client & use nyxx classes like Message or Guild
 import 'package:nyxx/nyxx.dart';
 // nyxx_commands is needed to use the commands plugin
 import 'package:nyxx_commands/nyxx_commands.dart';
@@ -32,15 +32,16 @@ void main() async {
   CommandsPlugin commands = CommandsPlugin(
     // The `prefix` parameter determines what prefix nyxx_commands will use for text commands.
     //
-    // It isn't a simple string but a function that takes a single argument, an `IMessage`, and
-    // returns a `String` indicating what prefix to use for that message. This allows you to have
-    // different prefixes for different messages, for example you might want the bot to not require
-    // a prefix when in direct messages. In that case, you might provide a function like this:
+    // It isn't a simple string but a function that takes a single argument, a `MessageCreateEvent`,
+    // and returns a `String` indicating what prefix to use for that message. This allows you to
+    // have/ different prefixes for different messages, for example you might want the bot to not
+    // require a prefix when in direct messages. In that case, you might provide a function like
+    // this:
     // ```dart
-    // prefix: (message) {
-    //   if (message.startsWith('!')) {
+    // prefix: (event) {
+    //   if (event.message.content.startsWith('!')) {
     //     return '!';
-    //   } else if (message.guild == null) {
+    //   } else if (event.guild == null) {
     //     return '';
     //   }
     // }
@@ -50,9 +51,6 @@ void main() async {
     prefix: (message) => '!',
 
     // The `guild` parameter determines what guild slash commands will be registered to by default.
-    //
-    // This is useful for testing since registering slash commands globally can take up to an hour,
-    // whereas registering commands for a single guild is instantaneous.
     //
     // If you aren't testing or want your commands to be registered globally, either omit this
     // parameter or set it to `null`.
@@ -73,10 +71,8 @@ void main() async {
     ),
   );
 
-  // Since v3.0.0, nyxx_commands can be used as a plugin with nyxx v3.0.0
-
-  // To use a plugin, we must first obtain an instance of INyxx:
-  // nyxx_commands doesn't yet support using INyxxRest, so we have to use INyxxWebsocket
+  // Now we have our `CommandsPlugin`, we can connect to Discord, making sure to pass our `commands`
+  // instance to the client's options.
   await Nyxx.connectGateway(
     Platform.environment['TOKEN']!,
     GatewayIntents.allUnprivileged | GatewayIntents.guildMembers,
@@ -110,7 +106,7 @@ void main() async {
     // as an executable. If you just want to run nyxx_commands with `dart run`, this is optional and
     // you can just pass a normal function to the constructor.
     //
-    // The first parameter to this function must be a `IChatContext`. A `IChatContext` allows you to access
+    // The first parameter to this function must be a `ChatContext`. A `ChatContext` allows you to access
     // various information about how the command was run: the user that executed it, the guild it
     // was ran in and a few other useful pieces of information.
     // `IChatContext` also has a couple of methods that make it easier to respond to commands.
@@ -269,7 +265,7 @@ void main() async {
   // class is used.
   //
   // nyxx_commands registers a few converters by default for commonly used types such as `int`s,
-  // `double`s, `IMember`s and others. We'll look into creating custom converters later, and for now
+  // `double`s, `Member`s and others. We'll look into creating custom converters later, and for now
   // just use the built-in converters.
 
   // Using converters is just as simple as using arguments: simply specify the argument name and
@@ -280,8 +276,8 @@ void main() async {
   ChatCommand nick = ChatCommand(
     'nick',
     "Change a user's nickname",
-    // Setting the type of the `target` parameter to `IMember` will make nyxx_commands convert user
-    // input to instances of `IMember`.
+    // Setting the type of the `target` parameter to `Member` will make nyxx_commands convert user
+    // input to instances of `Member`.
     id('nick', (ChatContext context, Member target, String newNick) async {
       try {
         await target.update(MemberUpdateBuilder(nick: newNick));
@@ -320,7 +316,7 @@ void main() async {
   // You can also run the command from a text message, with `!nick *target* *new-nick*`. Unlike
   // slash commands, there is no way to filter user input before it gets to our bot, so we might end
   // up with an invalid input.
-  // If that is the case, the converter for `IMember` will be unable to convert the user input to a
+  // If that is the case, the converter for `Member` will be unable to convert the user input to a
   // valid member, and the command will fail with an exception.
   //
   // Note that the bot must have the MANAGE_MEMBERS permission and have a higher role than the
@@ -357,7 +353,7 @@ void main() async {
     // The first parameter to the function is an instance of `StringView`. `StringView` allows you
     // to manipulate and extract data from a `String`, but also allows the next converter to know
     // where to start parsing its argument from.
-    // The second parameter is the current `IChatContext` in which the argument is being parsed.
+    // The second parameter is the current `ChatContext` in which the argument is being parsed.
     (view, context) {
       // In our case, we want to return a `Shape` based on the user's input. The `getQuotedWord()`
       // will get the next quoted word from the input.
@@ -486,8 +482,7 @@ void main() async {
   // ```dart
   // (IChatContext context, [String? a, String? b, String? c]) {}
   // ```
-  // In this case, `b` having a value does not guarantee `a` has a value. As such, it is always
-  // better to provide a default for your optional parameters instead of making them nullable.
+  // In this case, `b` having a value does not guarantee `a` has a value.
 
   // As an example for using optional arguments, let's create a command with an optional argument:
   ChatCommand favoriteFruit = ChatCommand(
