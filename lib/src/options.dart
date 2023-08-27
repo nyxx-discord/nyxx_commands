@@ -7,7 +7,7 @@ import 'context/base.dart';
 /// Options that modify how the [CommandsPlugin] instance works.
 ///
 /// You might also be interested in:
-/// - [CommandOptions], the options for individual [IOptions] instances.
+/// - [CommandOptions], the options for individual [Options] instances.
 class CommandsOptions implements CommandOptions {
   /// Whether to automatically log exceptions.
   ///

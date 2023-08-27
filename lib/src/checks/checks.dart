@@ -59,7 +59,7 @@ abstract class AbstractCheck {
   ///
   /// You might also be interested in:
   /// - [allowsDm], for controlling whether a command can be executed in a DM;
-  /// - [PermissionsConstants], for finding the integer that represents a certain permission.
+  /// - [Permissions], for finding the integer that represents a certain permission.
   FutureOr<Flags<Permissions>?> get requiredPermissions;
 
   /// An iterable of callbacks executed before a command is executed but after all the checks for

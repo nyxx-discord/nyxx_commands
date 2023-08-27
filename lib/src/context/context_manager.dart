@@ -20,16 +20,17 @@ import 'user_context.dart';
 class ContextManager {
   /// The [CommandsPlugin] this [ContextManager] is attached to.
   ///
-  /// All contexts created by this [ContextManager] will include [commands] as [IContext.commands].
+  /// All contexts created by this [ContextManager] will include [commands] as
+  /// [ContextData.commands].
   ///
   /// You might also be interested in:
-  /// - [IContext.commands], the property which exposes the [CommandsPlugin] to commands.
+  /// - [ContextData.commands], the property which exposes the [CommandsPlugin] to commands.
   final CommandsPlugin commands;
 
   /// Create a new [ContextManager] attached to a [CommandsPlugin].
   ContextManager(this.commands);
 
-  /// Create a [MessageChatContext] from an [IMessage].
+  /// Create a [MessageChatContext] from a [Message].
   ///
   /// [message] is the message that triggered the command, [contentView] is a [StringView] of the
   /// message's content with the prefix already skipped and [prefix] is the content of the match
@@ -71,10 +72,10 @@ class ContextManager {
     );
   }
 
-  /// Create an [InteractionChatContext] from an [ISlashCommandInteractionEvent].
+  /// Create an [InteractionChatContext] from an [ApplicationCommandInteraction].
   ///
-  /// [interactionEvent] is the interaction event that triggered the command and [command] is the
-  /// command executed by the event.
+  /// [interaction] is the interaction that triggered the command and [command] is the command
+  /// executed by the event.
   ///
   /// You might also be interested in:
   /// - [createMessageChatContext], for creating [ChatContext]s from message events.
@@ -105,7 +106,7 @@ class ContextManager {
     );
   }
 
-  /// Create a [UserContext] from an [ISlashCommandInteractionEvent].
+  /// Create a [UserContext] from an [ApplicationCommandInteraction].
   ///
   /// [interaction] is the interaction event that triggered the command and [command] is the
   /// command executed by the event.
@@ -135,7 +136,7 @@ class ContextManager {
     );
   }
 
-  /// Create a [MessageContext] from an [ISlashCommandInteractionEvent].
+  /// Create a [MessageContext] from an [ApplicationCommandInteraction].
   ///
   /// [interaction] is the interaction event that triggered the command and [command] is the
   /// command executed by the event.
@@ -163,7 +164,7 @@ class ContextManager {
     );
   }
 
-  /// Create an [AutocompleteContext] from an [IAutocompleteInteractionEvent].
+  /// Create an [AutocompleteContext] from an [ApplicationCommandAutocompleteInteraction].
   ///
   /// [interaction] is the interaction event that triggered the autocomplete action and
   /// [command] is the command to which the autocompleted parameter belongs.
@@ -191,7 +192,7 @@ class ContextManager {
     );
   }
 
-  /// Create a [ButtonComponentContext] from an [IButtonInteractionEvent].
+  /// Create a [ButtonComponentContext] from a [MessageComponentInteraction].
   ///
   /// [interaction] is the interaction event that triggered this context's creation.
   Future<ButtonComponentContext> createButtonComponentContext(
@@ -211,7 +212,7 @@ class ContextManager {
     );
   }
 
-  /// Create a [SelectMenuContext] from an [IMultiselectInteractionEvent].
+  /// Create a [SelectMenuContext] from a [MessageComponentInteraction].
   ///
   /// [interaction] is the interaction event that triggered this context's creation and
   /// [selected] is the value(s) that were selected by the user.
@@ -234,7 +235,7 @@ class ContextManager {
     );
   }
 
-  /// Create a [ModalContext] from an [IModalInteractionEvent].
+  /// Create a [ModalContext] from a [ModalSubmitInteraction].
   ///
   /// [interaction] is the interaction event that triggered this context's creation.
   Future<ModalContext> createModalContext(ModalSubmitInteraction interaction) async {

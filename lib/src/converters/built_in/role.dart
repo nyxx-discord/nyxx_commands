@@ -9,15 +9,15 @@ import '../converter.dart';
 import '../fallback.dart';
 import 'snowflake.dart';
 
-FutureOr<Role?> snowflakeToRole(Snowflake snowflake, ContextData context) {
+Future<Role?> snowflakeToRole(Snowflake snowflake, ContextData context) async {
   try {
-    return context.guild?.roles.get(snowflake);
+    return await context.guild?.roles.get(snowflake);
   } on RoleNotFoundException {
     return null;
   }
 }
 
-FutureOr<Role?> convertRole(StringView view, ContextData context) async {
+Future<Role?> convertRole(StringView view, ContextData context) async {
   String word = view.getQuotedWord();
 
   if (context.guild != null) {
@@ -65,17 +65,28 @@ SelectMenuOptionBuilder roleToMultiselectOption(Role role) {
   return builder;
 }
 
-ButtonBuilder roleToButton(Role role) => ButtonBuilder(
-      style: ButtonStyle.primary,
-      label: role.name,
-      emoji: null,
-      customId: '',
-    );
+ButtonBuilder roleToButton(Role role) {
+  final builder = ButtonBuilder(
+    style: ButtonStyle.primary,
+    label: role.name,
+    customId: '',
+  );
 
-/// A converter that converts input to an [IRole].
+  if (role.unicodeEmoji != null) {
+    builder.emoji = TextEmoji(
+      id: Snowflake.zero,
+      manager: role.manager.client.guilds[Snowflake.zero].emojis,
+      name: role.unicodeEmoji!,
+    );
+  }
+
+  return builder;
+}
+
+/// A converter that converts input to a [Role].
 ///
-/// This will first attempt to parse the input as a snowflake that will then be converted to an
-/// [IRole]. If this fails, then the role will be looked up by name in the current guild.
+/// This will first attempt to parse the input as a snowflake that will then be converted to a
+/// [Role]. If this fails, then the role will be looked up by name in the current guild.
 ///
 /// This converter has a Discord Slash Command argument type of [CommandOptionType.role].
 const Converter<Role> roleConverter = FallbackConverter<Role>(

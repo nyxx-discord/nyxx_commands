@@ -99,8 +99,8 @@ class AutocompleteFailedException extends CommandsException {
   /// The context in which the exception occurred.
   ///
   /// If the exception was not triggered by a slow response, default options can still be returned
-  /// by accessing the [AutocompleteContext.interactionEvent] and calling
-  /// [IAutocompleteInteractionEvent.respond] with the default options.
+  /// by accessing the [AutocompleteContext.interaction] and calling
+  /// [ApplicationCommandAutocompleteInteraction.respond] with the default options.
   final AutocompleteContext context;
 
   /// The exception that occurred.
@@ -110,7 +110,7 @@ class AutocompleteFailedException extends CommandsException {
   AutocompleteFailedException(this.exception, this.context) : super(exception.toString());
 }
 
-/// A wrapper class for an exception that was thrown inside the [ICommand.execute] callback.
+/// A wrapper class for an exception that was thrown inside the [Command.execute] callback.
 ///
 /// This generally indicates incorrect or incomplete code inside a command callback, and the
 /// developer should try to identify and fix the issue.
@@ -129,7 +129,7 @@ class UncaughtException extends CommandInvocationException {
 /// This is the exception thrown by [InteractiveContext.getButtonPress],
 /// [InteractiveContext.getSelection] and other methods that might time out.
 class InteractionTimeoutException extends CommandInvocationException {
-  /// Create a new [InteractionTimeouException].
+  /// Create a new [InteractionTimeoutException].
   InteractionTimeoutException(super.message, super.context);
 }
 

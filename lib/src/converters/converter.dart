@@ -25,15 +25,15 @@ import 'built_in.dart';
 /// - [doubleConverter], which converts [double]s;
 /// - [boolConverter], which converts [bool]s;
 /// - [snowflakeConverter], which converts [Snowflake]s;
-/// - [memberConverter], which converts [IMember]s;
-/// - [userConverter], which converts [IUser]s;
-/// - [guildChannelConverter], which converts [IGuildChannel]s;
-/// - [textGuildChannelConverter], which converts [ITextGuildChannel]s;
-/// - [voiceGuildChannelConverter], which converts [IVoiceGuildChannel]s;
-/// - [stageVoiceChannelConverter], which converts [IStageVoiceGuildChannel]s;
-/// - [roleConverter], which converts [IRole]s;
-/// - [mentionableConverter], which converts [Mentionable]s;
-/// - [attachmentConverter], which converts [IAttachment]s.
+/// - [memberConverter], which converts [Member]s;
+/// - [userConverter], which converts [User]s;
+/// - [guildChannelConverter], which converts [GuildChannel]s;
+/// - [textGuildChannelConverter], which converts [GuildTextChannel]s;
+/// - [voiceGuildChannelConverter], which converts [GuildVoiceChannel]s;
+/// - [stageVoiceChannelConverter], which converts [GuildStageChannel]s;
+/// - [roleConverter], which converts [Role]s;
+/// - [mentionableConverter], which converts [CommandOptionMentionable]s;
+/// - [attachmentConverter], which converts [Attachment]s.
 ///
 /// You can override these default implementations with your own by calling
 /// [CommandsPlugin.addConverter] with your own converter for one of the types mentioned above.
@@ -89,7 +89,7 @@ class Converter<T> {
   final FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext)?
       autocompleteCallback;
 
-  /// A function called to provide [MultiselectOptionBuilder]s that can be used to represent an
+  /// A function called to provide [SelectMenuOptionBuilder]s that can be used to represent an
   /// element converted by this converter.
   ///
   /// The builder returned by this function should have a value that this converter will be able to
@@ -106,7 +106,7 @@ class Converter<T> {
   ///
   /// You might also be interested in:
   /// - [InteractiveContext.getButtonSelection], which makes use of this function;
-  /// - [toMultiselectOption], similar to this function but for [MultiselectOptionBuilder]s.
+  /// - [toMultiselectOption], similar to this function but for [SelectMenuOptionBuilder]s.
   final FutureOr<ButtonBuilder> Function(T)? toButton;
 
   /// Create a new converter.
@@ -137,7 +137,7 @@ class Converter<T> {
 ///   the converter to use.
 ///
 /// You might also be interested in:
-/// - [ICommand.invoke], which parses multiple arguments and executes a command.
+/// - [Command.invoke], which parses multiple arguments and executes a command.
 Future<T> parse<T>(
   CommandsPlugin commands,
   ContextData context,

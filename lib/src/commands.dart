@@ -24,28 +24,25 @@ final Logger logger = Logger('Commands');
 
 /// The base plugin used to interact with nyxx_commands.
 ///
-/// Since nyxx 3.0.0, classes can extend [BasePlugin] and be registered as plugins to an existing
-/// nyxx client by calling [INyxx.registerPlugin]. nyxx_commands uses that interface, which avoids
-/// the need for a separate wrapper class.
-///
 /// Commands can be added to nyxx_commands with the [addCommand] method. Once you've added the
 /// [CommandsPlugin] to your nyxx client, these commands will automatically become available once
 /// the client is ready.
 ///
-/// The [CommandsPlugin] will automatically subscribe to all the event streams it needs, as well as
-/// create its own instance of [IInteractions] for using slash commands. If you want to access this
-/// instance for your own use, it is available through the [interactions] getter.
+/// The [CommandsPlugin] will automatically subscribe to all the event streams it needs. It will
+/// also bulk override all globally registered slash commands and guild commands in the guilds where
+/// commands with [GuildCheck]s are registered.
 ///
 /// For example, here is how you would create and register [CommandsPlugin]:
 /// ```dart
-/// INyxxWebsocket client = NyxxFactory.createNyxxWebsocket(...);
-///
-/// CommandsPlugin commands = CommandsPlugin(
+/// final commands = CommandsPlugin(
 ///   prefix: (_) => '!',
 /// );
 ///
-/// client.registerPlugin(commands);
-/// client.connect();
+/// final client = await Nyxx.connectGateway(
+///   token,
+///   intents,
+///   options: GatewayClientOptions(plugins: [commands]),
+/// );
 /// ```
 ///
 /// [CommandsPlugin] is also where [Converter]s are managed and stored. New developers need not
@@ -155,9 +152,6 @@ class CommandsPlugin extends NyxxPlugin implements CommandGroup<CommandContext> 
   final Set<NyxxGateway> _attachedClients = {};
 
   /// Create a new [CommandsPlugin].
-  ///
-  /// Note that the plugin must then be added to a nyxx client with [INyxx.registerPlugin] before it
-  /// can be used.
   CommandsPlugin({
     required this.prefix,
     this.guild,

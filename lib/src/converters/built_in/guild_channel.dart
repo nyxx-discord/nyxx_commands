@@ -58,7 +58,7 @@ Future<GuildChannel?> convertGuildChannel(StringView view, ContextData context) 
   return null;
 }
 
-/// A converter that converts input to one or more types of [IGuildChannel]s.
+/// A converter that converts input to one or more types of [GuildChannel]s.
 ///
 /// This converter will only allow users to select channels of one of the types in [channelTypes],
 /// and then will further only accept channels of type `T`.
@@ -69,11 +69,11 @@ Future<GuildChannel?> convertGuildChannel(StringView view, ContextData context) 
 /// validated beyond being assignable to `T`.
 ///
 /// You might also be interested in:
-/// - [guildChannelConverter], a converter for all [IGuildChannel]s;
-/// - [textGuildChannelConverter], a converter for [ITextGuildChannel]s;
-/// - [voiceGuildChannelConverter], a converter for [IVoiceGuildChannel]s;
-/// - [categoryGuildChannelConverter], a converter for [ICategoryGuildChannel]s;
-/// - [stageVoiceChannelConverter], a converter for [IStageVoiceGuildChannel]s.
+/// - [guildChannelConverter], a converter for all [GuildChannel]s;
+/// - [textGuildChannelConverter], a converter for [GuildTextChannel]s;
+/// - [voiceGuildChannelConverter], a converter for [GuildVoiceChannel]s;
+/// - [categoryGuildChannelConverter], a converter for [GuildCategory]s;
+/// - [stageVoiceChannelConverter], a converter for [GuildStageChannel]s.
 class GuildChannelConverter<T extends GuildChannel> implements Converter<T> {
   /// The types of channels this converter allows users to select.
   ///
@@ -136,57 +136,57 @@ class GuildChannelConverter<T extends GuildChannel> implements Converter<T> {
       );
 }
 
-/// A converter that converts input to an [IGuildChannel].
+/// A converter that converts input to a [GuildChannel].
 ///
 /// This will first attempt to parse the input as a [Snowflake] that will then be converted to an
-/// [IGuildChannel]. If this fails, the channel will be looked up by name in the current guild.
+/// [GuildChannel]. If this fails, the channel will be looked up by name in the current guild.
 ///
 /// This converter has a Discord Slash Command argument type of [CommandOptionType.channel] and is
 /// set to accept all channel types.
 const GuildChannelConverter<GuildChannel> guildChannelConverter = GuildChannelConverter(null);
 
-/// A converter that converts input to an [ITextGuildChannel].
+/// A converter that converts input to an [GuildTextChannel].
 ///
 /// This will first attempt to parse the input as a [Snowflake] that will then be converted to an
-/// [ITextGuildChannel]. If this fails, the channel will be looked up by name in the current guild.
+/// [GuildTextChannel]. If this fails, the channel will be looked up by name in the current guild.
 ///
 /// This converter has a Discord Slash Command argument type of [CommandOptionType.channel] and is
-/// set to accept channels of type [ChannelType.text].
+/// set to accept channels of type [ChannelType.guildText].
 const GuildChannelConverter<GuildTextChannel> textGuildChannelConverter = GuildChannelConverter([
   ChannelType.guildText,
 ]);
 
-/// A converter that converts input to an [IVoiceGuildChannel].
+/// A converter that converts input to an [GuildVoiceChannel].
 ///
 /// This will first attempt to parse the input as a [Snowflake] that will then be converted to an
-/// [IVoiceGuildChannel]. If this fails, the channel will be looked up by name in the current guild.
+/// [GuildVoiceChannel]. If this fails, the channel will be looked up by name in the current guild.
 ///
 /// This converter has a Discord Slash Command argument type of [CommandOptionType.channel] and is
-/// set to accept channels of type [ChannelType.voice].
+/// set to accept channels of type [ChannelType.guildVoice].
 const GuildChannelConverter<GuildVoiceChannel> voiceGuildChannelConverter = GuildChannelConverter([
   ChannelType.guildVoice,
 ]);
 
-/// A converter that converts input to an [ICategoryGuildChannel].
+/// A converter that converts input to an [GuildCategory].
 ///
 /// This will first attempt to parse the input as a [Snowflake] that will then be converted to an
-/// [ICategoryGuildChannel]. If this fails, the channel will be looked up by name in the current
+/// [GuildCategory]. If this fails, the channel will be looked up by name in the current
 /// guild.
 ///
 /// This converter has a Discord Slash Command argument type of [CommandOptionType.channel] and it
-/// set to accept channels of type [ChannelType.category].
+/// set to accept channels of type [ChannelType.guildCategory].
 const GuildChannelConverter<GuildCategory> categoryGuildChannelConverter = GuildChannelConverter([
   ChannelType.guildCategory,
 ]);
 
-/// A converter that converts input to an [IStageVoiceGuildChannel].
+/// A converter that converts input to an [GuildStageChannel].
 ///
 /// This will first attempt to parse the input as a [Snowflake] that will then be converted to an
-/// [IStageVoiceGuildChannel]. If this fails, the channel will be looked up by name in the current
+/// [GuildStageChannel]. If this fails, the channel will be looked up by name in the current
 /// guild.
 ///
 /// This converter has a Discord Slash Command argument type of [CommandOptionType.channel] and is
-/// set to accept channels of type [ChannelType.guildStage].
+/// set to accept channels of type [ChannelType.guildStageVoice].
 const GuildChannelConverter<GuildStageChannel> stageVoiceChannelConverter = GuildChannelConverter([
   ChannelType.guildStageVoice,
 ]);

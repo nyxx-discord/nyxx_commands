@@ -14,7 +14,7 @@ class AutocompleteContext extends ContextBase implements InteractionContextData 
 
   /// The option that the user is currently filling in.
   ///
-  /// Other options might have already been filled in and are accessible through [interactionEvent].
+  /// Other options might have already been filled in and are accessible through [interaction].
   final InteractionOption option;
 
   /// The value the user has put in [option] so far.

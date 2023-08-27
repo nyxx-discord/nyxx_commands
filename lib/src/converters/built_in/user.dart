@@ -69,11 +69,11 @@ ButtonBuilder userToButton(User user) => ButtonBuilder(
       customId: '',
     );
 
-/// A converter that converts input to an [IUser].
+/// A converter that converts input to a [User].
 ///
-/// This will first attempt to parse the input to a snowflake which will then be converted to an
-/// [IUser]. If this fails, the input will be parsed as an [IMember] which will then be converted to
-/// an [IUser]. If this fails, the user will be looked up by name.
+/// This will first attempt to parse the input to a snowflake which will then be converted to a
+/// [User]. If this fails, the input will be parsed as a [Member] which will then be converted to
+/// a [User]. If this fails, the user will be looked up by name.
 ///
 /// This converter has a Discord Slash Command Argument Type of [CommandOptionType.user].
 const Converter<User> userConverter = FallbackConverter<User>(

@@ -126,7 +126,7 @@ class Choices {
   /// The values can be either [String]s or [int]s.
   ///
   /// You might also be interested in:
-  /// - [ArgChoiceBuilder], the nyxx_interactions builder these entries are converted to.
+  /// - [CommandOptionChoiceBuilder], the nyxx_interactions builder these entries are converted to.
   final Map<String, dynamic> choices;
 
   /// Create a new [Choices].

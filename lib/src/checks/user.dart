@@ -10,7 +10,7 @@ class UserCheck extends Check {
   /// Create a new [UserCheck] that succeeds if the context was created by [user].
   ///
   /// You might also be interested in:
-  /// - [UserCheck.id], for creating this same check without an instance of [IUser],
+  /// - [UserCheck.id], for creating this same check without an instance of [User],
   /// - [UserCheck.any], for checking that a context was created by a user in a set or users.
   UserCheck(User user, {String? name}) : this.id(user.id, name: name);
 
@@ -25,7 +25,7 @@ class UserCheck extends Check {
   /// Create a new [UserCheck] that succeeds if the context was created by any one of [users].
   ///
   /// You might also be interested in:
-  /// - [UserCheck.anyId], for creating this same check without instance of [IUser].
+  /// - [UserCheck.anyId], for creating this same check without instance of [User].
   UserCheck.any(Iterable<User> users, {String? name})
       : this.anyId(users.map((user) => user.id), name: name);
 
@@ -47,7 +47,7 @@ class RoleCheck extends Check {
   /// Create a new [RoleCheck] that succeeds if the user that created the context has [role].
   ///
   /// You might also be interested in:
-  /// - [RoleCheck.id], for creating this same check without an instance of [IRole];
+  /// - [RoleCheck.id], for creating this same check without an instance of [Role];
   /// - [RoleCheck.any], for checking that the user that created a context has one of a set or
   ///   roles.
   RoleCheck(Role role, {String? name}) : this.id(role.id, name: name);
@@ -64,7 +64,7 @@ class RoleCheck extends Check {
   /// Create a new [RoleCheck] that succeeds if the user that created the context has any of [roles].
   ///
   /// You might also be interested in:
-  /// - [RoleCheck.anyId], for creating this same check without instances of [IRole].
+  /// - [RoleCheck.anyId], for creating this same check without instances of [Role].
   RoleCheck.any(Iterable<Role> roles, {String? name})
       : this.anyId(roles.map((role) => role.id), name: name);
 

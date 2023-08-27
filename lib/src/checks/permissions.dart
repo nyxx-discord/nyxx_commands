@@ -14,7 +14,7 @@ class PermissionsCheck extends Check {
   /// The bitfield representing the permissions required by this check.
   ///
   /// You might also be interested in:
-  /// - [PermissionsConstants], for computing the value for this field;
+  /// - [Permissions], for computing the value for this field;
   /// - [AbstractCheck.requiredPermissions], for setting permissions on any check.
   final Flags<Permissions> permissions;
 
@@ -155,5 +155,5 @@ class PermissionsCheck extends Check {
     bool allowsOverrides = true,
     String? name,
     bool allowsDm = true,
-  }) : this(Permissions(0), allowsOverrides: allowsOverrides, allowsDm: allowsDm, name: name);
+  }) : this(const Permissions(0), allowsOverrides: allowsOverrides, allowsDm: allowsDm, name: name);
 }

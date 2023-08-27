@@ -42,9 +42,17 @@ class EventManager {
     _listeners[type]![id] ??= completer;
 
     if (id.expiresAt != null) {
-      Timer(id.expiresIn!, () {
+      final expiresIn = id.expiresIn!;
+
+      Timer(expiresIn, () {
         if (!completer.isCompleted) {
-          completer.completeError(TimeoutException(null, id.expiresIn), StackTrace.current);
+          completer.completeError(
+            TimeoutException(
+              'Timed out waiting for interaction on $id',
+              expiresIn,
+            ),
+            StackTrace.current,
+          );
         }
 
         stopListeningFor(id);
@@ -109,23 +117,27 @@ class EventManager {
     }
   }
 
-  /// The handler for [IButtonInteractionEvent]s. Attach to [IEventController.onButtonEvent].
+  /// The handler for button [MessageComponentInteraction]s.
+  ///
+  /// Attach to [NyxxGateway.onMessageComponentInteraction] where the component is a button.
   Future<void> processButtonInteraction(MessageComponentInteraction interaction) =>
       _processComponentEvent(
         interaction,
         commands.contextManager.createButtonComponentContext,
       );
 
-  /// The handler for [IMultiselectInteractionEvent]s. Attach to
-  /// [IEventController.onMultiselectEvent].
+  /// The handler for select menu [MessageComponentInteraction]s.
+  ///
+  /// Attach to [NyxxGateway.onMessageComponentInteraction] where the component is a select menu.
   Future<void> processSelectMenuInteraction(MessageComponentInteraction interaction) =>
       _processComponentEvent<SelectMenuContext<List<String>>>(
         interaction,
         (event) => commands.contextManager.createSelectMenuContext(event, event.data.values!),
       );
 
-  /// A handler for [IMessageReceivedEvent]s. Attach to
-  /// [IWebsocketEventController.onMessageReceived], and pass in the inner [IMessage] object.
+  /// A handler for [MessageCreateEvent]s.
+  ///
+  /// Attach to [NyxxGateway.onMessageCreate].
   Future<void> processMessageCreateEvent(MessageCreateEvent event) async {
     final message = event.message;
 
@@ -183,25 +195,29 @@ class EventManager {
     await context.command.invoke(context);
   }
 
-  /// A handler for chat [ISlashCommandInteractionEvent]s. Attach to
-  /// [IEventController.onSlashCommand] and pass the [ChatCommand] for which the event was
-  /// triggered, or use [SlashCommandBuilder.registerHandler].
+  /// A handler for chat [ApplicationCommandInteraction]s where the command is a chat command.
+  ///
+  /// Attach to [NyxxGateway.onApplicationCommandInteraction] where the command is a chat command.
+  ///
+  /// [command] is the [ChatCommand] resolved to be the target of the interaction.
+  /// [options] are the options passed to the command in the [interaction], excluding subcommand
+  /// options.
   Future<void> processChatInteraction(
-    ApplicationCommandInteraction interactionEvent,
+    ApplicationCommandInteraction interaction,
     List<InteractionOption> options,
     ChatCommand command,
   ) async =>
       processInteractionCommand(
         await commands.contextManager.createInteractionChatContext(
-          interactionEvent,
+          interaction,
           options,
           command,
         ),
       );
 
-  /// A handler for user [ISlashCommandInteractionEvent]s. Attach to
-  /// [IEventController.onSlashCommand] and pass the [UserCommand] for which the event was
-  /// triggered, or use [SlashCommandBuilder.registerHandler].
+  /// A handler for chat [ApplicationCommandInteraction]s where the command is a user command.
+  ///
+  /// Attach to [NyxxGateway.onApplicationCommandInteraction] where the command is a user command.
   Future<void> processUserInteraction(
     ApplicationCommandInteraction interactionEvent,
     UserCommand command,
@@ -210,9 +226,10 @@ class EventManager {
         await commands.contextManager.createUserContext(interactionEvent, command),
       );
 
-  /// A handler for message [ISlashCommandInteractionEvent]s. Attach to
-  /// [IEventController.onSlashCommand] and pass the [MessageCommand] for which the event was
-  /// triggered, or use [SlashCommandBuilder.registerHandler].
+  /// A handler for chat [ApplicationCommandInteraction]s where the command is a message command.
+  ///
+  /// Attach to [NyxxGateway.onApplicationCommandInteraction] where the command is a message
+  /// command.
   Future<void> processMessageInteraction(
     ApplicationCommandInteraction interactionEvent,
     MessageCommand command,
@@ -221,10 +238,12 @@ class EventManager {
         await commands.contextManager.createMessageContext(interactionEvent, command),
       );
 
-  /// A handler for [IAutocompleteInteractionEvent]s. Attach to
-  /// [IEventController.onAutocompleteEvent] and pass in the autocompletion callback and the command
-  /// for which the argument is being autocompleted, or use
-  /// [CommandOptionBuilder.registerAutocompleteHandler].
+  /// A handler for [ApplicationCommandAutocompleteInteraction]s.
+  ///
+  /// Attach to [NyxxGateway.onApplicationCommandAutocompleteInteraction].
+  ///
+  /// [callback] is the autocompletion callback for the focused option.
+  /// [command] is the command the interaction is targeting.
   Future<void> processAutocompleteInteraction(
     ApplicationCommandAutocompleteInteraction interactionEvent,
     FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext) callback,

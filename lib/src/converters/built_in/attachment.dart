@@ -68,7 +68,7 @@ ButtonBuilder attachmentToButton(Attachment attachment) => ButtonBuilder(
       customId: '',
     );
 
-/// A converter that converts input to an [IAttachment].
+/// A converter that converts input to an [Attachment].
 ///
 /// This will first attempt to parse the input to a snowflake that will then be resolved as the ID
 /// of one of the attachments in the message or interaction. If this fails, then the attachment will

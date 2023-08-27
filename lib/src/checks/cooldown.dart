@@ -36,7 +36,7 @@ class CooldownType extends Flags<CooldownType> {
   /// A cooldown type that sorts contexts depending on the highest-level role the user invoking the
   /// command has.
   ///
-  /// If the user has no role, then the [IGuild.everyoneRole] for that guild is used.
+  /// If the user has no role, then the id of the [Guild] is used.
   /// If the context was not invoked from a guild, then this type behaves the same as [user].
   static const Flag<CooldownType> role = Flag<CooldownType>.fromOffset(5);
 
@@ -52,6 +52,7 @@ class CooldownType extends Flags<CooldownType> {
   /// Combine two cooldown types.
   ///
   /// For details on how cooldown types are combined, see [CooldownCheck.getKey].
+  @override
   CooldownType operator |(Flags<CooldownType> other) => CooldownType(value | other.value);
 
   @override

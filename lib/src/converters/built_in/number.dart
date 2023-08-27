@@ -62,13 +62,11 @@ int? convertInt(StringView view, ContextData context) => int.tryParse(view.getQu
 class IntConverter extends NumConverter<int> {
   /// Create a new [IntConverter].
   const IntConverter({
-    int? min,
-    int? max,
+    super.min,
+    super.max,
   }) : super(
           convertInt,
           type: CommandOptionType.integer,
-          min: min,
-          max: max,
         );
 }
 
@@ -93,13 +91,11 @@ double? convertDouble(StringView view, ContextData context) =>
 class DoubleConverter extends NumConverter<double> {
   /// Create a new [DoubleConverter].
   const DoubleConverter({
-    double? min,
-    double? max,
+    super.min,
+    super.max,
   }) : super(
           convertDouble,
           type: CommandOptionType.number,
-          min: min,
-          max: max,
         );
 }
 

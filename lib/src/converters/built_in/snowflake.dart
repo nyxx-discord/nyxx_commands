@@ -7,12 +7,11 @@ import '../converter.dart';
 final RegExp _snowflakePattern = RegExp(r'^(?:<(?:@(?:!|&)?|#)([0-9]{15,20})>|([0-9]{15,20}))$');
 
 Snowflake? convertSnowflake(StringView view, ContextData context) {
-  String word = view.getQuotedWord();
-  if (!_snowflakePattern.hasMatch(word)) {
+  final match = _snowflakePattern.firstMatch(view.getQuotedWord());
+
+  if (match == null) {
     return null;
   }
-
-  final RegExpMatch match = _snowflakePattern.firstMatch(word)!;
 
   // 1st group will catch mentions, second will catch raw IDs
   return Snowflake.parse(match.group(1) ?? match.group(2)!);

@@ -12,7 +12,7 @@ import 'converter.dart';
 /// another function.
 ///
 /// This has the effect of allowing further processing of the output of a converter, for example to
-/// transform a [Snowflake] into a [IMember].
+/// transform a [Snowflake] into a [Member].
 ///
 /// You might also be interested in:
 /// - [FallbackConverter], a converter that tries multiple converters successively.

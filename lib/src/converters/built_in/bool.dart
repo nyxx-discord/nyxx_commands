@@ -34,7 +34,7 @@ ButtonBuilder boolToButton(bool value) => ButtonBuilder(
 ///
 /// This converter will parse the input to `true` if the next word or quoted section of the input is
 /// one of `y`, `yes`, `+`, `1` or `true`. This comparison is case-insensitive.
-/// This converter will parse the input to `false` if the next work or quoted section of the input
+/// This converter will parse the input to `false` if the next word or quoted section of the input
 /// is one of `n`, `no`, `-`, `0` or `false`. This comparison is case-insensitive.
 ///
 /// If the input is not one of the aforementioned words, this converter will fail.
