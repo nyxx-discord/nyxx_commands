@@ -1,11 +1,15 @@
+## 6.0.0-dev.1
+__Breaking changes__
+- Update nyxx to version 6.0.0. See the changelog at https://pub.dev/packages/nyxx for more details.
+
 ## 5.0.2
 __Bug fixes__
-- Fix disposing the plugin partway through command execution causing errors
+- Fix disposing the plugin partway through command execution causing errors.
 
 ## 5.0.1
 __Bug fixes__
-- Fix component timeouts triggering instantly
-- Fix component wrappers causing null assertions to trigger
+- Fix component timeouts triggering instantly.
+- Fix component wrappers causing null assertions to trigger.
 
 ## 5.0.0
 __Breaking changes__
