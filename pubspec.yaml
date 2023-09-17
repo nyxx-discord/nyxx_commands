@@ -15,7 +15,7 @@ dependencies:
   dart_style: ^2.2.5
   logging: ^1.1.1
   meta: ^1.9.0
-  nyxx: ^6.0.0-dev.2
+  nyxx: ^6.0.0-dev.3
   random_string: ^2.3.1
   path: ^1.8.3
   runtime_type: ^1.0.1

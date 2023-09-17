@@ -55,7 +55,7 @@ final Logger logger = Logger('Commands');
 /// - [addCommand], for adding commands to your bot;
 /// - [check], for adding checks to your bot;
 /// - [MessageCommand] and [UserCommand], for creating Message and User Commands respectively.
-class CommandsPlugin extends NyxxPlugin implements CommandGroup<CommandContext> {
+class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<CommandContext> {
   /// A function called to determine the prefix for a specific message.
   ///
   /// This function should return a [Pattern] that should match the start of the message content if
@@ -167,17 +167,7 @@ class CommandsPlugin extends NyxxPlugin implements CommandGroup<CommandContext> 
   }
 
   @override
-  Future<ClientType> connect<ClientType extends Nyxx>(
-    ApiOptions apiOptions,
-    ClientOptions clientOptions,
-    Future<ClientType> Function() connect,
-  ) async {
-    final client = await super.connect(apiOptions, clientOptions, connect);
-
-    if (client is! NyxxGateway) {
-      throw CommandsError('CommandsPlugin must be used with NyxxGateway');
-    }
-
+  Future<void> afterConnect(NyxxGateway client) async {
     _attachedClients.add(client);
 
     client.onMessageComponentInteraction
@@ -244,8 +234,6 @@ class CommandsPlugin extends NyxxPlugin implements CommandGroup<CommandContext> 
     if (children.isNotEmpty) {
       _syncCommands(client);
     }
-
-    return client;
   }
 
   (ChatCommand, List<InteractionOption>) _resolveChatCommand(
@@ -268,11 +256,9 @@ class CommandsPlugin extends NyxxPlugin implements CommandGroup<CommandContext> 
   }
 
   @override
-  Future<void> close(Nyxx client, Future<void> Function() close) {
+  void beforeClose(NyxxGateway client) {
     registeredCommands.removeWhere((command) => command.manager.client == client);
     _attachedClients.remove(client);
-
-    return close();
   }
 
   Future<void> _syncCommands(NyxxGateway client) async {
