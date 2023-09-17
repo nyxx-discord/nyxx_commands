@@ -1,5 +1,4 @@
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../../context/base.dart';
 import '../../util/view.dart';
@@ -8,39 +7,35 @@ import '../converter.dart';
 import '../fallback.dart';
 import 'snowflake.dart';
 
-Future<IMember?> snowflakeToMember(Snowflake snowflake, IContextData context) async {
-  if (context.guild != null) {
-    IMember? cached = context.guild!.members[snowflake];
-    if (cached != null) {
-      return cached;
-    }
-
-    try {
-      return await context.guild!.fetchMember(snowflake);
-    } on IHttpResponseError {
-      return null;
-    }
+Future<Member?> snowflakeToMember(Snowflake snowflake, ContextData context) async {
+  try {
+    return await context.guild?.members.get(snowflake);
+  } on HttpResponseError {
+    return null;
   }
-  return null;
 }
 
-Future<IMember?> convertMember(StringView view, IContextData context) async {
+Future<Member?> convertMember(StringView view, ContextData context) async {
   String word = view.getQuotedWord();
 
   if (context.guild != null) {
-    Stream<IMember> named = context.guild!.searchMembersGateway(word, limit: 800000);
+    Stream<Member> named = context.client.gateway.listGuildMembers(
+      context.guild!.id,
+      query: word,
+      limit: 100,
+    );
 
-    List<IMember> usernameExact = [];
-    List<IMember> nickExact = [];
+    List<Member> usernameExact = [];
+    List<Member> nickExact = [];
 
-    List<IMember> usernameCaseInsensitive = [];
-    List<IMember> nickCaseInsensitive = [];
+    List<Member> usernameCaseInsensitive = [];
+    List<Member> nickCaseInsensitive = [];
 
-    List<IMember> usernameStart = [];
-    List<IMember> nickStart = [];
+    List<Member> usernameStart = [];
+    List<Member> nickStart = [];
 
     await for (final member in named) {
-      IUser user = await member.user.getOrDownload();
+      User user = await context.client.users.get(member.id);
 
       if (user.username == word) {
         usernameExact.add(member);
@@ -52,14 +47,14 @@ Future<IMember?> convertMember(StringView view, IContextData context) async {
         usernameStart.add(member);
       }
 
-      if (member.nickname != null) {
-        if (member.nickname! == word) {
+      if (member.nick != null) {
+        if (member.nick! == word) {
           nickExact.add(member);
         }
-        if (member.nickname!.toLowerCase() == word.toLowerCase()) {
+        if (member.nick!.toLowerCase() == word.toLowerCase()) {
           nickCaseInsensitive.add(member);
         }
-        if (member.nickname!.toLowerCase().startsWith(word.toLowerCase())) {
+        if (member.nick!.toLowerCase().startsWith(word.toLowerCase())) {
           nickStart.add(member);
         }
       }
@@ -81,41 +76,40 @@ Future<IMember?> convertMember(StringView view, IContextData context) async {
   return null;
 }
 
-Future<MultiselectOptionBuilder> memberToMultiselectOption(IMember member) async {
-  IUser user = await member.user.getOrDownload();
-  String name = member.nickname ?? user.username;
-  String discriminator = user.formattedDiscriminator;
+Future<SelectMenuOptionBuilder> memberToMultiselectOption(Member member) async {
+  User user = await member.manager.client.users.get(member.id);
+  String name = member.nick ?? user.globalName ?? user.username;
 
-  return MultiselectOptionBuilder(
-    '$name#$discriminator',
-    member.id.toString(),
+  return SelectMenuOptionBuilder(
+    label: name,
+    value: member.id.toString(),
+    description: '@${user.username}',
   );
 }
 
-Future<ButtonBuilder> memberToButton(IMember member) async {
-  IUser user = await member.user.getOrDownload();
-  String name = member.nickname ?? user.username;
-  String discriminator = user.formattedDiscriminator;
+Future<ButtonBuilder> memberToButton(Member member) async {
+  User user = await member.manager.client.users.get(member.id);
+  String name = member.nick ?? user.globalName ?? user.username;
 
   return ButtonBuilder(
-    '$name#$discriminator',
-    '',
-    ButtonStyle.primary,
+    style: ButtonStyle.primary,
+    label: '$name (@${user.globalName})',
+    customId: '',
   );
 }
 
-/// A converter that converts input to an [IMember].
+/// A converter that converts input to a [Member].
 ///
 /// This will first attempt to parse the input to a snowflake which will then be converted to an
-/// [IMember]. If this fails, the member will be looked up by name.
+/// [Member]. If this fails, the member will be looked up by name.
 ///
 /// This converter has a Discord Slash Command Argument Type of [CommandOptionType.user].
-const Converter<IMember> memberConverter = FallbackConverter<IMember>(
+const Converter<Member> memberConverter = FallbackConverter<Member>(
   [
     // Get member from mention or snowflake.
-    CombineConverter<Snowflake, IMember>(snowflakeConverter, snowflakeToMember),
+    CombineConverter<Snowflake, Member>(snowflakeConverter, snowflakeToMember),
     // Get member by name or nickname
-    Converter<IMember>(convertMember),
+    Converter<Member>(convertMember),
   ],
   type: CommandOptionType.user,
   toMultiselectOption: memberToMultiselectOption,

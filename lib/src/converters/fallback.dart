@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:nyxx_interactions/nyxx_interactions.dart';
+import 'package:nyxx/nyxx.dart';
 import 'package:runtime_type/runtime_type.dart';
 
 import '../context/autocomplete_context.dart';
@@ -25,12 +25,13 @@ class FallbackConverter<T> implements Converter<T> {
   final void Function(CommandOptionBuilder)? processOptionCallback;
 
   @override
-  final FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autocompleteCallback;
+  final FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext)?
+      autocompleteCallback;
 
-  final Iterable<ArgChoiceBuilder>? _choices;
+  final Iterable<CommandOptionChoiceBuilder<dynamic>>? _choices;
   final CommandOptionType? _type;
 
-  final FutureOr<MultiselectOptionBuilder> Function(T)? _toMultiselectOption;
+  final FutureOr<SelectMenuOptionBuilder> Function(T)? _toMultiselectOption;
 
   final FutureOr<ButtonBuilder> Function(T)? _toButton;
 
@@ -40,11 +41,11 @@ class FallbackConverter<T> implements Converter<T> {
   /// Create a new [FallbackConverter].
   const FallbackConverter(
     this.converters, {
-    Iterable<ArgChoiceBuilder>? choices,
+    Iterable<CommandOptionChoiceBuilder<dynamic>>? choices,
     CommandOptionType? type,
     this.processOptionCallback,
     this.autocompleteCallback,
-    FutureOr<MultiselectOptionBuilder> Function(T)? toMultiselectOption,
+    FutureOr<SelectMenuOptionBuilder> Function(T)? toMultiselectOption,
     FutureOr<ButtonBuilder> Function(T)? toButton,
   })  : _choices = choices,
         _type = type,
@@ -52,22 +53,22 @@ class FallbackConverter<T> implements Converter<T> {
         _toButton = toButton;
 
   @override
-  Iterable<ArgChoiceBuilder>? get choices {
+  Iterable<CommandOptionChoiceBuilder<dynamic>>? get choices {
     if (_choices != null) {
       return _choices;
     }
 
-    List<ArgChoiceBuilder> allChoices = [];
+    List<CommandOptionChoiceBuilder<dynamic>> allChoices = [];
 
     for (final converter in converters) {
-      Iterable<ArgChoiceBuilder>? converterChoices = converter.choices;
+      Iterable<CommandOptionChoiceBuilder<dynamic>>? converterChoices = converter.choices;
 
       if (converterChoices == null) {
         return null;
       }
 
       for (final choice in converterChoices) {
-        ArgChoiceBuilder existing =
+        CommandOptionChoiceBuilder<dynamic> existing =
             allChoices.singleWhere((element) => element.name == choice.name, orElse: () => choice);
 
         if (existing.value != choice.value) {
@@ -101,8 +102,7 @@ class FallbackConverter<T> implements Converter<T> {
   }
 
   @override
-  FutureOr<T?> Function(StringView view, IContextData context) get convert =>
-      (view, context) async {
+  FutureOr<T?> Function(StringView view, ContextData context) get convert => (view, context) async {
         StringView? used;
         T? ret = await converters.fold(Future.value(null), (previousValue, element) async {
           if (await previousValue != null) {
@@ -125,7 +125,7 @@ class FallbackConverter<T> implements Converter<T> {
       };
 
   @override
-  FutureOr<MultiselectOptionBuilder> Function(T)? get toMultiselectOption {
+  FutureOr<SelectMenuOptionBuilder> Function(T)? get toMultiselectOption {
     if (_toMultiselectOption != null) {
       return _toMultiselectOption;
     }

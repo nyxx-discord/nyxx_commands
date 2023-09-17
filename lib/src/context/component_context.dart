@@ -1,4 +1,5 @@
-import 'package:nyxx_interactions/nyxx_interactions.dart';
+import 'package:nyxx_commands/src/util/util.dart';
+import 'package:nyxx/nyxx.dart';
 
 import '../util/mixins.dart';
 import 'base.dart';
@@ -6,16 +7,16 @@ import 'base.dart';
 /// Data about a context in which a component was interacted with.
 ///
 /// You might also be interested in:
-/// - [IComponentContext], which exposes the functionality for interacting with this context.
-abstract class IComponentContextData implements IInteractionContextData {
+/// - [ComponentContext], which exposes the functionality for interacting with this context.
+abstract class ComponentContextData implements InteractionContextData {
   @override
-  IComponentInteractionEvent get interactionEvent;
-
-  @override
-  IComponentInteraction get interaction;
+  MessageComponentInteraction get interaction;
 
   /// The ID of the component that was interacted with.
   String get componentId;
+
+  /// If [componentId] is a valid [ComponentId], this is the parsed version of that.
+  ComponentId? get parsedComponentId;
 }
 
 /// A context in which a component was interacted with.
@@ -24,24 +25,24 @@ abstract class IComponentContextData implements IInteractionContextData {
 /// that interaction.
 ///
 /// You might also be interested in:
-/// - [IComponentContextData], which exposes the data found in this context.
-abstract class IComponentContext implements IComponentContextData, IInteractionInteractiveContext {}
+/// - [ComponentContextData], which exposes the data found in this context.
+abstract class ComponentContext implements ComponentContextData, InteractionInteractiveContext {}
 
 /// A context in which a button component was interacted with.
 ///
 /// You might also be interested in:
-/// - [IComponentContext], the base class for all component contexts.
+/// - [ComponentContext], the base class for all component contexts.
 class ButtonComponentContext extends ContextBase
     with InteractionRespondMixin, InteractiveMixin
-    implements IComponentContext {
+    implements ComponentContext {
   @override
-  final IButtonInteraction interaction;
+  final MessageComponentInteraction interaction;
 
   @override
-  final IButtonInteractionEvent interactionEvent;
+  String get componentId => interaction.data.customId;
 
   @override
-  String get componentId => interaction.customId;
+  ComponentId? get parsedComponentId => ComponentId.parse(componentId);
 
   /// Create a new [ButtonComponentContext].
   ButtonComponentContext({
@@ -52,34 +53,32 @@ class ButtonComponentContext extends ContextBase
     required super.commands,
     required super.client,
     required this.interaction,
-    required this.interactionEvent,
-    required super.interactions,
   });
 }
 
 /// A context in which a multi-select component was interacted with.
 ///
 /// You might also be interested in:
-/// - [IComponentContext], the base class for all component contexts.
-class MultiselectComponentContext<T> extends ContextBase
+/// - [ComponentContext], the base class for all component contexts.
+class SelectMenuContext<T> extends ContextBase
     with InteractionRespondMixin, InteractiveMixin
-    implements IComponentContext {
+    implements ComponentContext {
   @override
-  final IMultiselectInteraction interaction;
+  final MessageComponentInteraction interaction;
 
   @override
-  final IMultiselectInteractionEvent interactionEvent;
-
-  @override
-  String get componentId => interaction.customId;
+  String get componentId => interaction.data.customId;
 
   /// The item selected by the user.
   ///
   /// Will be a [List] if multiple items were selected.
   final T selected;
 
-  /// Create a new [MultiselectComponentContext].
-  MultiselectComponentContext({
+  @override
+  ComponentId? get parsedComponentId => ComponentId.parse(componentId);
+
+  /// Create a new [SelectMenuContext].
+  SelectMenuContext({
     required super.user,
     required super.member,
     required super.guild,
@@ -87,8 +86,6 @@ class MultiselectComponentContext<T> extends ContextBase
     required super.commands,
     required super.client,
     required this.interaction,
-    required this.interactionEvent,
     required this.selected,
-    required super.interactions,
   });
 }

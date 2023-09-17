@@ -1,3 +1,54 @@
+## 6.0.0-dev.1
+__Breaking changes__
+- Update nyxx to version 6.0.0. See the changelog at https://pub.dev/packages/nyxx for more details.
+
+## 5.0.2
+__Bug fixes__
+- Fix disposing the plugin partway through command execution causing errors.
+
+## 5.0.1
+__Bug fixes__
+- Fix component timeouts triggering instantly.
+- Fix component wrappers causing null assertions to trigger.
+
+## 5.0.0
+__Breaking changes__
+- Removed all deprecated APIs.
+- APIs which used to take `Type` objects now take `RuntimeType`s for the relevant type.
+- APIs which used to take the `customId` of a component now take a `ComponentId`.
+- Context types have been reorganized. See the docs for `IContextData`, `ICommandContext` and `IInteractiveContext` for more.
+- Converter & check APIs now take `IContextData` objects instead of `IContext` objects.
+- Checks now use named parameters instead of positional ones in their constructors.
+- `IInteractiveContext.respond` (formerly `IContext.respond`) now takes a `ResponseLevel` object instead of `private` and `hidden`.
+- The `interactions` field on `CommandsPlugin` is now nullable to avoid a `late` modifier. Use `IContextData.interactions` instead for a non nullable field.
+
+__New features__
+- Contexts are now managed by a `ContextManager` which allows users to create their own contexts.
+- Added support for modal helpers. See `IInteractionInteractiveContext.getModal` for more.
+- Added new errors: `ConverterFailedException`, `InteractionTimeoutException`, `UncaughtCommandsException` and `UnhandledInteractionException`.
+- Events & listeners are now handled by an `EventManager` and `ComponentId`s.
+- Prefix callbacks can now be asynchronous and return any `Pattern`.
+- Added `autoAcknowledgeDuration` for more control over auto-acknowledge.
+- Added parsing utilities on `AutocompleteContext` for parsing arguments.
+- Contexts in a command are now chained, so interaction expiry and inconsistent formatting of responses to commands are no longer an issue. See `IInteractiveContext.delegate` for more.
+- Added many helpers for handling message components:
+  - `awaitButtonPress`, `awaitSelection` and `awaitMultiSelection` for using fully custom components with nyxx_commands;
+  - `getButtonPress`, `getButtonSelection` and `getConfirmation` for handling buttons;
+  - `getSelection` and `getMultiSelection` for handling multiselect menus.
+- Added `SimpleConverter` to simplify creating custom converters.
+- The prefix callback can now be set to null to disable message commands. This will change the default command type to `slashOnly` unless `CommandsOptions.inferDefaultCommandType` is set to `false`.
+- Added `skipPattern` to `StringView`, similar to `skipString`.
+
+__Bug fixes__
+- Fixed a bug that prevented `part` files from being compiled.
+- Fixed a bug that prevented enum parameters from being compiled.
+- Fixed nested command `fullName`s not being correct.
+
+__Miscellaneous__
+- Optimized the compilation script to generate less code and use a more reliable subtype checking method.
+- Instructions for compilation can now be found at the package README.
+- Bump `nyxx` to 5.0.0 and `nyxx_interactions` to 4.6.0.
+
 ## 5.0.0-dev.3
 __Bug fixes__
 - Fixed a bug which caused `IInteractiveContext.respond` to error after auto-acknowledge.

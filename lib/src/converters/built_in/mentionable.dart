@@ -1,19 +1,18 @@
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../converter.dart';
 import '../fallback.dart';
-import 'member.dart';
+import 'user.dart';
 import 'role.dart';
 
-/// A converter that converts input to a [Mentionable].
+/// A converter that converts input to a [CommandOptionMentionable].
 ///
-/// This will first attempt to convert the input as a member, then as a role.
+/// This will first attempt to convert the input as a user, then as a role.
 ///
 /// This converter has a Discord Slash Command argument type of [CommandOptionType.mentionable].
-const Converter<Mentionable> mentionableConverter = FallbackConverter(
+const Converter<CommandOptionMentionable> mentionableConverter = FallbackConverter(
   [
-    memberConverter,
+    userConverter,
     roleConverter,
   ],
   type: CommandOptionType.mentionable,

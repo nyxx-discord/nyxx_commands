@@ -1,5 +1,4 @@
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../../context/base.dart';
 import '../../util/view.dart';
@@ -24,7 +23,7 @@ class NumConverter<T extends num> extends Converter<T> {
 
   /// Create a new [NumConverter].
   const NumConverter(
-    T? Function(StringView, IContextData) convert, {
+    T? Function(StringView, ContextData) convert, {
     required CommandOptionType type,
     this.min,
     this.max,
@@ -32,25 +31,25 @@ class NumConverter<T extends num> extends Converter<T> {
 
   @override
   void Function(CommandOptionBuilder)? get processOptionCallback => (builder) {
-        builder.min = min;
-        builder.max = max;
+        builder.minValue = min;
+        builder.maxValue = max;
       };
 
   @override
-  MultiselectOptionBuilder Function(T) get toMultiselectOption => (n) => MultiselectOptionBuilder(
-        n.toString(),
-        n.toString(),
+  SelectMenuOptionBuilder Function(T) get toMultiselectOption => (n) => SelectMenuOptionBuilder(
+        label: n.toString(),
+        value: n.toString(),
       );
 
   @override
   ButtonBuilder Function(T) get toButton => (n) => ButtonBuilder(
-        n.toString(),
-        '',
-        ButtonStyle.primary,
+        style: ButtonStyle.primary,
+        label: n.toString(),
+        customId: '',
       );
 }
 
-int? convertInt(StringView view, IContextData context) => int.tryParse(view.getQuotedWord());
+int? convertInt(StringView view, ContextData context) => int.tryParse(view.getQuotedWord());
 
 /// A converter that converts input to [int]s, possibly with a minimum or maximum value.
 ///
@@ -63,13 +62,11 @@ int? convertInt(StringView view, IContextData context) => int.tryParse(view.getQ
 class IntConverter extends NumConverter<int> {
   /// Create a new [IntConverter].
   const IntConverter({
-    int? min,
-    int? max,
+    super.min,
+    super.max,
   }) : super(
           convertInt,
           type: CommandOptionType.integer,
-          min: min,
-          max: max,
         );
 }
 
@@ -80,7 +77,7 @@ class IntConverter extends NumConverter<int> {
 /// This converter has a Discord Slash Command Argument Type of [CommandOptionType.integer].
 const Converter<int> intConverter = IntConverter();
 
-double? convertDouble(StringView view, IContextData context) =>
+double? convertDouble(StringView view, ContextData context) =>
     double.tryParse(view.getQuotedWord());
 
 /// A converter that converts input to [double]s, possibly with a minimum or maximum value.
@@ -94,13 +91,11 @@ double? convertDouble(StringView view, IContextData context) =>
 class DoubleConverter extends NumConverter<double> {
   /// Create a new [DoubleConverter].
   const DoubleConverter({
-    double? min,
-    double? max,
+    super.min,
+    super.max,
   }) : super(
           convertDouble,
           type: CommandOptionType.number,
-          min: min,
-          max: max,
         );
 }
 

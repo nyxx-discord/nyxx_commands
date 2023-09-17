@@ -1,5 +1,4 @@
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../../context/base.dart';
 import '../../util/view.dart';
@@ -7,28 +6,27 @@ import '../converter.dart';
 
 final RegExp _snowflakePattern = RegExp(r'^(?:<(?:@(?:!|&)?|#)([0-9]{15,20})>|([0-9]{15,20}))$');
 
-Snowflake? convertSnowflake(StringView view, IContextData context) {
-  String word = view.getQuotedWord();
-  if (!_snowflakePattern.hasMatch(word)) {
+Snowflake? convertSnowflake(StringView view, ContextData context) {
+  final match = _snowflakePattern.firstMatch(view.getQuotedWord());
+
+  if (match == null) {
     return null;
   }
 
-  final RegExpMatch match = _snowflakePattern.firstMatch(word)!;
-
   // 1st group will catch mentions, second will catch raw IDs
-  return Snowflake(match.group(1) ?? match.group(2));
+  return Snowflake.parse(match.group(1) ?? match.group(2)!);
 }
 
-MultiselectOptionBuilder snowflakeToMultiselectOption(Snowflake snowflake) =>
-    MultiselectOptionBuilder(
-      snowflake.toString(),
-      snowflake.toString(),
+SelectMenuOptionBuilder snowflakeToMultiselectOption(Snowflake snowflake) =>
+    SelectMenuOptionBuilder(
+      label: snowflake.toString(),
+      value: snowflake.toString(),
     );
 
 ButtonBuilder snowflakeToButton(Snowflake snowflake) => ButtonBuilder(
-      snowflake.toString(),
-      '',
-      ButtonStyle.primary,
+      style: ButtonStyle.primary,
+      label: snowflake.toString(),
+      customId: '',
     );
 
 /// A converter that converts input to a [Snowflake].

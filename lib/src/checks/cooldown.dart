@@ -12,63 +12,54 @@ import 'checks.dart';
 ///
 /// You might also be interested in:
 /// - [CooldownCheck], the check that uses this enum.
-class CooldownType extends IEnum<int> {
+class CooldownType extends Flags<CooldownType> {
   /// A cooldown type that sorts contexts depending on the category they were invoked from.
   ///
   /// If the channel the context was created in is not part of a category, then this type behaves
   /// the same as [channel].
-  static const CooldownType category = CooldownType(1 << 0);
+  static const Flag<CooldownType> category = Flag<CooldownType>.fromOffset(0);
 
   /// A cooldown type that sorts contexts depending on the channel they were invoked from.
-  static const CooldownType channel = CooldownType(1 << 1);
+  static const Flag<CooldownType> channel = Flag<CooldownType>.fromOffset(1);
 
   /// A cooldown type that sorts contexts depending on the command being invoked.
-  static const CooldownType command = CooldownType(1 << 2);
+  static const Flag<CooldownType> command = Flag<CooldownType>.fromOffset(2);
 
   /// A cooldown type that sorts all contexts into the same bucket.
-  static const CooldownType global = CooldownType(1 << 3);
+  static const Flag<CooldownType> global = Flag<CooldownType>.fromOffset(3);
 
   /// A cooldown type that sorts contexts depending on the guild they were invoked from.
   ///
   /// If the context was not invoked from a guild, then this type behaves the same as [channel].
-  static const CooldownType guild = CooldownType(1 << 4);
+  static const Flag<CooldownType> guild = Flag<CooldownType>.fromOffset(4);
 
   /// A cooldown type that sorts contexts depending on the highest-level role the user invoking the
   /// command has.
   ///
-  /// If the user has no role, then the [IGuild.everyoneRole] for that guild is used.
+  /// If the user has no role, then the id of the [Guild] is used.
   /// If the context was not invoked from a guild, then this type behaves the same as [user].
-  static const CooldownType role = CooldownType(1 << 5);
+  static const Flag<CooldownType> role = Flag<CooldownType>.fromOffset(5);
 
   /// A cooldown type that sorts contexts depending on the user that invoked them.
-  static const CooldownType user = CooldownType(1 << 6);
+  static const Flag<CooldownType> user = Flag<CooldownType>.fromOffset(6);
 
   /// Create a new [CooldownType].
   ///
   /// Using a [value] other than the predefined ones will not result in any new behavior, so using
   /// this constructor is discouraged.
-  const CooldownType(int value) : super(value);
+  const CooldownType(super.value);
 
   /// Combine two cooldown types.
   ///
   /// For details on how cooldown types are combined, see [CooldownCheck.getKey].
-  CooldownType operator |(CooldownType other) => CooldownType(value | other.value);
-
-  /// Return whether [check] applies to [instance].
-  ///
-  /// A type is considered to *apply* to another if all the values making up that type are also
-  /// present in the other type.
-  ///
-  /// For example, `CooldownType.user` applies to `CooldownType.user | CooldownType.guild` while
-  /// `CooldownType.channel` does not.
-  static bool applies(CooldownType instance, CooldownType check) =>
-      instance.value & check.value == check.value;
+  @override
+  CooldownType operator |(Flags<CooldownType> other) => CooldownType(value | other.value);
 
   @override
   String toString() {
     List<String> components = [];
 
-    Map<CooldownType, String> names = {
+    Map<Flag<CooldownType>, String> names = {
       category: 'Category',
       channel: 'Channel',
       command: 'Command',
@@ -78,10 +69,8 @@ class CooldownType extends IEnum<int> {
       user: 'User',
     };
 
-    for (final key in names.keys) {
-      if (applies(this, key)) {
-        components.add(names[key]!);
-      }
+    for (final flag in this) {
+      components.add(names[flag]!);
     }
 
     return 'CooldownType[${components.join(', ')}]';
@@ -166,7 +155,7 @@ class CooldownCheck extends AbstractCheck {
   Duration duration;
 
   /// The cooldown type, used to sort contexts into buckets.
-  final CooldownType type;
+  final Flags<CooldownType> type;
 
   Map<int, _BucketEntry> _currentBucket = {};
   Map<int, _BucketEntry> _previousBucket = {};
@@ -174,7 +163,7 @@ class CooldownCheck extends AbstractCheck {
   late DateTime _currentStart = DateTime.now();
 
   @override
-  FutureOr<bool> check(ICommandContextData context) {
+  FutureOr<bool> check(CommandContext context) {
     if (DateTime.now().isAfter(_currentStart.add(duration))) {
       _previousBucket = _currentBucket;
       _currentBucket = {};
@@ -215,47 +204,66 @@ class CooldownCheck extends AbstractCheck {
   ///
   /// You might also be interested in:
   /// - [type], which determines which values from [context] are combined to create a key.
-  int getKey(ICommandContextData context) {
+  // TODO: Move away from [int] in order to reduce the risk of hash collisions.
+  int getKey(CommandContext context) {
     List<int> keys = [];
 
-    if (CooldownType.applies(type, CooldownType.category)) {
+    if (type.has(CooldownType.category)) {
       if (context.guild != null) {
-        keys.add((context.channel as IGuildChannel).parentChannel?.id.id ?? context.channel.id.id);
+        keys.add((context.channel as GuildChannel).parentId?.value ?? context.channel.id.value);
       } else {
-        keys.add(context.channel.id.id);
+        keys.add(context.channel.id.value);
       }
     }
 
-    if (CooldownType.applies(type, CooldownType.channel)) {
-      keys.add(context.channel.id.id);
+    if (type.has(CooldownType.channel)) {
+      keys.add(context.channel.id.value);
     }
 
-    if (CooldownType.applies(type, CooldownType.command)) {
+    if (type.has(CooldownType.command)) {
       keys.add(context.command.hashCode);
     }
 
-    if (CooldownType.applies(type, CooldownType.global)) {
+    if (type.has(CooldownType.global)) {
       keys.add(0);
     }
 
     if (type.value & CooldownType.guild.value != 0) {
-      keys.add(context.guild?.id.id ?? context.user.id.id);
+      keys.add(context.guild?.id.value ?? context.user.id.value);
     }
 
-    if (CooldownType.applies(type, CooldownType.role)) {
+    if (type.has(CooldownType.role)) {
       if (context.member != null) {
-        if (context.member!.roles.isNotEmpty) {
-          keys.add(PermissionsUtils.getMemberHighestRole(context.member!).id.id);
-        } else {
-          keys.add(context.guild!.everyoneRole.id.id);
-        }
+        keys.add(
+          context.member!.roles
+                  .fold<Role?>(
+                    null,
+                    (previousValue, element) {
+                      final cached = element.manager.cache[element.id];
+
+                      // TODO: Need to fetch if not cached
+                      if (cached == null) {
+                        return previousValue;
+                      }
+
+                      if (previousValue == null) {
+                        return cached;
+                      }
+
+                      return previousValue.position > cached.position ? previousValue : cached;
+                    },
+                  )
+                  ?.id
+                  .value ??
+              context.guild!.id.value,
+        );
       } else {
-        keys.add(context.user.id.id);
+        keys.add(context.user.id.value);
       }
     }
 
-    if (CooldownType.applies(type, CooldownType.user)) {
-      keys.add(context.user.id.id);
+    if (type.has(CooldownType.user)) {
+      keys.add(context.user.id.value);
     }
 
     return Object.hashAll(keys);
@@ -267,7 +275,7 @@ class CooldownCheck extends AbstractCheck {
   ///
   /// You might also be interested in:
   /// - [getKey], for getting the ID of the bucket the context was sorted into.
-  Duration remaining(ICommandContextData context) {
+  Duration remaining(CommandContext context) {
     if (check(context) as bool) {
       return Duration.zero;
     }
@@ -291,7 +299,7 @@ class CooldownCheck extends AbstractCheck {
   }
 
   @override
-  late Iterable<void Function(ICommandContextData)> preCallHooks = [
+  late Iterable<void Function(CommandContext)> preCallHooks = [
     (context) {
       int key = getKey(context);
 
@@ -306,11 +314,11 @@ class CooldownCheck extends AbstractCheck {
   ];
 
   @override
-  Iterable<void Function(ICommandContextData p1)> get postCallHooks => [];
+  Iterable<void Function(CommandContext p1)> get postCallHooks => [];
 
   @override
   bool get allowsDm => true;
 
   @override
-  int? get requiredPermissions => null;
+  Flags<Permissions>? get requiredPermissions => null;
 }
