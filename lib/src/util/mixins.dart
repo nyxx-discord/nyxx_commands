@@ -791,7 +791,7 @@ mixin InteractionRespondMixin
     ModalBuilder builder = ModalBuilder(
       customId: ComponentId.generate().toString(),
       title: title,
-      components: components,
+      components: components.map((textInput) => ActionRowBuilder(components: [textInput])).toList(),
     );
 
     await (interaction as ModalResponse).respondModal(builder);
