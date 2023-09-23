@@ -139,6 +139,8 @@ class EventManager {
   ///
   /// Attach to [NyxxGateway.onMessageCreate].
   Future<void> processMessageCreateEvent(MessageCreateEvent event) async {
+    if (commands.prefix == null) return;
+
     final message = event.message;
 
     Pattern prefix = await commands.prefix!(event);
