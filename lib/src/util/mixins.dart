@@ -819,10 +819,13 @@ mixin MessageRespondMixin implements InteractiveMixin {
     if (builder.replyId == null) {
       builder.replyId = message.id;
 
-      // Calling [AllowedMentions.allow] here will only change anything if [level.mention] is
-      // non-null, in which case we want to change it. Otherwise, this does nothing.
-      builder.allowedMentions!.parse =
-          {...(builder.allowedMentions!.parse ?? <String>[]), 'replied_user'}.toList();
+      if (level.mention == true) {
+        builder.allowedMentions =
+            (builder.allowedMentions ?? AllowedMentions()) | AllowedMentions(repliedUser: true);
+      } else if (level.mention == false) {
+        builder.allowedMentions =
+            (builder.allowedMentions ?? AllowedMentions()) & AllowedMentions(repliedUser: false);
+      }
     }
 
     return channel.sendMessage(builder);

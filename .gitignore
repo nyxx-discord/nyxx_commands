@@ -14,3 +14,4 @@ build/
 doc/
 .vscode/
 .idea/
+pubspec_overrides.yaml
