@@ -819,12 +819,11 @@ mixin MessageRespondMixin implements InteractiveMixin {
     if (builder.replyId == null) {
       builder.replyId = message.id;
 
-      if (level.mention == true) {
+      if (level.mention case final shouldMention?) {
+        final allowedMentions = builder.allowedMentions ?? AllowedMentions();
+        final replyMentions = AllowedMentions(repliedUser: shouldMention);
         builder.allowedMentions =
-            (builder.allowedMentions ?? AllowedMentions()) | AllowedMentions(repliedUser: true);
-      } else if (level.mention == false) {
-        builder.allowedMentions =
-            (builder.allowedMentions ?? AllowedMentions()) & AllowedMentions(repliedUser: false);
+            shouldMention ? allowedMentions | replyMentions : allowedMentions & replyMentions;
       }
     }
 
