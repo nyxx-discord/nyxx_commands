@@ -173,62 +173,94 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
     client.onMessageComponentInteraction
         .map((event) => event.interaction)
         .where((interaction) => interaction.data.type == MessageComponentType.button)
-        .listen(eventManager.processButtonInteraction);
+        .listen(
+      (interaction) async {
+        try {
+          await eventManager.processButtonInteraction(interaction);
+        } on CommandsException catch (e) {
+          _onCommandErrorController.add(e);
+        }
+      },
+    );
 
     client.onMessageComponentInteraction
         .map((event) => event.interaction)
         .where((interaction) => interaction.data.type == MessageComponentType.stringSelect)
-        .listen(eventManager.processSelectMenuInteraction);
+        .listen(
+      (interaction) async {
+        try {
+          await eventManager.processSelectMenuInteraction(interaction);
+        } on CommandsException catch (e) {
+          _onCommandErrorController.add(e);
+        }
+      },
+    );
 
-    client.onMessageCreate.listen(eventManager.processMessageCreateEvent);
-
-    client.onApplicationCommandInteraction.map((event) => event.interaction).listen((interaction) {
-      final applicationCommand = registeredCommands.singleWhere(
-        (command) => command.id == interaction.data.id,
-      );
-
-      if (interaction.data.type == ApplicationCommandType.user) {
-        eventManager.processUserInteraction(
-          interaction,
-          _userCommands[applicationCommand.name]!,
-        );
-      } else if (interaction.data.type == ApplicationCommandType.message) {
-        eventManager.processMessageInteraction(
-          interaction,
-          _messageCommands[applicationCommand.name]!,
-        );
-      } else if (interaction.data.type == ApplicationCommandType.chatInput) {
-        final (command, options) = _resolveChatCommand(interaction, applicationCommand);
-
-        eventManager.processChatInteraction(
-          interaction,
-          options,
-          command,
-        );
+    client.onMessageCreate.listen((event) async {
+      try {
+        await eventManager.processMessageCreateEvent(event);
+      } on CommandsException catch (e) {
+        _onCommandErrorController.add(e);
       }
     });
 
+    client.onApplicationCommandInteraction.map((event) => event.interaction).listen(
+      (interaction) async {
+        try {
+          final applicationCommand = registeredCommands.singleWhere(
+            (command) => command.id == interaction.data.id,
+          );
+
+          if (interaction.data.type == ApplicationCommandType.user) {
+            await eventManager.processUserInteraction(
+              interaction,
+              _userCommands[applicationCommand.name]!,
+            );
+          } else if (interaction.data.type == ApplicationCommandType.message) {
+            await eventManager.processMessageInteraction(
+              interaction,
+              _messageCommands[applicationCommand.name]!,
+            );
+          } else if (interaction.data.type == ApplicationCommandType.chatInput) {
+            final (command, options) = _resolveChatCommand(interaction, applicationCommand);
+
+            await eventManager.processChatInteraction(
+              interaction,
+              options,
+              command,
+            );
+          }
+        } on CommandsException catch (e) {
+          _onCommandErrorController.add(e);
+        }
+      },
+    );
+
     client.onApplicationCommandAutocompleteInteraction
         .map((event) => event.interaction)
-        .listen((interaction) {
-      final applicationCommand = registeredCommands.singleWhere(
-        (command) => command.id == interaction.data.id,
-      );
+        .listen((interaction) async {
+      try {
+        final applicationCommand = registeredCommands.singleWhere(
+          (command) => command.id == interaction.data.id,
+        );
 
-      final (command, options) = _resolveChatCommand(interaction, applicationCommand);
+        final (command, options) = _resolveChatCommand(interaction, applicationCommand);
 
-      final functionData = loadFunctionData(command.execute);
-      final focusedOption = options.singleWhere((element) => element.isFocused == true);
-      final focusedParameter =
-          functionData.parametersData.singleWhere((element) => element.name == focusedOption.name);
+        final functionData = loadFunctionData(command.execute);
+        final focusedOption = options.singleWhere((element) => element.isFocused == true);
+        final focusedParameter = functionData.parametersData
+            .singleWhere((element) => element.name == focusedOption.name);
 
-      final converter = focusedParameter.converterOverride ?? getConverter(focusedParameter.type);
+        final converter = focusedParameter.converterOverride ?? getConverter(focusedParameter.type);
 
-      eventManager.processAutocompleteInteraction(
-        interaction,
-        (focusedParameter.autocompleteOverride ?? converter?.autocompleteCallback)!,
-        command,
-      );
+        await eventManager.processAutocompleteInteraction(
+          interaction,
+          (focusedParameter.autocompleteOverride ?? converter?.autocompleteCallback)!,
+          command,
+        );
+      } on CommandsException catch (e) {
+        _onCommandErrorController.add(e);
+      }
     });
 
     if (children.isNotEmpty) {
