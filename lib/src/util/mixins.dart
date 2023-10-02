@@ -529,12 +529,7 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
       );
 
       if (matchingOptionIndex >= 0) {
-        final builder = await toMultiSelect(result);
-
-        menu.options![matchingOptionIndex] = SelectMenuOptionBuilder(
-          label: builder.label,
-          value: builder.value,
-        );
+        menu.options![matchingOptionIndex].isDefault = true;
       }
 
       return result;
