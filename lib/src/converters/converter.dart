@@ -99,14 +99,14 @@ class Converter<T> {
   /// - [InteractiveContext.getSelection] and [InteractiveContext.getMultiSelection], which make
   ///   use of this function;
   /// - [toButton], similar to this function but for [ButtonBuilder]s.
-  final FutureOr<SelectMenuOptionBuilder> Function(T)? toMultiselectOption;
+  final FutureOr<SelectMenuOptionBuilder> Function(T)? toSelectMenuOption;
 
   /// A function called to provide [ButtonBuilder]s that can be used to represent an element
   /// converted by this converter.
   ///
   /// You might also be interested in:
   /// - [InteractiveContext.getButtonSelection], which makes use of this function;
-  /// - [toMultiselectOption], similar to this function but for [SelectMenuOptionBuilder]s.
+  /// - [toSelectMenuOption], similar to this function but for [SelectMenuOptionBuilder]s.
   final FutureOr<ButtonBuilder> Function(T)? toButton;
 
   /// Create a new converter.
@@ -119,7 +119,7 @@ class Converter<T> {
     this.processOptionCallback,
     this.autocompleteCallback,
     this.type = CommandOptionType.string,
-    this.toMultiselectOption,
+    this.toSelectMenuOption,
     this.toButton,
   });
 

@@ -410,7 +410,7 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
     ResponseLevel? level,
     Duration? timeout,
     bool authorOnly = true,
-    FutureOr<SelectMenuOptionBuilder> Function(T)? toMultiSelect,
+    FutureOr<SelectMenuOptionBuilder> Function(T)? toSelectMenuOption,
     Converter<T>? converterOverride,
   }) async {
     if (_delegate != null) {
@@ -421,21 +421,21 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
         converterOverride: converterOverride,
         level: level,
         timeout: timeout,
-        toMultiSelect: toMultiSelect,
+        toSelectMenuOption: toSelectMenuOption,
       );
     }
 
     assert(
-      toMultiSelect == null || converterOverride == null,
-      'Cannot specify both toMultiSelect and converterOverride',
+      toSelectMenuOption == null || converterOverride == null,
+      'Cannot specify both toSelectMenuOption and converterOverride',
     );
 
-    toMultiSelect ??= converterOverride?.toMultiselectOption;
-    toMultiSelect ??= commands.getConverter(RuntimeType<T>())?.toMultiselectOption;
+    toSelectMenuOption ??= converterOverride?.toSelectMenuOption;
+    toSelectMenuOption ??= commands.getConverter(RuntimeType<T>())?.toSelectMenuOption;
 
-    if (toMultiSelect == null) {
+    if (toSelectMenuOption == null) {
       throw UncaughtCommandsException(
-        'No suitable method for converting $T to MultiselectOptionBuilder found',
+        'No suitable method for converting $T to SelectMenuOptionBuilder found',
         _nearestCommandContext,
       );
     }
@@ -443,7 +443,7 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
     Map<String, T> idToValue = {};
     List<SelectMenuOptionBuilder> options = await Future.wait(choices.map(
       (value) async {
-        SelectMenuOptionBuilder builder = await toMultiSelect!(value);
+        SelectMenuOptionBuilder builder = await toSelectMenuOption!(value);
         idToValue[builder.value] = value;
         return builder;
       },
@@ -529,12 +529,7 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
       );
 
       if (matchingOptionIndex >= 0) {
-        final builder = await toMultiSelect(result);
-
-        menu.options![matchingOptionIndex] = SelectMenuOptionBuilder(
-          label: builder.label,
-          value: builder.value,
-        );
+        menu.options![matchingOptionIndex].isDefault = true;
       }
 
       return result;
@@ -558,7 +553,7 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
     ResponseLevel? level,
     Duration? timeout,
     bool authorOnly = true,
-    FutureOr<SelectMenuOptionBuilder> Function(T)? toMultiSelect,
+    FutureOr<SelectMenuOptionBuilder> Function(T)? toSelectMenuOption,
     Converter<T>? converterOverride,
   }) async {
     if (_delegate != null) {
@@ -569,16 +564,16 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
         converterOverride: converterOverride,
         level: level,
         timeout: timeout,
-        toMultiSelect: toMultiSelect,
+        toSelectMenuOption: toSelectMenuOption,
       );
     }
 
-    toMultiSelect ??= converterOverride?.toMultiselectOption;
-    toMultiSelect ??= commands.getConverter(RuntimeType<T>())?.toMultiselectOption;
+    toSelectMenuOption ??= converterOverride?.toSelectMenuOption;
+    toSelectMenuOption ??= commands.getConverter(RuntimeType<T>())?.toSelectMenuOption;
 
-    if (toMultiSelect == null) {
+    if (toSelectMenuOption == null) {
       throw UncaughtCommandsException(
-        'No suitable method for converting $T to MultiselectOptionBuilder found',
+        'No suitable method for converting $T to SelectMenuOptionBuilder found',
         _nearestCommandContext,
       );
     }
@@ -586,7 +581,7 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
     Map<String, T> idToValue = {};
     List<SelectMenuOptionBuilder> options = await Future.wait(choices.map(
       (value) async {
-        SelectMenuOptionBuilder builder = await toMultiSelect!(value);
+        SelectMenuOptionBuilder builder = await toSelectMenuOption!(value);
         idToValue[builder.value] = value;
         return builder;
       },

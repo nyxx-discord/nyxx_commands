@@ -31,7 +31,7 @@ class FallbackConverter<T> implements Converter<T> {
   final Iterable<CommandOptionChoiceBuilder<dynamic>>? _choices;
   final CommandOptionType? _type;
 
-  final FutureOr<SelectMenuOptionBuilder> Function(T)? _toMultiselectOption;
+  final FutureOr<SelectMenuOptionBuilder> Function(T)? _toSelectMenuOption;
 
   final FutureOr<ButtonBuilder> Function(T)? _toButton;
 
@@ -45,11 +45,11 @@ class FallbackConverter<T> implements Converter<T> {
     CommandOptionType? type,
     this.processOptionCallback,
     this.autocompleteCallback,
-    FutureOr<SelectMenuOptionBuilder> Function(T)? toMultiselectOption,
+    FutureOr<SelectMenuOptionBuilder> Function(T)? toSelectMenuOption,
     FutureOr<ButtonBuilder> Function(T)? toButton,
   })  : _choices = choices,
         _type = type,
-        _toMultiselectOption = toMultiselectOption,
+        _toSelectMenuOption = toSelectMenuOption,
         _toButton = toButton;
 
   @override
@@ -125,14 +125,14 @@ class FallbackConverter<T> implements Converter<T> {
       };
 
   @override
-  FutureOr<SelectMenuOptionBuilder> Function(T)? get toMultiselectOption {
-    if (_toMultiselectOption != null) {
-      return _toMultiselectOption;
+  FutureOr<SelectMenuOptionBuilder> Function(T)? get toSelectMenuOption {
+    if (_toSelectMenuOption != null) {
+      return _toSelectMenuOption;
     }
 
     for (final converter in converters) {
-      if (converter.toMultiselectOption != null) {
-        return converter.toMultiselectOption;
+      if (converter.toSelectMenuOption != null) {
+        return converter.toSelectMenuOption;
       }
     }
 

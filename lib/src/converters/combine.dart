@@ -43,7 +43,7 @@ class CombineConverter<R, T> implements Converter<T> {
       get autocompleteCallback => _autocompleteCallback ?? converter.autocompleteCallback;
 
   @override
-  final FutureOr<SelectMenuOptionBuilder> Function(T)? toMultiselectOption;
+  final FutureOr<SelectMenuOptionBuilder> Function(T)? toSelectMenuOption;
 
   @override
   final FutureOr<ButtonBuilder> Function(T)? toButton;
@@ -60,7 +60,7 @@ class CombineConverter<R, T> implements Converter<T> {
     void Function(CommandOptionBuilder)? processOptionCallback,
     FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext)?
         autocompleteCallback,
-    this.toMultiselectOption,
+    this.toSelectMenuOption,
     this.toButton,
   })  : _choices = choices,
         _type = type,

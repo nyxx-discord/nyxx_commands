@@ -19,7 +19,7 @@ bool? convertBool(StringView view, ContextData context) {
   return null;
 }
 
-SelectMenuOptionBuilder boolToMultiselectOption(bool value) => SelectMenuOptionBuilder(
+SelectMenuOptionBuilder boolToSelectMenuOption(bool value) => SelectMenuOptionBuilder(
       label: value ? 'True' : 'False',
       value: value.toString(),
     );
@@ -43,6 +43,6 @@ ButtonBuilder boolToButton(bool value) => ButtonBuilder(
 const Converter<bool> boolConverter = Converter<bool>(
   convertBool,
   type: CommandOptionType.boolean,
-  toMultiselectOption: boolToMultiselectOption,
+  toSelectMenuOption: boolToSelectMenuOption,
   toButton: boolToButton,
 );

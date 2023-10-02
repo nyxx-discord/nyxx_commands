@@ -36,7 +36,7 @@ class NumConverter<T extends num> extends Converter<T> {
       };
 
   @override
-  SelectMenuOptionBuilder Function(T) get toMultiselectOption => (n) => SelectMenuOptionBuilder(
+  SelectMenuOptionBuilder Function(T) get toSelectMenuOption => (n) => SelectMenuOptionBuilder(
         label: n.toString(),
         value: n.toString(),
       );

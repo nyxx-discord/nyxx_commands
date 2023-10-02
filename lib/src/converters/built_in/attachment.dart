@@ -56,7 +56,7 @@ Attachment? convertAttachment(StringView view, ContextData context) {
   return null;
 }
 
-SelectMenuOptionBuilder attachmentToMultiselectOption(Attachment attachment) =>
+SelectMenuOptionBuilder attachmentToSelectMenuOption(Attachment attachment) =>
     SelectMenuOptionBuilder(
       label: attachment.fileName,
       value: attachment.id.toString(),
@@ -81,6 +81,6 @@ const Converter<Attachment> attachmentConverter = FallbackConverter(
     Converter(convertAttachment),
   ],
   type: CommandOptionType.attachment,
-  toMultiselectOption: attachmentToMultiselectOption,
+  toSelectMenuOption: attachmentToSelectMenuOption,
   toButton: attachmentToButton,
 );

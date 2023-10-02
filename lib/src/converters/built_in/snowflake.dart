@@ -17,8 +17,7 @@ Snowflake? convertSnowflake(StringView view, ContextData context) {
   return Snowflake.parse(match.group(1) ?? match.group(2)!);
 }
 
-SelectMenuOptionBuilder snowflakeToMultiselectOption(Snowflake snowflake) =>
-    SelectMenuOptionBuilder(
+SelectMenuOptionBuilder snowflakeToSelectMenuOption(Snowflake snowflake) => SelectMenuOptionBuilder(
       label: snowflake.toString(),
       value: snowflake.toString(),
     );
@@ -35,6 +34,6 @@ ButtonBuilder snowflakeToButton(Snowflake snowflake) => ButtonBuilder(
 /// snowflakes.
 const Converter<Snowflake> snowflakeConverter = Converter<Snowflake>(
   convertSnowflake,
-  toMultiselectOption: snowflakeToMultiselectOption,
+  toSelectMenuOption: snowflakeToSelectMenuOption,
   toButton: snowflakeToButton,
 );
