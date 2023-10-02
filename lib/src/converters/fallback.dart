@@ -131,7 +131,7 @@ class FallbackConverter<T> implements Converter<T> {
     }
 
     for (final converter in converters) {
-      if (converter.toSelectMenuOption != null) {
+      if (converter.toSelectMenuOption is FutureOr<SelectMenuOptionBuilder> Function(T)) {
         return converter.toSelectMenuOption;
       }
     }
@@ -146,7 +146,7 @@ class FallbackConverter<T> implements Converter<T> {
     }
 
     for (final converter in converters) {
-      if (converter.toButton != null) {
+      if (converter.toButton is FutureOr<ButtonBuilder> Function(T)) {
         return converter.toButton;
       }
     }
