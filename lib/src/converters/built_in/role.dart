@@ -48,7 +48,7 @@ Future<Role?> convertRole(StringView view, ContextData context) async {
   return null;
 }
 
-SelectMenuOptionBuilder roleToMultiselectOption(Role role) {
+SelectMenuOptionBuilder roleToSelectMenuOption(Role role) {
   SelectMenuOptionBuilder builder = SelectMenuOptionBuilder(
     label: role.name,
     value: role.id.toString(),
@@ -95,6 +95,6 @@ const Converter<Role> roleConverter = FallbackConverter<Role>(
     Converter<Role>(convertRole),
   ],
   type: CommandOptionType.role,
-  toMultiselectOption: roleToMultiselectOption,
+  toSelectMenuOption: roleToSelectMenuOption,
   toButton: roleToButton,
 );

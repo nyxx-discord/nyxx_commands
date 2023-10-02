@@ -101,7 +101,7 @@ class EventManager {
   Future<ButtonComponentContext> nextButtonEvent(ComponentId id) => _nextComponentEvent(id);
 
   /// Get a future that completes with a context representing the next interaction on the
-  /// multiselect menu with id [id].
+  /// select menu with id [id].
   ///
   /// If [id] has an expiration time, the future will complete with an error once that time is
   /// elapsed.

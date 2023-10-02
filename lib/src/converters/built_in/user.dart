@@ -58,7 +58,7 @@ Future<User?> convertUser(StringView view, ContextData context) async {
   return null;
 }
 
-SelectMenuOptionBuilder userToMultiselectOption(User user) => SelectMenuOptionBuilder(
+SelectMenuOptionBuilder userToSelectMenuOption(User user) => SelectMenuOptionBuilder(
       label: '@${user.username}',
       value: user.id.toString(),
     );
@@ -83,6 +83,6 @@ const Converter<User> userConverter = FallbackConverter<User>(
     Converter<User>(convertUser),
   ],
   type: CommandOptionType.user,
-  toMultiselectOption: userToMultiselectOption,
+  toSelectMenuOption: userToSelectMenuOption,
   toButton: userToButton,
 );

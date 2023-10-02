@@ -60,15 +60,15 @@ abstract class SimpleConverter<T> implements Converter<T> {
   @override
   CommandOptionType get type => CommandOptionType.string;
 
-  final FutureOr<SelectMenuOptionBuilder> Function(T)? _toMultiSelectOption;
+  final FutureOr<SelectMenuOptionBuilder> Function(T)? _toSelectMenuOption;
   final FutureOr<ButtonBuilder> Function(T)? _toButton;
 
   const SimpleConverter._({
     required this.sensitivity,
     this.reviver,
-    FutureOr<SelectMenuOptionBuilder> Function(T)? toMultiSelectOption,
+    FutureOr<SelectMenuOptionBuilder> Function(T)? toSelectMenuOption,
     FutureOr<ButtonBuilder> Function(T)? toButton,
-  })  : _toMultiSelectOption = toMultiSelectOption,
+  })  : _toSelectMenuOption = toSelectMenuOption,
         _toButton = toButton;
 
   /// Create a new [SimpleConverter].
@@ -133,8 +133,8 @@ abstract class SimpleConverter<T> implements Converter<T> {
       };
 
   @override
-  FutureOr<SelectMenuOptionBuilder> Function(T)? get toMultiselectOption =>
-      _toMultiSelectOption ??
+  FutureOr<SelectMenuOptionBuilder> Function(T)? get toSelectMenuOption =>
+      _toSelectMenuOption ??
       (element) {
         String value = stringify(element);
 
@@ -170,7 +170,7 @@ class _DynamicSimpleConverter<T> extends SimpleConverter<T> {
     required this.stringify,
     super.sensitivity = 50,
     super.reviver,
-    super.toMultiSelectOption,
+    super.toSelectMenuOption,
     super.toButton,
   }) : super._();
 }
@@ -186,7 +186,7 @@ class _FixedSimpleConverter<T> extends SimpleConverter<T> {
     required this.stringify,
     super.sensitivity = 50,
     super.reviver,
-    super.toMultiSelectOption,
+    super.toSelectMenuOption,
     super.toButton,
   }) : super._();
 

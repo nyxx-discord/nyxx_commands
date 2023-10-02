@@ -76,7 +76,7 @@ Future<Member?> convertMember(StringView view, ContextData context) async {
   return null;
 }
 
-Future<SelectMenuOptionBuilder> memberToMultiselectOption(Member member) async {
+Future<SelectMenuOptionBuilder> memberToSelectMenuOption(Member member) async {
   User user = await member.manager.client.users.get(member.id);
   String name = member.nick ?? user.globalName ?? user.username;
 
@@ -112,6 +112,6 @@ const Converter<Member> memberConverter = FallbackConverter<Member>(
     Converter<Member>(convertMember),
   ],
   type: CommandOptionType.user,
-  toMultiselectOption: memberToMultiselectOption,
+  toSelectMenuOption: memberToSelectMenuOption,
   toButton: memberToButton,
 );

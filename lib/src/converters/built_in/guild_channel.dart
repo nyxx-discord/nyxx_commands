@@ -121,7 +121,7 @@ class GuildChannelConverter<T extends GuildChannel> implements Converter<T> {
   CommandOptionType get type => CommandOptionType.channel;
 
   @override
-  SelectMenuOptionBuilder Function(T) get toMultiselectOption =>
+  SelectMenuOptionBuilder Function(T) get toSelectMenuOption =>
       (channel) => SelectMenuOptionBuilder(
             label: channel.name,
             value: channel.id.toString(),

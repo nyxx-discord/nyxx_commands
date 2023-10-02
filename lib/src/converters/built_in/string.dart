@@ -6,7 +6,7 @@ import '../converter.dart';
 
 String? convertString(StringView view, ContextData context) => view.getQuotedWord();
 
-SelectMenuOptionBuilder stringToMultiselectOption(String value) => SelectMenuOptionBuilder(
+SelectMenuOptionBuilder stringToSelectMenuOption(String value) => SelectMenuOptionBuilder(
       label: value,
       value: value,
     );
@@ -26,6 +26,6 @@ ButtonBuilder stringToButton(String value) => ButtonBuilder(
 const Converter<String> stringConverter = Converter<String>(
   convertString,
   type: CommandOptionType.string,
-  toMultiselectOption: stringToMultiselectOption,
+  toSelectMenuOption: stringToSelectMenuOption,
   toButton: stringToButton,
 );

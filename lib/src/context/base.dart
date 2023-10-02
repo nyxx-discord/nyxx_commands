@@ -181,7 +181,7 @@ abstract interface class InteractiveContext {
   /// [level] will change the level at which the message is sent, similarly to [respond].
   ///
   /// [converterOverride] can be set to change how each value is converted to a multi-select option.
-  /// The default is to use [Converter.toMultiselectOption] on the default converter for `T`.
+  /// The default is to use [Converter.toSelectMenuOption] on the default converter for `T`.
   ///
   /// You might also be interested in:
   /// - [getMultiSelection], for getting multiple selection;
@@ -193,7 +193,7 @@ abstract interface class InteractiveContext {
     ResponseLevel? level,
     Duration? timeout,
     bool authorOnly = true,
-    FutureOr<SelectMenuOptionBuilder> Function(T)? toMultiSelect,
+    FutureOr<SelectMenuOptionBuilder> Function(T)? toSelectMenuOption,
     Converter<T>? converterOverride,
   });
 
@@ -207,7 +207,7 @@ abstract interface class InteractiveContext {
   /// [level] will change the level at which the message is sent, similarly to [respond].
   ///
   /// [converterOverride] can be set to change how each value is converted to a multi-select option.
-  /// The default is to use [Converter.toMultiselectOption] on the default converter for `T`.
+  /// The default is to use [Converter.toSelectMenuOption] on the default converter for `T`.
   ///
   /// You might also be interested in:
   /// - [getSelection], for getting a single selection;
@@ -219,7 +219,7 @@ abstract interface class InteractiveContext {
     ResponseLevel? level,
     Duration? timeout,
     bool authorOnly = true,
-    FutureOr<SelectMenuOptionBuilder> Function(T)? toMultiSelect,
+    FutureOr<SelectMenuOptionBuilder> Function(T)? toSelectMenuOption,
     Converter<T>? converterOverride,
   });
 }
