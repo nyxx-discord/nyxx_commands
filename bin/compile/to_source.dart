@@ -506,7 +506,7 @@ List<String>? toCollectionElementSource(CollectionElement item) {
 
     List<String> imports = [];
 
-    List<String>? conditionSource = toExpressionSource(item.condition);
+    List<String>? conditionSource = toExpressionSource(item.expression);
 
     if (conditionSource == null) {
       return null;

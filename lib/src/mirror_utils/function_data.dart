@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
-import 'package:runtime_type/runtime_type.dart';
 
 import '../context/autocomplete_context.dart';
 import '../converters/converter.dart';

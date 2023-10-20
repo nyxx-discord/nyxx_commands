@@ -3,8 +3,6 @@ import 'dart:math';
 
 import 'package:nyxx/nyxx.dart';
 
-import 'package:runtime_type/runtime_type.dart';
-
 import '../checks/checks.dart';
 import '../commands.dart';
 import '../commands/chat_command.dart';
