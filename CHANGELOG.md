@@ -1,3 +1,10 @@
+## 6.0.0
+__Breaking changes__
+- Update nyxx to version 6.0.0.
+
+__Bug fixes__
+- Fixes a type error that could occur when using FallbackConverter's toButton and toMultiselect.
+
 ## 6.0.0-dev.1
 __Breaking changes__
 - Update nyxx to version 6.0.0. See the changelog at https://pub.dev/packages/nyxx for more details.
