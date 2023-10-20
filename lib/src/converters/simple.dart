@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:fuzzywuzzy/fuzzywuzzy.dart' as fuzzy;
 import 'package:nyxx/nyxx.dart';
-import 'package:runtime_type/runtime_type.dart';
 
 import '../context/autocomplete_context.dart';
 import '../context/base.dart';

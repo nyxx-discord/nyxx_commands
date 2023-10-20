@@ -23,11 +23,11 @@ class NumConverter<T extends num> extends Converter<T> {
 
   /// Create a new [NumConverter].
   const NumConverter(
-    T? Function(StringView, ContextData) convert, {
-    required CommandOptionType type,
+    T? Function(StringView, ContextData) super.convert, {
+    required super.type,
     this.min,
     this.max,
-  }) : super(convert, type: type);
+  });
 
   @override
   void Function(CommandOptionBuilder)? get processOptionCallback => (builder) {
