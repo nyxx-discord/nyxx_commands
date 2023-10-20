@@ -1,5 +1,4 @@
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../context/base.dart';
 import '../util/mixins.dart';
@@ -7,12 +6,9 @@ import '../util/mixins.dart';
 /// A context in which a user submitted a modal.
 class ModalContext extends ContextBase
     with InteractionRespondMixin, InteractiveMixin
-    implements IInteractionInteractiveContext {
+    implements InteractionInteractiveContext {
   @override
-  final IModalInteraction interaction;
-
-  @override
-  final IModalInteractionEvent interactionEvent;
+  final ModalSubmitInteraction interaction;
 
   /// Create a new [ModalContext].
   ModalContext({
@@ -23,16 +19,14 @@ class ModalContext extends ContextBase
     required super.commands,
     required super.client,
     required this.interaction,
-    required this.interactionEvent,
-    required super.interactions,
   });
 
   /// Get the value the user inputted in a component based on its [id].
   ///
   /// Throws a [StateError] if no component with the given [id] exist in the modal.
-  String operator [](String id) => interaction.components
-      .expand((row) => row)
-      .whereType<IMessageTextInput>()
+  String? operator [](String id) => interaction.data.components
+      .expand((component) => component is ActionRowComponent ? component.components : [component])
+      .whereType<TextInputComponent>()
       .singleWhere((element) => element.customId == id)
       .value;
 }

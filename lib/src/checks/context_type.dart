@@ -1,3 +1,5 @@
+import 'package:nyxx/nyxx.dart';
+
 import '../context/base.dart';
 import '../context/chat_context.dart';
 import '../context/message_context.dart';
@@ -19,7 +21,7 @@ import 'checks.dart';
 class InteractionCommandCheck extends Check {
   /// Create a new [InteractionChatCommandCheck].
   InteractionCommandCheck({super.name = 'Interaction check'})
-      : super((context) => context is IInteractionContextData);
+      : super((context) => context is InteractionContextData);
 }
 
 /// A check that succeeds if the command being invoked is a [MessageCommand].
@@ -64,7 +66,7 @@ class UserCommandCheck extends Check {
 class ChatCommandCheck extends Check {
   /// Create a new [ChatCommandCheck].
   ChatCommandCheck({super.name = 'Chat command check'})
-      : super((context) => context is IChatContext);
+      : super((context) => context is ChatContext);
 }
 
 /// A check that succeeds if the command being invoked is a [ChatCommand] and that the context was
@@ -103,6 +105,6 @@ class MessageChatCommandCheck extends Check {
           (context) => context is MessageChatContext,
           // Don't enable slash commands with this check either in DMs or in guilds.
           allowsDm: false,
-          requiredPermissions: 0,
+          requiredPermissions: Permissions(0),
         );
 }

@@ -1,7 +1,6 @@
 import 'dart:async';
 
-import 'package:nyxx_interactions/nyxx_interactions.dart';
-import 'package:runtime_type/runtime_type.dart';
+import 'package:nyxx/nyxx.dart';
 
 import '../context/autocomplete_context.dart';
 import '../converters/converter.dart';
@@ -33,7 +32,8 @@ class ParameterData<T> {
 
   final Converter<dynamic>? converterOverride;
 
-  final FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autocompleteOverride;
+  final FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext)?
+      autocompleteOverride;
 
   const ParameterData({
     required this.name,

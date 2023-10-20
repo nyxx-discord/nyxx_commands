@@ -1,7 +1,6 @@
 import 'dart:async';
 
-import 'package:nyxx_interactions/nyxx_interactions.dart';
-import 'package:runtime_type/runtime_type.dart';
+import 'package:nyxx/nyxx.dart';
 
 import '../context/autocomplete_context.dart';
 import '../context/base.dart';
@@ -12,7 +11,7 @@ import 'converter.dart';
 /// another function.
 ///
 /// This has the effect of allowing further processing of the output of a converter, for example to
-/// transform a [Snowflake] into a [IMember].
+/// transform a [Snowflake] into a [Member].
 ///
 /// You might also be interested in:
 /// - [FallbackConverter], a converter that tries multiple converters successively.
@@ -24,7 +23,7 @@ class CombineConverter<R, T> implements Converter<T> {
   ///
   /// As with normal converters, this function should not throw but can return `null` to indicate
   /// parsing failure.
-  final FutureOr<T?> Function(R, IContextData) process;
+  final FutureOr<T?> Function(R, ContextData) process;
 
   @override
   RuntimeType<T> get output => RuntimeType<T>();
@@ -35,30 +34,32 @@ class CombineConverter<R, T> implements Converter<T> {
   void Function(CommandOptionBuilder)? get processOptionCallback =>
       _customProcessOptionCallback ?? converter.processOptionCallback;
 
-  final FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? _autocompleteCallback;
+  final FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext)?
+      _autocompleteCallback;
 
   @override
-  FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? get autocompleteCallback =>
-      _autocompleteCallback ?? converter.autocompleteCallback;
+  FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext)?
+      get autocompleteCallback => _autocompleteCallback ?? converter.autocompleteCallback;
 
   @override
-  final FutureOr<MultiselectOptionBuilder> Function(T)? toMultiselectOption;
+  final FutureOr<SelectMenuOptionBuilder> Function(T)? toSelectMenuOption;
 
   @override
   final FutureOr<ButtonBuilder> Function(T)? toButton;
 
-  final Iterable<ArgChoiceBuilder>? _choices;
+  final Iterable<CommandOptionChoiceBuilder<dynamic>>? _choices;
   final CommandOptionType? _type;
 
   /// Create a new [CombineConverter].
   const CombineConverter(
     this.converter,
     this.process, {
-    Iterable<ArgChoiceBuilder>? choices,
+    Iterable<CommandOptionChoiceBuilder<dynamic>>? choices,
     CommandOptionType? type,
     void Function(CommandOptionBuilder)? processOptionCallback,
-    FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autocompleteCallback,
-    this.toMultiselectOption,
+    FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext)?
+        autocompleteCallback,
+    this.toSelectMenuOption,
     this.toButton,
   })  : _choices = choices,
         _type = type,
@@ -66,14 +67,13 @@ class CombineConverter<R, T> implements Converter<T> {
         _autocompleteCallback = autocompleteCallback;
 
   @override
-  Iterable<ArgChoiceBuilder>? get choices => _choices ?? converter.choices;
+  Iterable<CommandOptionChoiceBuilder<dynamic>>? get choices => _choices ?? converter.choices;
 
   @override
   CommandOptionType get type => _type ?? converter.type;
 
   @override
-  FutureOr<T?> Function(StringView view, IContextData context) get convert =>
-      (view, context) async {
+  FutureOr<T?> Function(StringView view, ContextData context) get convert => (view, context) async {
         R? ret = await converter.convert(view, context);
 
         if (ret != null) {

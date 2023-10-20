@@ -1,4 +1,4 @@
-import 'package:nyxx_interactions/nyxx_interactions.dart';
+import 'package:nyxx/nyxx.dart';
 
 import '../commands/chat_command.dart';
 import '../converters/converter.dart' as converters show parse;
@@ -8,17 +8,14 @@ import '../util/view.dart';
 import 'base.dart';
 
 /// Represents a context in which an autocomplete event was triggered.
-class AutocompleteContext extends ContextBase implements IInteractionContextData {
+class AutocompleteContext extends ContextBase implements InteractionContextData {
   @override
-  final ISlashCommandInteraction interaction;
-
-  @override
-  final IAutocompleteInteractionEvent interactionEvent;
+  final ApplicationCommandAutocompleteInteraction interaction;
 
   /// The option that the user is currently filling in.
   ///
-  /// Other options might have already been filled in and are accessible through [interactionEvent].
-  final IInteractionOption option;
+  /// Other options might have already been filled in and are accessible through [interaction].
+  final InteractionOption option;
 
   /// The value the user has put in [option] so far.
   ///
@@ -37,7 +34,7 @@ class AutocompleteContext extends ContextBase implements IInteractionContextData
   ///
   /// The values might contain partial data.
   late final Map<String, String> existingArguments = Map.fromEntries(
-    interactionEvent.options.map((option) => MapEntry(option.name, option.value.toString())),
+    interaction.data.options!.map((option) => MapEntry(option.name, option.value.toString())),
   );
 
   /// A map containing the arguments of [command] and their value, if the user has inputted a value
@@ -57,7 +54,6 @@ class AutocompleteContext extends ContextBase implements IInteractionContextData
   AutocompleteContext({
     required this.command,
     required this.interaction,
-    required this.interactionEvent,
     required this.option,
     required this.currentValue,
     required super.user,
@@ -66,14 +62,13 @@ class AutocompleteContext extends ContextBase implements IInteractionContextData
     required super.channel,
     required super.commands,
     required super.client,
-    required super.interactions,
   }) {
-    ISlashCommand command = interactions.commands.singleWhere(
-      (command) => command.id == interaction.commandId,
+    ApplicationCommand command = commands.registeredCommands.singleWhere(
+      (element) => element.id == interaction.data.id,
     );
 
     arguments = Map.fromIterable(
-      command.options.map((option) => option.name),
+      command.options!.map((option) => option.name),
       value: (option) => existingArguments[option],
     );
   }

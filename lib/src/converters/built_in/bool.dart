@@ -1,11 +1,10 @@
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_interactions/nyxx_interactions.dart';
 
 import '../../context/base.dart';
 import '../../util/view.dart';
 import '../converter.dart';
 
-bool? convertBool(StringView view, IContextData context) {
+bool? convertBool(StringView view, ContextData context) {
   String word = view.getQuotedWord();
 
   const Iterable<String> truthy = ['y', 'yes', '+', '1', 'true'];
@@ -20,22 +19,22 @@ bool? convertBool(StringView view, IContextData context) {
   return null;
 }
 
-MultiselectOptionBuilder boolToMultiselectOption(bool value) => MultiselectOptionBuilder(
-      value ? 'True' : 'False',
-      value.toString(),
+SelectMenuOptionBuilder boolToSelectMenuOption(bool value) => SelectMenuOptionBuilder(
+      label: value ? 'True' : 'False',
+      value: value.toString(),
     );
 
 ButtonBuilder boolToButton(bool value) => ButtonBuilder(
-      value ? 'True' : 'False',
-      '',
-      ButtonStyle.primary,
+      style: ButtonStyle.primary,
+      label: value ? 'True' : 'False',
+      customId: '',
     );
 
 /// A [Converter] that converts input to a [bool].
 ///
 /// This converter will parse the input to `true` if the next word or quoted section of the input is
 /// one of `y`, `yes`, `+`, `1` or `true`. This comparison is case-insensitive.
-/// This converter will parse the input to `false` if the next work or quoted section of the input
+/// This converter will parse the input to `false` if the next word or quoted section of the input
 /// is one of `n`, `no`, `-`, `0` or `false`. This comparison is case-insensitive.
 ///
 /// If the input is not one of the aforementioned words, this converter will fail.
@@ -44,6 +43,6 @@ ButtonBuilder boolToButton(bool value) => ButtonBuilder(
 const Converter<bool> boolConverter = Converter<bool>(
   convertBool,
   type: CommandOptionType.boolean,
-  toMultiselectOption: boolToMultiselectOption,
+  toSelectMenuOption: boolToSelectMenuOption,
   toButton: boolToButton,
 );

@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:mockito/mockito.dart';
 import 'package:nyxx/nyxx.dart';
 import 'package:nyxx_commands/nyxx_commands.dart';
-import 'package:nyxx_interactions/nyxx_interactions.dart';
+
 import 'package:test/test.dart';
 
 void main() {
@@ -14,9 +14,9 @@ void main() {
       final componentId = ComponentId.generate();
       final nextEventFuture = eventManager.nextButtonEvent(componentId);
 
-      eventManager.processButtonEvent(MockButtonInteractionEvent(
+      eventManager.processButtonInteraction(MockButtonInteractionEvent(
         componentId.toString(),
-        Snowflake.zero(),
+        Snowflake.zero,
       ));
 
       expect(nextEventFuture, completes);
@@ -38,11 +38,11 @@ void main() {
       final eventManager = EventManager(MockCommandsPlugin());
 
       final componentId = ComponentId.generate(
-        allowedUser: Snowflake.zero(),
+        allowedUser: Snowflake.zero,
       );
 
       expect(
-        () => eventManager.processButtonEvent(MockButtonInteractionEvent(
+        () => eventManager.processButtonInteraction(MockButtonInteractionEvent(
           componentId.toString(),
           Snowflake(1),
         )),
@@ -62,9 +62,9 @@ void main() {
       final componentId = ComponentId.generate();
 
       expect(
-        () => eventManager.processButtonEvent(MockButtonInteractionEvent(
+        () => eventManager.processButtonInteraction(MockButtonInteractionEvent(
           componentId.toString(),
-          Snowflake.zero(),
+          Snowflake.zero,
         )),
         throwsA(
           isA<UnhandledInteractionException>().having(
@@ -81,65 +81,48 @@ void main() {
 class MockCommandsPlugin with Mock implements CommandsPlugin {
   @override
   ContextManager get contextManager => ContextManager(this);
-
-  @override
-  INyxx get client => MockNyxx();
-
-  @override
-  IInteractions get interactions => MockInteractions();
 }
 
-class MockButtonInteractionEvent with Mock implements IButtonInteractionEvent {
-  @override
-  final IButtonInteraction interaction;
-
+class MockButtonInteractionEvent with Mock implements MessageComponentInteraction {
   MockButtonInteractionEvent(String customId, Snowflake userId)
-      : interaction = MockButtonInteraction(customId, MockUser(userId));
+      : data = MockMessageComponentInteractionData(customId),
+        user = MockUser(userId);
+
+  @override
+  final MessageComponentInteractionData data;
+
+  @override
+  PartialChannel get channel => MockChannel();
+
+  @override
+  final User? user;
+
+  @override
+  InteractionManager get manager => MockInteractionManager();
 }
 
-class MockButtonInteraction with Mock implements IButtonInteraction {
+class MockMessageComponentInteractionData with Mock implements MessageComponentInteractionData {
   @override
   final String customId;
 
-  @override
-  final IUser? userAuthor;
-
-  MockButtonInteraction(this.customId, this.userAuthor);
-
-  @override
-  Cacheable<Snowflake, ITextChannel> get channel => MockCacheable(MockTextChannel());
-
-  @override
-  // ignore: hash_and_equals
-  bool operator ==(dynamic other) => super == other;
+  MockMessageComponentInteractionData(this.customId);
 }
 
-class MockUser with Mock implements IUser {
+class MockUser with Mock implements User {
   @override
   final Snowflake id;
 
   MockUser(this.id);
-
-  @override
-  // ignore: hash_and_equals
-  bool operator ==(dynamic other) => super == other;
 }
 
-class MockCacheable<T extends SnowflakeEntity> with Mock implements Cacheable<Snowflake, T> {
-  final T value;
+class MockNyxx with Mock implements NyxxGateway {}
 
-  MockCacheable(this.value);
-
+class MockChannel with Mock implements TextChannel {
   @override
-  T getOrDownload() => value;
+  Future<TextChannel> get() async => this;
 }
 
-class MockTextChannel with Mock implements ITextChannel {
+class MockInteractionManager with Mock implements InteractionManager {
   @override
-  // ignore: hash_and_equals
-  bool operator ==(dynamic other) => super == other;
+  NyxxRest get client => MockNyxx();
 }
-
-class MockNyxx with Mock implements INyxxWebsocket {}
-
-class MockInteractions with Mock implements IInteractions {}

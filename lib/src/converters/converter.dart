@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_interactions/nyxx_interactions.dart';
-import 'package:runtime_type/runtime_type.dart';
 
 import '../commands.dart';
 import '../context/autocomplete_context.dart';
@@ -26,15 +24,15 @@ import 'built_in.dart';
 /// - [doubleConverter], which converts [double]s;
 /// - [boolConverter], which converts [bool]s;
 /// - [snowflakeConverter], which converts [Snowflake]s;
-/// - [memberConverter], which converts [IMember]s;
-/// - [userConverter], which converts [IUser]s;
-/// - [guildChannelConverter], which converts [IGuildChannel]s;
-/// - [textGuildChannelConverter], which converts [ITextGuildChannel]s;
-/// - [voiceGuildChannelConverter], which converts [IVoiceGuildChannel]s;
-/// - [stageVoiceChannelConverter], which converts [IStageVoiceGuildChannel]s;
-/// - [roleConverter], which converts [IRole]s;
-/// - [mentionableConverter], which converts [Mentionable]s;
-/// - [attachmentConverter], which converts [IAttachment]s.
+/// - [memberConverter], which converts [Member]s;
+/// - [userConverter], which converts [User]s;
+/// - [guildChannelConverter], which converts [GuildChannel]s;
+/// - [textGuildChannelConverter], which converts [GuildTextChannel]s;
+/// - [voiceGuildChannelConverter], which converts [GuildVoiceChannel]s;
+/// - [stageVoiceChannelConverter], which converts [GuildStageChannel]s;
+/// - [roleConverter], which converts [Role]s;
+/// - [mentionableConverter], which converts [CommandOptionMentionable]s;
+/// - [attachmentConverter], which converts [Attachment]s.
 ///
 /// You can override these default implementations with your own by calling
 /// [CommandsPlugin.addConverter] with your own converter for one of the types mentioned above.
@@ -54,13 +52,13 @@ class Converter<T> {
   /// This function should not throw if parsing fails, it should instead return `null` to indicate
   /// failure. A [BadInputException] will then be added to [CommandsPlugin.onCommandError] where it
   /// can be handled appropriately.
-  final FutureOr<T?> Function(StringView view, IContextData context) convert;
+  final FutureOr<T?> Function(StringView view, ContextData context) convert;
 
   /// The choices for this type.
   ///
   /// Choices will be the only options selectable in Slash Commands, however text commands might
   /// still pass any content to this converter.
-  final Iterable<ArgChoiceBuilder>? choices;
+  final Iterable<CommandOptionChoiceBuilder<dynamic>>? choices;
 
   /// The [Discord Slash Command Argument Type](https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-option-type)
   /// of the type that this converter parses.
@@ -87,26 +85,27 @@ class Converter<T> {
   /// message in their client.
   ///
   /// This function should return at most 25 results and should not throw.
-  final FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autocompleteCallback;
+  final FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext)?
+      autocompleteCallback;
 
-  /// A function called to provide [MultiselectOptionBuilder]s that can be used to represent an
+  /// A function called to provide [SelectMenuOptionBuilder]s that can be used to represent an
   /// element converted by this converter.
   ///
   /// The builder returned by this function should have a value that this converter will be able to
   /// convert.
   ///
   /// You might also be interested in:
-  /// - [IInteractiveContext.getSelection] and [IInteractiveContext.getMultiSelection], which make
+  /// - [InteractiveContext.getSelection] and [InteractiveContext.getMultiSelection], which make
   ///   use of this function;
   /// - [toButton], similar to this function but for [ButtonBuilder]s.
-  final FutureOr<MultiselectOptionBuilder> Function(T)? toMultiselectOption;
+  final FutureOr<SelectMenuOptionBuilder> Function(T)? toSelectMenuOption;
 
   /// A function called to provide [ButtonBuilder]s that can be used to represent an element
   /// converted by this converter.
   ///
   /// You might also be interested in:
-  /// - [IInteractiveContext.getButtonSelection], which makes use of this function;
-  /// - [toMultiselectOption], similar to this function but for [MultiselectOptionBuilder]s.
+  /// - [InteractiveContext.getButtonSelection], which makes use of this function;
+  /// - [toSelectMenuOption], similar to this function but for [SelectMenuOptionBuilder]s.
   final FutureOr<ButtonBuilder> Function(T)? toButton;
 
   /// Create a new converter.
@@ -119,7 +118,7 @@ class Converter<T> {
     this.processOptionCallback,
     this.autocompleteCallback,
     this.type = CommandOptionType.string,
-    this.toMultiselectOption,
+    this.toSelectMenuOption,
     this.toButton,
   });
 
@@ -137,10 +136,10 @@ class Converter<T> {
 ///   the converter to use.
 ///
 /// You might also be interested in:
-/// - [ICommand.invoke], which parses multiple arguments and executes a command.
+/// - [Command.invoke], which parses multiple arguments and executes a command.
 Future<T> parse<T>(
   CommandsPlugin commands,
-  IContextData context,
+  ContextData context,
   StringView toParse,
   RuntimeType<T> expectedType, {
   Converter<T>? converterOverride,

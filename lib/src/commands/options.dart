@@ -4,7 +4,7 @@ import 'chat_command.dart';
 /// Options that modify how a command behaves.
 ///
 /// You might also be interested in:
-/// - [IOptions], the interface for entities that support options;
+/// - [Options], the interface for entities that support options;
 /// - [CommandsOptions], the settings for the entire nyxx_commands package.
 class CommandOptions {
   /// Whether to automatically acknowledge interactions before they expire.
@@ -19,7 +19,7 @@ class CommandOptions {
   /// You might also be interested in:
   /// - [autoAcknowledgeDuration], for setting the time after which interactions will be
   ///   acknowledged.
-  /// - [IInteractionInteractiveContext.acknowledge], for manually acknowledging interactions.
+  /// - [InteractionInteractiveContext.acknowledge], for manually acknowledging interactions.
   final bool? autoAcknowledgeInteractions;
 
   /// The duration after which to automatically acknowledge interactions.
@@ -69,7 +69,7 @@ class CommandOptions {
   /// the case of the input.
   ///
   /// You might also be interested in:
-  /// - [IChatCommandComponent.aliases], for invoking a single command from multiple names.
+  /// - [ChatCommandComponent.aliases], for invoking a single command from multiple names.
   final bool? caseInsensitiveCommands;
 
   /// Create a set of command options.

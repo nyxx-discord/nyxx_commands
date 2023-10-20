@@ -56,7 +56,7 @@ class CommandsException implements Exception {
 /// Subclasses of this exception are generally thrown during the processing of [context].
 class ContextualException extends CommandsException {
   /// The context in which the exception occurred.
-  final IContextData context;
+  final ContextData context;
 
   /// Create a new [ContextualException].
   ContextualException(super.message, this.context);
@@ -66,7 +66,7 @@ class ContextualException extends CommandsException {
 /// was not handled.
 class UnhandledInteractionException extends CommandsException implements ContextualException {
   @override
-  final IComponentContext context;
+  final ComponentContext context;
 
   /// The [ComponentId] of the component that was interacted with.
   final ComponentId componentId;
@@ -82,7 +82,7 @@ class UnhandledInteractionException extends CommandsException implements Context
 /// An exception that occurred during the execution of a command.
 class CommandInvocationException extends CommandsException implements ContextualException {
   @override
-  final ICommandContext context;
+  final CommandContext context;
 
   /// Create a new [CommandInvocationException].
   CommandInvocationException(super.message, this.context);
@@ -99,8 +99,8 @@ class AutocompleteFailedException extends CommandsException {
   /// The context in which the exception occurred.
   ///
   /// If the exception was not triggered by a slow response, default options can still be returned
-  /// by accessing the [AutocompleteContext.interactionEvent] and calling
-  /// [IAutocompleteInteractionEvent.respond] with the default options.
+  /// by accessing the [AutocompleteContext.interaction] and calling
+  /// [ApplicationCommandAutocompleteInteraction.respond] with the default options.
   final AutocompleteContext context;
 
   /// The exception that occurred.
@@ -110,7 +110,7 @@ class AutocompleteFailedException extends CommandsException {
   AutocompleteFailedException(this.exception, this.context) : super(exception.toString());
 }
 
-/// A wrapper class for an exception that was thrown inside the [ICommand.execute] callback.
+/// A wrapper class for an exception that was thrown inside the [Command.execute] callback.
 ///
 /// This generally indicates incorrect or incomplete code inside a command callback, and the
 /// developer should try to identify and fix the issue.
@@ -121,15 +121,15 @@ class UncaughtException extends CommandInvocationException {
   final Object exception;
 
   /// Create a new [UncaughtException].
-  UncaughtException(this.exception, ICommandContext context) : super(exception.toString(), context);
+  UncaughtException(this.exception, CommandContext context) : super(exception.toString(), context);
 }
 
 /// An exception thrown when an interaction times out in a command.
 ///
-/// This is the exception thrown by [IInteractiveContext.getButtonPress],
-/// [IInteractiveContext.getSelection] and other methods that might time out.
+/// This is the exception thrown by [InteractiveContext.getButtonPress],
+/// [InteractiveContext.getSelection] and other methods that might time out.
 class InteractionTimeoutException extends CommandInvocationException {
-  /// Create a new [InteractionTimeouException].
+  /// Create a new [InteractionTimeoutException].
   InteractionTimeoutException(super.message, super.context);
 }
 
@@ -139,7 +139,7 @@ class UncaughtCommandsException extends UncaughtException {
   final StackTrace stackTrace;
 
   /// Create a new [UncaughtCommandsException].
-  UncaughtCommandsException(String message, ICommandContext context)
+  UncaughtCommandsException(String message, CommandContext context)
       : stackTrace = StackTrace.current,
         super(CommandsException(message), context);
 }
@@ -161,7 +161,7 @@ class ConverterFailedException extends BadInputException {
   final StringView input;
 
   /// Create a new [ConverterFailedException].
-  ConverterFailedException(this.failed, this.input, IContextData context)
+  ConverterFailedException(this.failed, this.input, ContextData context)
       : super(
           'Could not parse input $input to type "${failed.type}"',
           context,
@@ -186,7 +186,7 @@ class CheckFailedException extends CommandInvocationException {
   final AbstractCheck failed;
 
   /// Create a new [CheckFailedException].
-  CheckFailedException(this.failed, ICommandContext context)
+  CheckFailedException(this.failed, CommandContext context)
       : super('Check "${failed.name}" failed', context);
 }
 

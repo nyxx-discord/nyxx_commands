@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:fuzzywuzzy/fuzzywuzzy.dart' as fuzzy;
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_interactions/nyxx_interactions.dart';
-import 'package:runtime_type/runtime_type.dart';
 
 import '../context/autocomplete_context.dart';
 import '../context/base.dart';
@@ -28,7 +26,7 @@ abstract class SimpleConverter<T> implements Converter<T> {
   /// This should return an iterable of all the instances of `T` that this converter should allow to
   /// be returned. It does not have to always return the same number of instances, and will be
   /// called for each new operation requested from this converter.
-  FutureOr<Iterable<T>> Function(IContextData) get provider;
+  FutureOr<Iterable<T>> Function(ContextData) get provider;
 
   /// A function called to convert elements into [String]s that can be displayed in the Discord
   /// client.
@@ -43,7 +41,7 @@ abstract class SimpleConverter<T> implements Converter<T> {
   /// You can provide additional logic here to convert inputs that would otherwise fail. When this
   /// function is called, it can either return an instance of `T` which will be returned from this
   /// converter or `null`, in which case the converter will fail.
-  final T? Function(StringView, IContextData)? reviver;
+  final T? Function(StringView, ContextData)? reviver;
 
   /// The sensitivity of this converter.
   ///
@@ -61,15 +59,15 @@ abstract class SimpleConverter<T> implements Converter<T> {
   @override
   CommandOptionType get type => CommandOptionType.string;
 
-  final FutureOr<MultiselectOptionBuilder> Function(T)? _toMultiSelectOption;
+  final FutureOr<SelectMenuOptionBuilder> Function(T)? _toSelectMenuOption;
   final FutureOr<ButtonBuilder> Function(T)? _toButton;
 
   const SimpleConverter._({
     required this.sensitivity,
     this.reviver,
-    FutureOr<MultiselectOptionBuilder> Function(T)? toMultiSelectOption,
+    FutureOr<SelectMenuOptionBuilder> Function(T)? toSelectMenuOption,
     FutureOr<ButtonBuilder> Function(T)? toButton,
-  })  : _toMultiSelectOption = toMultiSelectOption,
+  })  : _toSelectMenuOption = toSelectMenuOption,
         _toButton = toButton;
 
   /// Create a new [SimpleConverter].
@@ -78,10 +76,10 @@ abstract class SimpleConverter<T> implements Converter<T> {
   /// [stringify] must be top-level or static functions. Function literals are not `const`, so they
   /// cannot be used in a constant creation expression.
   const factory SimpleConverter({
-    required FutureOr<Iterable<T>> Function(IContextData) provider,
+    required FutureOr<Iterable<T>> Function(ContextData) provider,
     required String Function(T) stringify,
     int sensitivity,
-    T? Function(StringView, IContextData) reviver,
+    T? Function(StringView, ContextData) reviver,
   }) = _DynamicSimpleConverter<T>;
 
   /// Create a new [SimpleConverter] which converts an unchanging number of elements.
@@ -93,30 +91,30 @@ abstract class SimpleConverter<T> implements Converter<T> {
     required List<T> elements,
     required String Function(T) stringify,
     int sensitivity,
-    T? Function(StringView, IContextData) reviver,
+    T? Function(StringView, ContextData) reviver,
   }) = _FixedSimpleConverter<T>;
 
   @override
-  Future<Iterable<ArgChoiceBuilder>>? Function(AutocompleteContext)? get autocompleteCallback =>
-      (context) async {
-        List<String> choices = (await provider(context)).map(stringify).toList();
+  Future<Iterable<CommandOptionChoiceBuilder<dynamic>>>? Function(AutocompleteContext)?
+      get autocompleteCallback => (context) async {
+            List<String> choices = (await provider(context)).map(stringify).toList();
 
-        if (context.currentValue.isEmpty) {
-          return choices.take(25).map((e) => ArgChoiceBuilder(e, e));
-        }
+            if (context.currentValue.isEmpty) {
+              return choices.take(25).map((e) => CommandOptionChoiceBuilder(name: e, value: e));
+            }
 
-        return fuzzy
-            .extractTop(
-              query: context.currentValue,
-              choices: choices,
-              limit: 25,
-              cutoff: sensitivity,
-            )
-            .map((e) => ArgChoiceBuilder(e.choice, e.choice));
-      };
+            return fuzzy
+                .extractTop(
+                  query: context.currentValue,
+                  choices: choices,
+                  limit: 25,
+                  cutoff: sensitivity,
+                )
+                .map((e) => CommandOptionChoiceBuilder(name: e.choice, value: e.choice));
+          };
 
   @override
-  Future<T?> Function(StringView view, IContextData context) get convert => (view, context) async {
+  Future<T?> Function(StringView view, ContextData context) get convert => (view, context) async {
         try {
           return fuzzy
               .extractOne(
@@ -134,25 +132,26 @@ abstract class SimpleConverter<T> implements Converter<T> {
       };
 
   @override
-  FutureOr<MultiselectOptionBuilder> Function(T)? get toMultiselectOption =>
-      _toMultiSelectOption ??
+  FutureOr<SelectMenuOptionBuilder> Function(T)? get toSelectMenuOption =>
+      _toSelectMenuOption ??
       (element) {
         String value = stringify(element);
 
-        return MultiselectOptionBuilder(value, value);
+        return SelectMenuOptionBuilder(
+            label: value, value: value, description: null, emoji: null, isDefault: null);
       };
 
   @override
   FutureOr<ButtonBuilder> Function(T)? get toButton =>
       _toButton ??
       (element) => ButtonBuilder(
-            stringify(element),
-            '',
-            ButtonStyle.primary,
+            style: ButtonStyle.primary,
+            label: stringify(element),
+            customId: '',
           );
 
   @override
-  Iterable<ArgChoiceBuilder>? get choices => null;
+  Iterable<CommandOptionChoiceBuilder<dynamic>>? get choices => null;
 
   @override
   void Function(CommandOptionBuilder)? get processOptionCallback => null;
@@ -160,7 +159,7 @@ abstract class SimpleConverter<T> implements Converter<T> {
 
 class _DynamicSimpleConverter<T> extends SimpleConverter<T> {
   @override
-  final FutureOr<Iterable<T>> Function(IContextData) provider;
+  final FutureOr<Iterable<T>> Function(ContextData) provider;
 
   @override
   final String Function(T) stringify;
@@ -170,7 +169,7 @@ class _DynamicSimpleConverter<T> extends SimpleConverter<T> {
     required this.stringify,
     super.sensitivity = 50,
     super.reviver,
-    super.toMultiSelectOption,
+    super.toSelectMenuOption,
     super.toButton,
   }) : super._();
 }
@@ -186,20 +185,23 @@ class _FixedSimpleConverter<T> extends SimpleConverter<T> {
     required this.stringify,
     super.sensitivity = 50,
     super.reviver,
-    super.toMultiSelectOption,
+    super.toSelectMenuOption,
     super.toButton,
   }) : super._();
 
   @override
-  Iterable<T> Function(IContextData) get provider => (_) => elements;
+  Iterable<T> Function(ContextData) get provider => (_) => elements;
 
   @override
-  Future<Iterable<ArgChoiceBuilder>>? Function(AutocompleteContext)? get autocompleteCallback =>
-      // Don't autocomplete if we have less than 25 elements because we will use choices instead.
-      elements.length > 25 ? super.autocompleteCallback : null;
+  Future<Iterable<CommandOptionChoiceBuilder<dynamic>>>? Function(AutocompleteContext)?
+      get autocompleteCallback =>
+          // Don't autocomplete if we have less than 25 elements because we will use choices instead.
+          elements.length > 25 ? super.autocompleteCallback : null;
 
   @override
-  Iterable<ArgChoiceBuilder>? get choices =>
+  Iterable<CommandOptionChoiceBuilder<dynamic>>? get choices =>
       // Only use choices if we have less than 26 elements (maximum of 25 choices).
-      elements.length <= 25 ? elements.map(stringify).map((e) => ArgChoiceBuilder(e, e)) : null;
+      elements.length <= 25
+          ? elements.map(stringify).map((e) => CommandOptionChoiceBuilder(name: e, value: e))
+          : null;
 }
