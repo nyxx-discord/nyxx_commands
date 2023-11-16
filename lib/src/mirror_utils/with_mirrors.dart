@@ -1,30 +1,24 @@
-//  Copyright 2021 Abitofevrything and others.
-//
-//  Licensed under the Apache License, Version 2.0 (the "License");
-//  you may not use this file except in compliance with the License.
-//  You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-//  Unless required by applicable law or agreed to in writing, software
-//  distributed under the License is distributed on an "AS IS" BASIS,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//  See the License for the specific language governing permissions and
-//  limitations under the License.
-
 import 'dart:async';
 import 'dart:mirrors';
 
-import 'package:nyxx_commands/src/commands.dart';
-import 'package:nyxx_commands/src/mirror_utils/mirror_utils.dart';
-import 'package:nyxx_commands/nyxx_commands.dart';
-import 'package:nyxx_interactions/nyxx_interactions.dart';
+import 'package:nyxx/nyxx.dart';
+import 'package:runtime_type/mirrors.dart';
 
-bool isAssignableTo(Type instance, Type target) =>
-    instance == target || reflectType(instance).isSubtypeOf(reflectType(target));
+import '../commands.dart';
+import '../context/autocomplete_context.dart';
+import '../converters/converter.dart';
+import '../errors.dart';
+import '../util/util.dart';
+import 'mirror_utils.dart';
+
+final Map<Function, FunctionData> _cache = {};
 
 FunctionData loadFunctionData(Function fn) {
-  List<ParameterData> parametersData = [];
+  if (_cache.containsKey(fn)) {
+    return _cache[fn]!;
+  }
+
+  List<ParameterData<dynamic>> parametersData = [];
 
   MethodMirror fnMirror = (reflect(fn) as ClosureMirror).function;
 
@@ -56,8 +50,9 @@ FunctionData loadFunctionData(Function fn) {
     }
 
     // Get parameter type
-    Type type =
+    Type rawType =
         parameterMirror.type.hasReflectedType ? parameterMirror.type.reflectedType : dynamic;
+    RuntimeType<dynamic> type = rawType.toRuntimeType();
 
     // Get parameter description (if any)
 
@@ -104,7 +99,8 @@ FunctionData loadFunctionData(Function fn) {
       throw CommandRegistrationError('parameters may have at most one Autocomplete decorator');
     }
 
-    FutureOr<Iterable<ArgChoiceBuilder>?> Function(AutocompleteContext)? autocompleteOverride;
+    FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext)?
+        autocompleteOverride;
     if (autocompleteAnnotations.isNotEmpty) {
       autocompleteOverride = autocompleteAnnotations.first.callback;
     }
@@ -123,15 +119,11 @@ FunctionData loadFunctionData(Function fn) {
     ));
   }
 
-  return FunctionData(parametersData);
+  return _cache[fn] = FunctionData(parametersData);
 }
 
-void loadData(
-  Map<int, TypeData> typeTree,
-  Map<Type, int> typeMappings,
-  Map<dynamic, FunctionData> functionData,
-) {
+void loadData(Map<dynamic, FunctionData> functionData) {
   if (const bool.fromEnvironment('dart.library.mirrors')) {
-    logger.info('Loading compiled function data when `dart:mirrors` is availible is unneeded');
+    logger.info('Loading compiled function data when `dart:mirrors` is available is unneeded');
   }
 }

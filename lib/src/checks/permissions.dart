@@ -1,22 +1,8 @@
-//  Copyright 2021 Abitofevrything and others.
-//
-//  Licensed under the Apache License, Version 2.0 (the "License");
-//  you may not use this file except in compliance with the License.
-//  You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-//  Unless required by applicable law or agreed to in writing, software
-//  distributed under the License is distributed on an "AS IS" BASIS,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//  See the License for the specific language governing permissions and
-//  limitations under the License.
-
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/commands/interfaces.dart';
-import 'package:nyxx_commands/src/context/interaction_context.dart';
-import 'package:nyxx_interactions/nyxx_interactions.dart';
+import 'package:nyxx_commands/src/util/util.dart';
 
+import '../commands/interfaces.dart';
+import '../context/base.dart';
 import 'checks.dart';
 
 /// A check that succeeds if the member invoking the command has a certain set of permissions.
@@ -28,59 +14,66 @@ class PermissionsCheck extends Check {
   /// The bitfield representing the permissions required by this check.
   ///
   /// You might also be interested in:
-  /// - [PermissionsConstants], for computing the value for this field;
+  /// - [Permissions], for computing the value for this field;
   /// - [AbstractCheck.requiredPermissions], for setting permissions on any check.
-  // TODO: Rename to `permissions` once AbstractCheck.permissions is removed
-  final int permissionsValue;
+  final Flags<Permissions> permissions;
 
   /// Whether this check should allow server administrators to configure overrides that allow
   /// specific users or channels to execute this command regardless of permissions.
   final bool allowsOverrides;
 
   /// Whether this check requires the user invoking the command to have all of the permissions in
-  /// [permissionsValue] or only a single permission from [permissionsValue].
+  /// [permissions] or only a single permission from [permissions].
   ///
   /// If this is true, the member invoking the command must have all the permissions in
-  /// [permissionsValue] to execute the command. Otherwise, members need only have one of the
-  /// permissions in [permissionsValue] to execute the command.
+  /// [permissions] to execute the command. Otherwise, members need only have one of the
+  /// permissions in [permissions] to execute the command.
   final bool requiresAll;
 
   /// Create a new [PermissionsCheck].
   PermissionsCheck(
-    this.permissionsValue, {
+    this.permissions, {
     this.allowsOverrides = true,
     this.requiresAll = false,
     String? name,
-    bool allowsDm = true,
+    super.allowsDm = true,
   }) : super(
+          name: name ?? 'Permissions check on $permissions',
+          requiredPermissions: permissions,
           (context) async {
-            IMember? member = context.member;
+            Member? member = context.member;
 
             if (member == null) {
               return allowsDm;
             }
 
-            IPermissions effectivePermissions =
-                await (context.channel as IGuildChannel).effectivePermissions(member);
+            final effectivePermissions = await computePermissions(
+              context.guild!,
+              context.channel as GuildChannel,
+              member,
+            );
 
             if (allowsOverrides) {
-              ISlashCommand command;
+              ApplicationCommand command;
 
-              if (context is IInteractionContext) {
-                command = context.interactionEvent.interactions.commands
-                    .firstWhere((command) => command.id == context.interaction.commandId);
+              if (context is InteractionCommandContextData) {
+                command = context.commands.registeredCommands.singleWhere(
+                  (element) =>
+                      element.id == (context as InteractionCommandContextData).interaction.data.id,
+                );
               } else {
                 // If the invocation was not from a slash command, try to find a matching slash
                 // command and use the overrides from that.
-                ICommandRegisterable root = context.command;
+                CommandRegisterable root = context.command;
 
-                while (root.parent is ICommandRegisterable) {
-                  root = root.parent as ICommandRegisterable;
+                while (root.parent is CommandRegisterable) {
+                  root = root.parent as CommandRegisterable;
                 }
 
-                Iterable<ISlashCommand> matchingCommands =
-                    context.commands.interactions.commands.where(
-                  (command) => command.name == root.name && command.type == SlashCommandType.chat,
+                Iterable<ApplicationCommand> matchingCommands =
+                    context.commands.registeredCommands.where(
+                  (command) =>
+                      command.name == root.name && command.type == ApplicationCommandType.chatInput,
                 );
 
                 if (matchingCommands.isEmpty) {
@@ -90,13 +83,12 @@ class PermissionsCheck extends Check {
                 command = matchingCommands.first;
               }
 
-              ISlashCommandPermissionOverrides overrides =
-                  await command.getPermissionOverridesInGuild(context.guild!.id).getOrDownload();
+              CommandPermissions overrides = await command.fetchPermissions(context.guild!.id);
 
-              if (overrides.permissionOverrides.isEmpty) {
-                overrides = await context.commands.interactions
-                    .getGlobalOverridesInGuild(context.guild!.id)
-                    .getOrDownload();
+              if (overrides.permissions.isEmpty) {
+                overrides =
+                    (await context.client.guilds[context.guild!.id].commands.listPermissions())
+                        .singleWhere((overrides) => overrides.command == null);
               }
 
               bool? def;
@@ -107,15 +99,15 @@ class PermissionsCheck extends Check {
 
               int highestRoleIndex = -1;
 
-              for (final override in overrides.permissionOverrides) {
-                if (override.isEveryone) {
-                  def = override.allowed;
-                } else if (override.isAllChannels) {
-                  channelDef = override.allowed;
-                } else if (override.type == SlashCommandPermissionType.channel &&
+              for (final override in overrides.permissions) {
+                if (override.id == context.guild!.id) {
+                  def = override.hasPermission;
+                } else if (override.id == Snowflake(context.guild!.id.value - 1)) {
+                  channelDef = override.hasPermission;
+                } else if (override.type == CommandPermissionType.channel &&
                     override.id == context.channel.id) {
-                  channel = override.allowed;
-                } else if (override.type == SlashCommandPermissionType.role) {
+                  channel = override.hasPermission;
+                } else if (override.type == CommandPermissionType.role) {
                   int roleIndex = -1;
 
                   int i = 0;
@@ -129,35 +121,32 @@ class PermissionsCheck extends Check {
                   }
 
                   if (highestRoleIndex < roleIndex) {
-                    role = override.allowed;
+                    role = override.hasPermission;
                     highestRoleIndex = roleIndex;
                   }
-                } else if (override.type == SlashCommandPermissionType.user &&
+                } else if (override.type == CommandPermissionType.user &&
                     override.id == context.user.id) {
-                  user = override.allowed;
+                  user = override.hasPermission;
                   // No need to continue if we found an override for the specific user
                   break;
                 }
               }
 
-              Iterable<bool> prioritised = [def, channelDef, role, channel, user].whereType<bool>();
+              Iterable<bool> prioritized = [def, channelDef, role, channel, user].whereType<bool>();
 
-              if (prioritised.isNotEmpty) {
-                return prioritised.last;
+              if (prioritized.isNotEmpty) {
+                return prioritized.last;
               }
             }
 
-            int corresponding = effectivePermissions.raw & permissionsValue;
+            Flags<Permissions> corresponding = effectivePermissions & permissions;
 
             if (requiresAll) {
-              return corresponding == permissionsValue;
+              return corresponding == permissions;
             }
 
             return corresponding != 0;
           },
-          name ?? 'Permissions check on $permissionsValue',
-          allowsDm,
-          permissionsValue,
         );
 
   /// Create a [PermissionsCheck] that allows nobody to execute a command, unless configured
@@ -166,5 +155,5 @@ class PermissionsCheck extends Check {
     bool allowsOverrides = true,
     String? name,
     bool allowsDm = true,
-  }) : this(0, allowsOverrides: allowsOverrides, allowsDm: allowsDm, name: name);
+  }) : this(const Permissions(0), allowsOverrides: allowsOverrides, allowsDm: allowsDm, name: name);
 }

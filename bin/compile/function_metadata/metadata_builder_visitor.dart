@@ -12,7 +12,6 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-import 'package:analyzer/dart/analysis/analysis_context.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 
 import '../element_tree_visitor.dart';
@@ -21,7 +20,7 @@ import '../element_tree_visitor.dart';
 class FunctionBuilderVisitor extends EntireAstVisitor {
   final List<InvocationExpression> ids = [];
 
-  FunctionBuilderVisitor(AnalysisContext context, bool slow) : super(context, slow);
+  FunctionBuilderVisitor(super.context, super.slow);
 
   @override
   void visitMethodInvocation(MethodInvocation node) {

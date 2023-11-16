@@ -357,7 +357,7 @@ List<String>? toExpressionSource(Expression expression) {
         ];
       } else if (referenced.variable is FieldElement) {
         List<String>? typeData =
-            toTypeSource((referenced.variable.enclosingElement as ClassElement).thisType);
+            toTypeSource((referenced.variable.enclosingElement as InterfaceElement).thisType);
 
         if (typeData == null || !referenced.variable.isPublic || !referenced.variable.isStatic) {
           return null;
@@ -391,7 +391,8 @@ List<String>? toExpressionSource(Expression expression) {
         return null; // Cannot handle private functions
       }
     } else if (referenced is MethodElement) {
-      List<String>? typeData = toTypeSource((referenced.enclosingElement as ClassElement).thisType);
+      List<String>? typeData =
+          toTypeSource((referenced.enclosingElement as InterfaceElement).thisType);
 
       if (typeData == null || !referenced.isPublic || !referenced.isStatic) {
         return null;
@@ -505,7 +506,7 @@ List<String>? toCollectionElementSource(CollectionElement item) {
 
     List<String> imports = [];
 
-    List<String>? conditionSource = toExpressionSource(item.condition);
+    List<String>? conditionSource = toExpressionSource(item.expression);
 
     if (conditionSource == null) {
       return null;
@@ -546,7 +547,7 @@ List<String>? toCollectionElementSource(CollectionElement item) {
       ...imports,
     ];
   } else if (item is ForElement) {
-    // Collection for statement: disallowed beecause it is not const
+    // Collection for statement: disallowed because it is not const
     throw CommandsException('Cannot reproduce for loops');
   } else if (item is MapLiteralEntry) {
     // In the case we have a map, we need to convert both the key and the value

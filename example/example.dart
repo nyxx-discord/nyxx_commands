@@ -7,12 +7,12 @@
 // - Set the environment variable `GUILD` to the ID of the Discord guild (server) you want the
 //   commands to be registered to
 
-// nyxx is needed to create the client & use nyxx classes like IMessage or IGuild
+// nyxx is needed to create the client & use nyxx classes like Message or Guild
 import 'package:nyxx/nyxx.dart';
 // nyxx_commands is needed to use the commands plugin
 import 'package:nyxx_commands/nyxx_commands.dart';
 
-// To add these dependancies to your project, run:
+// To add these dependencies to your project, run:
 // - `dart pub add nyxx`;
 // - `dart pub add nyxx_commands`
 
@@ -20,23 +20,10 @@ import 'package:nyxx_commands/nyxx_commands.dart';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:nyxx_interactions/nyxx_interactions.dart';
-
-void main() {
+void main() async {
   // ====================================== //
-  // ===== Initialising nyxx_commands ===== //
+  // ===== Initializing nyxx_commands ===== //
   // ====================================== //
-
-  // Since v3.0.0, nyxx_commands can be used as a plugin with nyxx v3.0.0
-
-  // To use a plugin, we must first obtain an instance of INyxx:
-  // nyxx_commands doesn't yet support using INyxxRest, so we have to use INyxxWebsocket
-  INyxxWebsocket client = NyxxFactory.createNyxxWebsocket(
-    Platform.environment['TOKEN']!,
-    // nyxx_commands runs fine without the guild member intent, but it's useful to have it for
-    // IMember lookup
-    GatewayIntents.allUnprivileged | GatewayIntents.guildMembers,
-  );
 
   // Next, we need to create our plugin. The plugin class used for nyxx_commands is `CommandsPlugin`
   // and we need to store it in a variable to be able to access it for registering commands and
@@ -45,15 +32,16 @@ void main() {
   CommandsPlugin commands = CommandsPlugin(
     // The `prefix` parameter determines what prefix nyxx_commands will use for text commands.
     //
-    // It isn't a simple string but a function that takes a single argument, an `IMessage`, and
-    // returns a `String` indicating what prefix to use for that message. This allows you to have
-    // different prefixes for different messages, for example you might want the bot to not require
-    // a prefix when in direct messages. In that case, you might provide a function like this:
+    // It isn't a simple string but a function that takes a single argument, a `MessageCreateEvent`,
+    // and returns a `String` indicating what prefix to use for that message. This allows you to
+    // have/ different prefixes for different messages, for example you might want the bot to not
+    // require a prefix when in direct messages. In that case, you might provide a function like
+    // this:
     // ```dart
-    // prefix: (message) {
-    //   if (message.startsWith('!')) {
+    // prefix: (event) {
+    //   if (event.message.content.startsWith('!')) {
     //     return '!';
-    //   } else if (message.guild == null) {
+    //   } else if (event.guild == null) {
     //     return '';
     //   }
     // }
@@ -64,18 +52,15 @@ void main() {
 
     // The `guild` parameter determines what guild slash commands will be registered to by default.
     //
-    // This is useful for testing since registering slash commands globally can take up to an hour,
-    // whereas registering commands for a single guild is instantaneous.
-    //
     // If you aren't testing or want your commands to be registered globally, either omit this
     // parameter or set it to `null`.
-    guild: Snowflake(Platform.environment['GUILD']!),
+    guild: Snowflake.parse(Platform.environment['GUILD']!),
 
     // The `options` parameter allows you to specify additional configuration options for the
     // plugin.
     //
     // Generally you can just omit this parameter and use the defaults, but if you want to allow for
-    // a specific behaviour you can include this parameter to change the default settings.
+    // a specific behavior you can include this parameter to change the default settings.
     //
     // In this case, we set the option `logErrors` to `true`, meaning errors that occur in commands
     // will be sent to the logger. If you have also added the `Logging` plugin to your client, these
@@ -86,18 +71,13 @@ void main() {
     ),
   );
 
-  // Next, we add the commands plugin to our client:
-  client.registerPlugin(commands);
-
-  // We also register a couple other plugins for convenience.
-  // These aren't needed for nyxx_commands to work.
-  client
-    ..registerPlugin(Logging())
-    ..registerPlugin(CliIntegration())
-    ..registerPlugin(IgnoreExceptions());
-
-  // Finally, we tell the client to connect to Discord:
-  client.connect();
+  // Now we have our `CommandsPlugin`, we can connect to Discord, making sure to pass our `commands`
+  // instance to the client's options.
+  await Nyxx.connectGateway(
+    Platform.environment['TOKEN']!,
+    GatewayIntents.allUnprivileged | GatewayIntents.guildMembers,
+    options: GatewayClientOptions(plugins: [commands, logging, cliIntegration, ignoreExceptions]),
+  );
 
   // ====================================== //
   // ======= Registering a command ======== //
@@ -126,18 +106,18 @@ void main() {
     // as an executable. If you just want to run nyxx_commands with `dart run`, this is optional and
     // you can just pass a normal function to the constructor.
     //
-    // The first parameter to this function must be a `IChatContext`. A `IChatContext` allows you to access
+    // The first parameter to this function must be a `ChatContext`. A `ChatContext` allows you to access
     // various information about how the command was run: the user that executed it, the guild it
     // was ran in and a few other useful pieces of information.
     // `IChatContext` also has a couple of methods that make it easier to respond to commands.
     //
     // Since a ping command doesn't have any other arguments, we don't add any other parameters to
     // the function.
-    id('ping', (IChatContext context) {
+    id('ping', (ChatContext context) {
       // For a ping command, all we need to do is respond with `pong`.
       // To do that, we can use the `IChatContext`'s `respond` method which responds to the command with
       // a message.
-      context.respond(MessageBuilder.content('pong!'));
+      context.respond(MessageBuilder(content: 'pong!'));
     }),
   );
 
@@ -187,25 +167,25 @@ void main() {
       ChatCommand(
         'coin',
         'Throw a coin',
-        id('throw-coin', (IChatContext context) {
+        id('throw-coin', (ChatContext context) {
           bool heads = Random().nextBool();
 
           context.respond(
-              MessageBuilder.content('The coin landed on its ${heads ? 'head' : 'tail'}!'));
+              MessageBuilder(content: 'The coin landed on its ${heads ? 'head' : 'tail'}!'));
         }),
       ),
     ],
   );
 
   // The other way to add a command to a group is using the `ChatGroup`'s `addCommand` method,
-  // similarly to how we added the `ping` command to the bot earlie.
+  // similarly to how we added the `ping` command to the bot earlier.
   throwGroup.addCommand(ChatCommand(
     'die',
     'Throw a die',
-    id('throw-die', (IChatContext context) {
+    id('throw-die', (ChatContext context) {
       int number = Random().nextInt(6) + 1;
 
-      context.respond(MessageBuilder.content('The die landed on the $number!'));
+      context.respond(MessageBuilder(content: 'The die landed on the $number!'));
     }),
   ));
 
@@ -240,8 +220,8 @@ void main() {
     // As mentioned earlier, all we need to do to add an argument to our command is add it as a
     // parameter to our execute function. In this case, we take an argument called `message` and of
     // type `String`.
-    id('say', (IChatContext context, String message) {
-      context.respond(MessageBuilder.content(message));
+    id('say', (ChatContext context, String message) {
+      context.respond(MessageBuilder(content: message));
     }),
   );
 
@@ -285,7 +265,7 @@ void main() {
   // class is used.
   //
   // nyxx_commands registers a few converters by default for commonly used types such as `int`s,
-  // `double`s, `IMember`s and others. We'll look into creating custom converters later, and for now
+  // `double`s, `Member`s and others. We'll look into creating custom converters later, and for now
   // just use the built-in converters.
 
   // Using converters is just as simple as using arguments: simply specify the argument name and
@@ -296,17 +276,17 @@ void main() {
   ChatCommand nick = ChatCommand(
     'nick',
     "Change a user's nickname",
-    // Setting the type of the `target` parameter to `IMember` will make nyxx_commands convert user
-    // input to instances of `IMember`.
-    id('nick', (IChatContext context, IMember target, String newNick) async {
+    // Setting the type of the `target` parameter to `Member` will make nyxx_commands convert user
+    // input to instances of `Member`.
+    id('nick', (ChatContext context, Member target, String newNick) async {
       try {
-        await target.edit(builder: MemberBuilder()..nick = newNick);
-      } on IHttpResponseError {
-        context.respond(MessageBuilder.content("Couldn't change nickname :/"));
+        await target.update(MemberUpdateBuilder(nick: newNick));
+      } on HttpResponseError {
+        context.respond(MessageBuilder(content: "Couldn't change nickname :/"));
         return;
       }
 
-      context.respond(MessageBuilder.content('Successfully changed nickname!'));
+      context.respond(MessageBuilder(content: 'Successfully changed nickname!'));
     }),
   );
 
@@ -336,7 +316,7 @@ void main() {
   // You can also run the command from a text message, with `!nick *target* *new-nick*`. Unlike
   // slash commands, there is no way to filter user input before it gets to our bot, so we might end
   // up with an invalid input.
-  // If that is the case, the converter for `IMember` will be unable to convert the user input to a
+  // If that is the case, the converter for `Member` will be unable to convert the user input to a
   // valid member, and the command will fail with an exception.
   //
   // Note that the bot must have the MANAGE_MEMBERS permission and have a higher role than the
@@ -360,7 +340,7 @@ void main() {
   // To start off, we will create a converter for `Shape`s. We will need to create a brand new
   // converter from scratch for this, since no existing converter can be mapped to a `Shape`.
 
-  // To create the converter, we instanciate the `Converter` class.
+  // To create the converter, we instantiate the `Converter` class.
   // Note that the variable is fully
   // typed, the typed generics on `Converter` are filled in. This allows nyxx_commands to know what
   // the target type of this converter is.
@@ -373,7 +353,7 @@ void main() {
     // The first parameter to the function is an instance of `StringView`. `StringView` allows you
     // to manipulate and extract data from a `String`, but also allows the next converter to know
     // where to start parsing its argument from.
-    // The second parameter is the current `IChatContext` in which the argument is being parsed.
+    // The second parameter is the current `ChatContext` in which the argument is being parsed.
     (view, context) {
       // In our case, we want to return a `Shape` based on the user's input. The `getQuotedWord()`
       // will get the next quoted word from the input.
@@ -397,9 +377,9 @@ void main() {
     // nyxx_interaction's `ArgChoiceBuilder`, allowing you to specify the choices that will be shown
     // to the user when running this command from a slash command.
     choices: [
-      ArgChoiceBuilder('Triangle', 'triangle'),
-      ArgChoiceBuilder('Square', 'square'),
-      ArgChoiceBuilder('Pentagon', 'pentagon'),
+      CommandOptionChoiceBuilder(name: 'Triangle', value: 'triangle'),
+      CommandOptionChoiceBuilder(name: 'Square', value: 'square'),
+      CommandOptionChoiceBuilder(name: 'Pentagon', value: 'pentagon'),
     ],
   );
 
@@ -413,10 +393,10 @@ void main() {
   // to a `Dimension`.
 
   // To extend an existing `Converter`, we can use the `CombineConverter` class. This takes an
-  // exising converter and a function to transform the output of the original converter to the
+  // existing converter and a function to transform the output of the original converter to the
   // target type.
   // Similarly to the shape converter, this variable has to be fully typed. The first type argument
-  // for `CombineConverter` is the target type of the inital `Converter`, and the second is the
+  // for `CombineConverter` is the target type of the initial `Converter`, and the second is the
   // target type of the `CombineConverter`.
   Converter<Dimension> dimensionConverter = CombineConverter<int, Dimension>(
     intConverter,
@@ -437,46 +417,46 @@ void main() {
   commands.addConverter(dimensionConverter);
 
   // Let's create a command to test our converter out:
-  ChatCommand favouriteShape = ChatCommand(
-    'favourite-shape',
-    'Outputs your favourite shape',
-    id('favourite-shape', (IChatContext context, Shape shape, Dimension dimension) {
-      String favourite;
+  ChatCommand favoriteShape = ChatCommand(
+    'favorite-shape',
+    'Outputs your favorite shape',
+    id('favorite-shape', (ChatContext context, Shape shape, Dimension dimension) {
+      String favorite;
 
       switch (shape) {
         case Shape.triangle:
           if (dimension == Dimension.twoD) {
-            favourite = 'triangle';
+            favorite = 'triangle';
           } else {
-            favourite = 'pyramid';
+            favorite = 'pyramid';
           }
           break;
         case Shape.square:
           if (dimension == Dimension.twoD) {
-            favourite = 'square';
+            favorite = 'square';
           } else {
-            favourite = 'cube';
+            favorite = 'cube';
           }
           break;
         case Shape.pentagon:
           if (dimension == Dimension.twoD) {
-            favourite = 'pentagon';
+            favorite = 'pentagon';
           } else {
-            favourite = 'pentagonal prism';
+            favorite = 'pentagonal prism';
           }
       }
 
-      context.respond(MessageBuilder.content('Your favourite shape is $favourite!'));
+      context.respond(MessageBuilder(content: 'Your favorite shape is $favorite!'));
     }),
   );
 
-  commands.addCommand(favouriteShape);
+  commands.addCommand(favoriteShape);
 
-  // At this point, if you run the file you will see that the `favourite-shape` command has been
+  // At this point, if you run the file you will see that the `favorite-shape` command has been
   // added to the slash command menu.
   // Selecting this command, you will be prompted to select a shape from the choices we outlined
   // earlier and a dimension. Note that in this case Discord isn't able to give us choices since we
-  // haven't told it what dimensions are availible.
+  // haven't told it what dimensions are available.
   //
   // If you run the command, you will see that your input will automatically be converted to a
   // `Shape` and `Dimension` by using the converters we defined earlier.
@@ -502,23 +482,22 @@ void main() {
   // ```dart
   // (IChatContext context, [String? a, String? b, String? c]) {}
   // ```
-  // In this case, `b` having a value does not guarantee `a` has a value. As such, it is always
-  // better to provide a default for your optional parameters instead of making them nullable.
+  // In this case, `b` having a value does not guarantee `a` has a value.
 
   // As an example for using optional arguments, let's create a command with an optional argument:
-  ChatCommand favouriteFruit = ChatCommand(
-    'favourite-fruit',
-    'Outputs your favourite fruit',
-    id('favourite-fruit', (IChatContext context, [String favourite = 'apple']) {
-      context.respond(MessageBuilder.content('Your favourite fruit is $favourite!'));
+  ChatCommand favoriteFruit = ChatCommand(
+    'favorite-fruit',
+    'Outputs your favorite fruit',
+    id('favorite-fruit', (ChatContext context, [String favorite = 'apple']) {
+      context.respond(MessageBuilder(content: 'Your favorite fruit is $favorite!'));
     }),
   );
 
-  commands.addCommand(favouriteFruit);
+  commands.addCommand(favoriteFruit);
 
-  // At this point, if you run the file you will be able to use the `favourite-fruit` command. Once
+  // At this point, if you run the file you will be able to use the `favorite-fruit` command. Once
   // you've selected the command in the slash command menu, you'll be given an option to provide a
-  // value for the `favourite` argument.
+  // value for the `favorite` argument.
   // If you don't specify a value for the argument, the default value of `'apple'` will be used. If
   // you do specify a value, that value will be used instead.
   //
@@ -540,8 +519,8 @@ void main() {
   ChatCommand alphabet = ChatCommand(
     'alphabet',
     'Outputs the alphabet',
-    id('alphabet', (IChatContext context) {
-      context.respond(MessageBuilder.content('ABCDEFGHIJKLMNOPQRSTUVWXYZ'));
+    id('alphabet', (ChatContext context) {
+      context.respond(MessageBuilder(content: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'));
     }),
     // Since this command is spammy, we can use a cooldown to restrict its usage:
     checks: [
@@ -583,10 +562,10 @@ void main() {
     'better-say',
     'A better version of the say command',
     id('better-say', (
-      IChatContext context,
+      ChatContext context,
       @UseConverter(nonEmptyStringConverter) String input,
     ) {
-      context.respond(MessageBuilder.content(input));
+      context.respond(MessageBuilder(content: input));
     }),
   );
 
@@ -616,7 +595,7 @@ enum Dimension {
 // ---------- Global functions ---------- //
 // -------------------------------------- //
 
-String? filterInput(String input, IContext context) {
+String? filterInput(String input, ContextData context) {
   if (input.isNotEmpty) {
     return input;
   }

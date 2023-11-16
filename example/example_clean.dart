@@ -10,36 +10,26 @@ import 'package:nyxx_commands/nyxx_commands.dart';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:nyxx_interactions/nyxx_interactions.dart';
-
-void main() {
-  INyxxWebsocket client = NyxxFactory.createNyxxWebsocket(
-    Platform.environment['TOKEN']!,
-    GatewayIntents.allUnprivileged | GatewayIntents.guildMembers,
-  );
-
+void main() async {
   CommandsPlugin commands = CommandsPlugin(
     prefix: (message) => '!',
-    guild: Snowflake(Platform.environment['GUILD']!),
+    guild: Snowflake.parse(Platform.environment['GUILD']!),
     options: CommandsOptions(
       logErrors: true,
     ),
   );
 
-  client.registerPlugin(commands);
-
-  client
-    ..registerPlugin(Logging())
-    ..registerPlugin(CliIntegration())
-    ..registerPlugin(IgnoreExceptions());
-
-  client.connect();
+  await Nyxx.connectGateway(
+    Platform.environment['TOKEN']!,
+    GatewayIntents.allUnprivileged | GatewayIntents.guildMembers,
+    options: GatewayClientOptions(plugins: [commands, logging, cliIntegration, ignoreExceptions]),
+  );
 
   ChatCommand ping = ChatCommand(
     'ping',
     'Checks if the bot is online',
-    id('ping', (IChatContext context) {
-      context.respond(MessageBuilder.content('pong!'));
+    id('ping', (ChatContext context) {
+      context.respond(MessageBuilder(content: 'pong!'));
     }),
   );
 
@@ -52,11 +42,11 @@ void main() {
       ChatCommand(
         'coin',
         'Throw a coin',
-        id('throw-coin', (IChatContext context) {
+        id('throw-coin', (ChatContext context) {
           bool heads = Random().nextBool();
 
           context.respond(
-              MessageBuilder.content('The coin landed on its ${heads ? 'head' : 'tail'}!'));
+              MessageBuilder(content: 'The coin landed on its ${heads ? 'head' : 'tail'}!'));
         }),
       ),
     ],
@@ -65,10 +55,10 @@ void main() {
   throwGroup.addCommand(ChatCommand(
     'die',
     'Throw a die',
-    id('throw-die', (IChatContext context) {
+    id('throw-die', (ChatContext context) {
       int number = Random().nextInt(6) + 1;
 
-      context.respond(MessageBuilder.content('The die landed on the $number!'));
+      context.respond(MessageBuilder(content: 'The die landed on the $number!'));
     }),
   ));
 
@@ -77,8 +67,8 @@ void main() {
   ChatCommand say = ChatCommand(
     'say',
     'Make the bot say something',
-    id('say', (IChatContext context, String message) {
-      context.respond(MessageBuilder.content(message));
+    id('say', (ChatContext context, String message) {
+      context.respond(MessageBuilder(content: message));
     }),
   );
 
@@ -87,15 +77,15 @@ void main() {
   ChatCommand nick = ChatCommand(
     'nick',
     "Change a user's nickname",
-    id('nick', (IChatContext context, IMember target, String newNick) async {
+    id('nick', (ChatContext context, Member target, String newNick) async {
       try {
-        await target.edit(builder: MemberBuilder()..nick = newNick);
-      } on IHttpResponseError {
-        context.respond(MessageBuilder.content("Couldn't change nickname :/"));
+        await target.update(MemberUpdateBuilder(nick: newNick));
+      } on HttpResponseError {
+        context.respond(MessageBuilder(content: "Couldn't change nickname :/"));
         return;
       }
 
-      context.respond(MessageBuilder.content('Successfully changed nickname!'));
+      context.respond(MessageBuilder(content: 'Successfully changed nickname!'));
     }),
   );
 
@@ -115,9 +105,9 @@ void main() {
       }
     },
     choices: [
-      ArgChoiceBuilder('Triangle', 'triangle'),
-      ArgChoiceBuilder('Square', 'square'),
-      ArgChoiceBuilder('Pentagon', 'pentagon'),
+      CommandOptionChoiceBuilder(name: 'Triangle', value: 'triangle'),
+      CommandOptionChoiceBuilder(name: 'Square', value: 'square'),
+      CommandOptionChoiceBuilder(name: 'Pentagon', value: 'pentagon'),
     ],
   );
 
@@ -139,56 +129,56 @@ void main() {
 
   commands.addConverter(dimensionConverter);
 
-  ChatCommand favouriteShape = ChatCommand(
-    'favourite-shape',
-    'Outputs your favourite shape',
-    id('favourite-shape', (IChatContext context, Shape shape, Dimension dimension) {
-      String favourite;
+  ChatCommand favoriteShape = ChatCommand(
+    'favorite-shape',
+    'Outputs your favorite shape',
+    id('favorite-shape', (ChatContext context, Shape shape, Dimension dimension) {
+      String favorite;
 
       switch (shape) {
         case Shape.triangle:
           if (dimension == Dimension.twoD) {
-            favourite = 'triangle';
+            favorite = 'triangle';
           } else {
-            favourite = 'pyramid';
+            favorite = 'pyramid';
           }
           break;
         case Shape.square:
           if (dimension == Dimension.twoD) {
-            favourite = 'square';
+            favorite = 'square';
           } else {
-            favourite = 'cube';
+            favorite = 'cube';
           }
           break;
         case Shape.pentagon:
           if (dimension == Dimension.twoD) {
-            favourite = 'pentagon';
+            favorite = 'pentagon';
           } else {
-            favourite = 'pentagonal prism';
+            favorite = 'pentagonal prism';
           }
       }
 
-      context.respond(MessageBuilder.content('Your favourite shape is $favourite!'));
+      context.respond(MessageBuilder(content: 'Your favorite shape is $favorite!'));
     }),
   );
 
-  commands.addCommand(favouriteShape);
+  commands.addCommand(favoriteShape);
 
-  ChatCommand favouriteFruit = ChatCommand(
-    'favourite-fruit',
-    'Outputs your favourite fruit',
-    id('favourite-fruit', (IChatContext context, [String favourite = 'apple']) {
-      context.respond(MessageBuilder.content('Your favourite fruit is $favourite!'));
+  ChatCommand favoriteFruit = ChatCommand(
+    'favorite-fruit',
+    'Outputs your favorite fruit',
+    id('favorite-fruit', (ChatContext context, [String favorite = 'apple']) {
+      context.respond(MessageBuilder(content: 'Your favorite fruit is $favorite!'));
     }),
   );
 
-  commands.addCommand(favouriteFruit);
+  commands.addCommand(favoriteFruit);
 
   ChatCommand alphabet = ChatCommand(
     'alphabet',
     'Outputs the alphabet',
-    id('alphabet', (IChatContext context) {
-      context.respond(MessageBuilder.content('ABCDEFGHIJKLMNOPQRSTUVWXYZ'));
+    id('alphabet', (ChatContext context) {
+      context.respond(MessageBuilder(content: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'));
     }),
     checks: [
       CooldownCheck(
@@ -206,10 +196,10 @@ void main() {
     'better-say',
     'A better version of the say command',
     id('better-say', (
-      IChatContext context,
+      ChatContext context,
       @UseConverter(nonEmptyStringConverter) String input,
     ) {
-      context.respond(MessageBuilder.content(input));
+      context.respond(MessageBuilder(content: input));
     }),
   );
 
@@ -227,7 +217,7 @@ enum Dimension {
   threeD,
 }
 
-String? filterInput(String input, IContext context) {
+String? filterInput(String input, ContextData context) {
   if (input.isNotEmpty) {
     return input;
   }

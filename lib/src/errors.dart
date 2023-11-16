@@ -1,21 +1,12 @@
-//  Copyright 2021 Abitofevrything and others.
-//
-//  Licensed under the Apache License, Version 2.0 (the "License");
-//  you may not use this file except in compliance with the License.
-//  You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-//  Unless required by applicable law or agreed to in writing, software
-//  distributed under the License is distributed on an "AS IS" BASIS,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//  See the License for the specific language governing permissions and
-//  limitations under the License.
+import 'package:runtime_type/runtime_type.dart';
 
 import 'checks/checks.dart';
 import 'context/autocomplete_context.dart';
+import 'context/base.dart';
 import 'context/chat_context.dart';
-import 'context/context.dart';
+import 'context/component_context.dart';
+import 'converters/converter.dart';
+import 'util/util.dart';
 import 'util/view.dart';
 
 /// The base class for exceptions thrown by nyxx_commands.
@@ -34,6 +25,25 @@ class CommandsException implements Exception {
   /// users. Checking the type of the error and reacting accordingly is recommended.
   String message;
 
+  /// The stack trace at the point where this exception was first thrown.
+  ///
+  /// Might be unset if nyxx_commands has not yet handled this exception. The `stackTrace = ...`
+  /// setter should not be called if this is already non-null, so you should avoid calling it unless
+  /// you are creating exceptions yourself.
+  StackTrace? get stackTrace => _stackTrace;
+
+  set stackTrace(StackTrace? stackTrace) {
+    if (this.stackTrace != null) {
+      // Use a native error instead of one from nyxx_commands that could potentially lead to an
+      // infinite error loop
+      throw StateError('Cannot set CommandsException.stackTrace if it is already set');
+    }
+
+    _stackTrace = stackTrace;
+  }
+
+  StackTrace? _stackTrace;
+
   /// Create a new [CommandsException].
   CommandsException(this.message);
 
@@ -41,13 +51,41 @@ class CommandsException implements Exception {
   String toString() => 'Command Exception: $message';
 }
 
-/// An exception that occurred during the execution of a command.
-class CommandInvocationException extends CommandsException {
+/// An exception that can be attached to a known context.
+///
+/// Subclasses of this exception are generally thrown during the processing of [context].
+class ContextualException extends CommandsException {
   /// The context in which the exception occurred.
-  final IContext context;
+  final ContextData context;
+
+  /// Create a new [ContextualException].
+  ContextualException(super.message, this.context);
+}
+
+/// An exception thrown when an interaction on a component created by nyxx_commands was received but
+/// was not handled.
+class UnhandledInteractionException extends CommandsException implements ContextualException {
+  @override
+  final ComponentContext context;
+
+  /// The [ComponentId] of the component that was interacted with.
+  final ComponentId componentId;
+
+  /// The reason this interaction was not handled.
+  ComponentIdStatus get reason => componentId.status;
+
+  /// Create a new [UnhandledInteractionException].
+  UnhandledInteractionException(this.context, this.componentId)
+      : super('Unhandled interaction: ${componentId.status}');
+}
+
+/// An exception that occurred during the execution of a command.
+class CommandInvocationException extends CommandsException implements ContextualException {
+  @override
+  final CommandContext context;
 
   /// Create a new [CommandInvocationException].
-  CommandInvocationException(String message, this.context) : super(message);
+  CommandInvocationException(super.message, this.context);
 }
 
 /// A wrapper class for an exception that caused an autocomplete event to fail.
@@ -61,18 +99,18 @@ class AutocompleteFailedException extends CommandsException {
   /// The context in which the exception occurred.
   ///
   /// If the exception was not triggered by a slow response, default options can still be returned
-  /// by accessing the [AutocompleteContext.interactionEvent] and calling
-  /// [IAutocompleteInteractionEvent.respond] with the default options.
+  /// by accessing the [AutocompleteContext.interaction] and calling
+  /// [ApplicationCommandAutocompleteInteraction.respond] with the default options.
   final AutocompleteContext context;
 
   /// The exception that occurred.
-  final Exception exception;
+  final Object exception;
 
   /// Create a new [AutocompleteFailedException].
   AutocompleteFailedException(this.exception, this.context) : super(exception.toString());
 }
 
-/// A wrapper class for an exception that was thrown inside the [ICommand.execute] callback.
+/// A wrapper class for an exception that was thrown inside the [Command.execute] callback.
 ///
 /// This generally indicates incorrect or incomplete code inside a command callback, and the
 /// developer should try to identify and fix the issue.
@@ -80,23 +118,59 @@ class AutocompleteFailedException extends CommandsException {
 /// If you are throwing exceptions to indicate command failure, consider using [Check]s instead.
 class UncaughtException extends CommandInvocationException {
   /// The exception that occurred.
-  final Exception exception;
+  final Object exception;
 
   /// Create a new [UncaughtException].
-  UncaughtException(this.exception, IContext context) : super(exception.toString(), context);
+  UncaughtException(this.exception, CommandContext context) : super(exception.toString(), context);
+}
+
+/// An exception thrown when an interaction times out in a command.
+///
+/// This is the exception thrown by [InteractiveContext.getButtonPress],
+/// [InteractiveContext.getSelection] and other methods that might time out.
+class InteractionTimeoutException extends CommandInvocationException {
+  /// Create a new [InteractionTimeoutException].
+  InteractionTimeoutException(super.message, super.context);
+}
+
+/// An exception thrown by nyxx_commands to indicate misuse of the library.
+class UncaughtCommandsException extends UncaughtException {
+  @override
+  final StackTrace stackTrace;
+
+  /// Create a new [UncaughtCommandsException].
+  UncaughtCommandsException(String message, CommandContext context)
+      : stackTrace = StackTrace.current,
+        super(CommandsException(message), context);
 }
 
 /// An exception that occurred due to an invalid input from the user.
 ///
 /// This generally indicates that nyxx_commands was unable to parse the user's input.
-class BadInputException extends CommandInvocationException {
+class BadInputException extends ContextualException {
   /// Create a new [BadInputException].
-  BadInputException(String message, IChatContext context) : super(message, context);
+  BadInputException(super.message, super.context);
 }
 
-/// An exception thrown when the end of userr input is encountered before all the required arguments
+/// An exception thrown when a converter fails to convert user input.
+class ConverterFailedException extends BadInputException {
+  /// The converter that failed.
+  final Converter<dynamic> failed;
+
+  /// The [StringView] representing the arguments before the converter was invoked.
+  final StringView input;
+
+  /// Create a new [ConverterFailedException].
+  ConverterFailedException(this.failed, this.input, ContextData context)
+      : super(
+          'Could not parse input $input to type "${failed.type}"',
+          context,
+        );
+}
+
+/// An exception thrown when the end of user input is encountered before all the required arguments
 /// of a [ChatCommand] have been parsed.
-class NotEnoughArgumentsException extends BadInputException {
+class NotEnoughArgumentsException extends CommandInvocationException implements BadInputException {
   /// Create a new [NotEnoughArgumentsException].
   NotEnoughArgumentsException(MessageChatContext context)
       : super(
@@ -112,7 +186,7 @@ class CheckFailedException extends CommandInvocationException {
   final AbstractCheck failed;
 
   /// Create a new [CheckFailedException].
-  CheckFailedException(this.failed, IContext context)
+  CheckFailedException(this.failed, CommandContext context)
       : super('Check "${failed.name}" failed', context);
 }
 
@@ -120,13 +194,12 @@ class CheckFailedException extends CommandInvocationException {
 ///
 /// You might also be interested in:
 /// - [CommandsPlugin.addConverter], for adding your own [Converter]s to your bot.
-class NoConverterException extends CommandInvocationException {
+class NoConverterException extends CommandsException {
   /// The type that the converter was requested for.
-  final Type expectedType;
+  final RuntimeType<dynamic> expectedType;
 
   /// Create a new [NoConverterException].
-  NoConverterException(this.expectedType, IChatContext context)
-      : super('No converter found for type "$expectedType"', context);
+  NoConverterException(this.expectedType) : super('No converter found for type "$expectedType"');
 }
 
 /// An exception thrown when a message command matching [CommandsPlugin.prefix] is found, but no
@@ -173,5 +246,5 @@ class CommandsError extends Error {
 /// An error that occurred during registration of a command.
 class CommandRegistrationError extends CommandsError {
   /// Create a new [CommandRegistrationError].
-  CommandRegistrationError(String message) : super(message);
+  CommandRegistrationError(super.message);
 }
