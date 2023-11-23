@@ -362,7 +362,7 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
         throw CommandsError('Cannot have more than one GuildCheck per command');
       }
 
-      final guilds = guildChecks.singleOrNull?.guildIds ?? [null];
+      final guilds = guildChecks.singleOrNull?.guildIds ?? [guild];
       for (final id in guilds) {
         (result[id] ??= []).add(builder);
       }
