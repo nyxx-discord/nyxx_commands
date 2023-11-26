@@ -1,3 +1,9 @@
+## 6.0.1
+__Bug fixes__
+- Fixed ephemeral response levels breaking component helpers.
+- Fixed `getMultiSelection` not working.
+- `CommandsPlugin.guild` is not longer ignored.
+
 ## 6.0.0
 __Breaking changes__
 - Update nyxx to version 6.0.0.
