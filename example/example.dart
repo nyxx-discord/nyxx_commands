@@ -113,6 +113,7 @@ void main() async {
     //
     // Since a ping command doesn't have any other arguments, we don't add any other parameters to
     // the function.
+    options: CommandOptions(defaultResponseLevel: ResponseLevel.hint),
     id('ping', (ChatContext context) {
       // For a ping command, all we need to do is respond with `pong`.
       // To do that, we can use the `IChatContext`'s `respond` method which responds to the command with

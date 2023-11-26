@@ -115,6 +115,18 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
     return _parent!._nearestCommandContext;
   }
 
+  Future<Message> _updateMessage(
+    InteractiveContext context,
+    Message message,
+    MessageUpdateBuilder builder,
+  ) async {
+    return switch (context) {
+      InteractionContextData(:MessageResponse<dynamic> interaction) =>
+        interaction.updateFollowup(message.id, builder),
+      _ => message.update(builder),
+    };
+  }
+
   @override
   Future<ButtonComponentContext> awaitButtonPress(ComponentId componentId) async {
     if (delegate != null) {
@@ -372,9 +384,7 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
         commands.eventManager.stopListeningFor(id);
       }
 
-      await message.update(
-        MessageUpdateBuilder(components: disabledComponentRows),
-      );
+      await _updateMessage(this, message, MessageUpdateBuilder(components: disabledComponentRows));
     }
   }
 
@@ -462,6 +472,7 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
 
     SelectMenuBuilder? menu;
     Message? message;
+    InteractiveContext? responseContext;
 
     try {
       do {
@@ -494,6 +505,7 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
           (builder.components ??= []).add(row);
 
           message = await respond(builder, level: level);
+          responseContext = this;
         } else {
           // On later iterations, replace the last row with our newly created one.
           List<ActionRowBuilder> rows = builder.components!;
@@ -505,6 +517,7 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
             level: (level ?? _nearestCommandContext.command.resolvedOptions.defaultResponseLevel)!
                 .copyWith(preserveComponentMessages: false),
           );
+          responseContext = context;
         }
 
         context = await commands.eventManager.nextSelectMenuEvent(menuId);
@@ -537,9 +550,9 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
         _nearestCommandContext,
       )..stackTrace = s;
     } finally {
-      if (menu != null && message != null) {
+      if (menu != null && message != null && responseContext != null) {
         menu.isDisabled = true;
-        await message.edit(MessageCreateUpdateBuilder.fromMessageBuilder(builder));
+        await _updateMessage(this, message, MessageCreateUpdateBuilder.fromMessageBuilder(builder));
       }
     }
   }
@@ -594,7 +607,7 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
       type: MessageComponentType.stringSelect,
       customId: menuId.toString(),
       options: options,
-      minValues: choices.length,
+      maxValues: choices.length,
     );
     ActionRowBuilder row = ActionRowBuilder(components: [menu]);
 
@@ -628,7 +641,7 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
       )..stackTrace = s;
     } finally {
       menu.isDisabled = true;
-      await message.edit(MessageCreateUpdateBuilder.fromMessageBuilder(builder));
+      await _updateMessage(this, message, MessageCreateUpdateBuilder.fromMessageBuilder(builder));
     }
   }
 }
@@ -645,6 +658,8 @@ mixin InteractionRespondMixin
 
   @override
   Future<Message> respond(MessageBuilder builder, {ResponseLevel? level}) async {
+    builder = MessageCreateUpdateBuilder.fromMessageBuilder(builder);
+
     await _acknowledgeLock;
 
     if (_delegate != null) {
@@ -671,24 +686,18 @@ mixin InteractionRespondMixin
       return interaction.createFollowup(builder, isEphemeral: level.hideInteraction);
     }
 
-    // If we want to preserve the original message a component is attached to, we can just send a
-    // followup instead of a response.
-    // Also, if we are requested to hide interactions, also send a followup, or
-    // components will just edit the original message (making it public).
-    if (level.hideInteraction) {
-      await interaction.respond(builder, isEphemeral: level.hideInteraction);
-      return interaction.fetchOriginalResponse();
-    }
-
-    if (interaction is MessageComponentInteraction) {
+    // Only update the message if we don't want to preserve it and the message's ephemerality
+    // matches whether we want the response to be ephemeral or not.
+    if (interaction is MessageComponentInteraction &&
+        !level.preserveComponentMessages &&
+        interaction.message?.flags.isEphemeral == level.hideInteraction) {
       // Using interactionEvent.respond is actually the same as editing a message in the case where
       // the interaction is a message component. In those cases, leaving `componentRows` as `null`
       // would leave the existing components on the message - which likely isn't what our users
       // expect. Instead, we override them and set the builder to have no components.
       builder.components ??= [];
 
-      await (interaction as MessageComponentInteraction)
-          .respond(builder, updateMessage: !level.preserveComponentMessages);
+      await (interaction as MessageComponentInteraction).respond(builder, updateMessage: true);
       return interaction.fetchOriginalResponse();
     }
 
