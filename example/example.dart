@@ -113,11 +113,61 @@ void main() async {
     //
     // Since a ping command doesn't have any other arguments, we don't add any other parameters to
     // the function.
-    id('ping', (ChatContext context) {
+    options: CommandOptions(defaultResponseLevel: ResponseLevel.hint),
+    id('ping', (ChatContext context) async {
       // For a ping command, all we need to do is respond with `pong`.
       // To do that, we can use the `IChatContext`'s `respond` method which responds to the command with
       // a message.
-      context.respond(MessageBuilder(content: 'pong!'));
+      // context.respond(MessageBuilder(content: 'pong!'));
+
+      final level1 = ResponseLevel(
+        hideInteraction: true,
+        isDm: false,
+        mention: false,
+        preserveComponentMessages: true,
+      );
+      final level2 = ResponseLevel(
+        hideInteraction: true,
+        isDm: false,
+        mention: false,
+        preserveComponentMessages: false,
+      );
+      final level3 = ResponseLevel(
+        hideInteraction: false,
+        isDm: false,
+        mention: false,
+        preserveComponentMessages: true,
+      );
+      final level4 = ResponseLevel(
+        hideInteraction: false,
+        isDm: false,
+        mention: false,
+        preserveComponentMessages: false,
+      );
+      final levels = [level1, level2, level3, level4];
+
+      for (final level in levels) {
+        await context.getButtonSelection(
+          [1, 2, 3],
+          MessageBuilder(content: 'test'),
+          level: level,
+        );
+        await context.getSelection(
+          [1, 2, 3],
+          MessageBuilder(content: 'test'),
+          level: level,
+        );
+        await context.getSelection(
+          List.generate(50, (index) => index),
+          MessageBuilder(content: 'test'),
+          level: level,
+        );
+        await context.getMultiSelection(
+          [1, 2, 3],
+          MessageBuilder(content: 'test'),
+          level: level,
+        );
+      }
     }),
   );
 
