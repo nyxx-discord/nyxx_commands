@@ -175,6 +175,18 @@ class ContextManager {
     Member? member = interaction.member;
     User user = member?.user ?? interaction.user!;
 
+    Iterable<InteractionOption> expandOptions(List<InteractionOption> options) sync* {
+      for (final option in options) {
+        yield option;
+        if (option.options case final nestedOptions?) {
+          yield* expandOptions(nestedOptions);
+        }
+      }
+    }
+
+    final focusedOption = expandOptions(interaction.data.options!)
+        .singleWhere((element) => element.isFocused == true);
+
     return AutocompleteContext(
       commands: commands,
       guild: await interaction.guild?.get(),
@@ -184,11 +196,8 @@ class ContextManager {
       command: command,
       client: interaction.manager.client as NyxxGateway,
       interaction: interaction,
-      option: interaction.data.options!.singleWhere((element) => element.isFocused == true),
-      currentValue: interaction.data.options!
-          .singleWhere((element) => element.isFocused == true)
-          .value
-          .toString(),
+      option: focusedOption,
+      currentValue: focusedOption.value.toString(),
     );
   }
 

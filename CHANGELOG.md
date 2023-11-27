@@ -1,3 +1,7 @@
+## 6.0.2
+__Bug fixes__
+- Fixed autocompletion in commands in chat groups
+
 ## 6.0.1
 __Bug fixes__
 - Fixed ephemeral response levels breaking component helpers.
