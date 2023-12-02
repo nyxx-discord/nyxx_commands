@@ -31,6 +31,12 @@ export 'src/commands/user_command.dart' show UserCommand;
 export 'src/context/autocomplete_context.dart' show AutocompleteContext;
 export 'src/context/chat_context.dart'
     show ChatContext, ChatContextData, InteractionChatContext, MessageChatContext;
+export 'src/context/component_context.dart'
+    show
+        ComponentContextData,
+        ComponentContext,
+        ButtonComponentContext,
+        SelectMenuContext;
 export 'src/context/context_manager.dart' show ContextManager;
 export 'src/context/base.dart'
     show
