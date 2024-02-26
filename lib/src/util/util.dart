@@ -649,3 +649,33 @@ Future<Permissions> computePermissions(
 
   return computeOverwrites(await computeBasePermissions());
 }
+
+/// Represents a command argument.
+class CommandArgument {
+  /// The name of this argument.
+  final String name;
+
+  /// The localized names of this argument.
+  final Map<Locale, String>? localizedNames;
+
+  /// The description of this argument.
+  final String? description;
+
+  /// The localized descriptions of this argument.
+  final Map<Locale, String>? localizedDescriptions;
+
+  /// The argument type.
+  final RuntimeType<dynamic>? type;
+
+  /// Whether this argument is optional.
+  final bool isOptional;
+
+  const CommandArgument({
+    required this.name,
+    required this.isOptional,
+    this.localizedNames,
+    this.description,
+    this.localizedDescriptions,
+    this.type,
+  });
+}
