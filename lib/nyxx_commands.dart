@@ -79,7 +79,6 @@ export 'src/util/util.dart'
     show
         Autocomplete,
         Choices,
-        CommandArgument,
         ComponentId,
         ComponentIdStatus,
         Description,
