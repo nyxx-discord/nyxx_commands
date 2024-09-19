@@ -59,7 +59,11 @@ class PermissionsCheck extends Check {
               if (context is InteractionCommandContextData) {
                 command = context.commands.registeredCommands.singleWhere(
                   (element) =>
-                      element.id == (context as InteractionCommandContextData).interaction.data.id,
+                      element.id ==
+                      (context as InteractionCommandContextData)
+                          .interaction
+                          .data
+                          .id,
                 );
               } else {
                 // If the invocation was not from a slash command, try to find a matching slash
@@ -73,7 +77,8 @@ class PermissionsCheck extends Check {
                 Iterable<ApplicationCommand> matchingCommands =
                     context.commands.registeredCommands.where(
                   (command) =>
-                      command.name == root.name && command.type == ApplicationCommandType.chatInput,
+                      command.name == root.name &&
+                      command.type == ApplicationCommandType.chatInput,
                 );
 
                 if (matchingCommands.isEmpty) {
@@ -83,12 +88,17 @@ class PermissionsCheck extends Check {
                 command = matchingCommands.first;
               }
 
-              CommandPermissions overrides = await command.fetchPermissions(context.guild!.id);
+              CommandPermissions overrides =
+                  await command.fetchPermissions(context.guild!.id);
 
               if (overrides.permissions.isEmpty) {
-                overrides =
-                    (await context.client.guilds[context.guild!.id].commands.listPermissions())
-                        .singleWhere((overrides) => overrides.command == null);
+                overrides = (await context
+                        .client.guilds[context.guild!.id].commands
+                        .listPermissions())
+                    .singleWhere(
+                  (overrides) => overrides.command == null,
+                  orElse: () => overrides,
+                );
               }
 
               bool? def;
@@ -102,7 +112,8 @@ class PermissionsCheck extends Check {
               for (final override in overrides.permissions) {
                 if (override.id == context.guild!.id) {
                   def = override.hasPermission;
-                } else if (override.id == Snowflake(context.guild!.id.value - 1)) {
+                } else if (override.id ==
+                    Snowflake(context.guild!.id.value - 1)) {
                   channelDef = override.hasPermission;
                 } else if (override.type == CommandPermissionType.channel &&
                     override.id == context.channel.id) {
@@ -132,14 +143,16 @@ class PermissionsCheck extends Check {
                 }
               }
 
-              Iterable<bool> prioritized = [def, channelDef, role, channel, user].whereType<bool>();
+              Iterable<bool> prioritized =
+                  [def, channelDef, role, channel, user].whereType<bool>();
 
               if (prioritized.isNotEmpty) {
                 return prioritized.last;
               }
             }
 
-            Flags<Permissions> corresponding = effectivePermissions & permissions;
+            Flags<Permissions> corresponding =
+                effectivePermissions & permissions;
 
             if (requiresAll) {
               return corresponding == permissions;
@@ -155,5 +168,6 @@ class PermissionsCheck extends Check {
     bool allowsOverrides = true,
     String? name,
     bool allowsDm = true,
-  }) : this(const Permissions(0), allowsOverrides: allowsOverrides, allowsDm: allowsDm, name: name);
+  }) : this(const Permissions(0),
+            allowsOverrides: allowsOverrides, allowsDm: allowsDm, name: name);
 }
