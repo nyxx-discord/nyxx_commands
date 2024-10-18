@@ -279,7 +279,11 @@ class ChatCommand
   final List<AbstractCheck> singleChecks = [];
 
   /// The types of the required and positional arguments of [execute], in the order they appear.
+  @Deprecated('Use arguments[].type instead')
   final List<RuntimeType<dynamic>> argumentTypes = [];
+
+  /// The arguments of [execute], in the order they appear.
+  final List<ParameterData<dynamic>> arguments = [];
 
   @override
   final CommandOptions options;
@@ -368,7 +372,9 @@ class ChatCommand
         }
       }
 
+      // ignore: deprecated_member_use_from_same_package
       argumentTypes.add(parameter.type);
+      arguments.add(parameter);
     }
   }
 

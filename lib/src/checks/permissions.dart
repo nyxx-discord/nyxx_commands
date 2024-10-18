@@ -88,7 +88,10 @@ class PermissionsCheck extends Check {
               if (overrides.permissions.isEmpty) {
                 overrides =
                     (await context.client.guilds[context.guild!.id].commands.listPermissions())
-                        .singleWhere((overrides) => overrides.command == null);
+                        .singleWhere(
+                  (overrides) => overrides.command == null,
+                  orElse: () => overrides,
+                );
               }
 
               bool? def;

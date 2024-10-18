@@ -1,3 +1,8 @@
+## 6.0.3
+__Bug fixes__
+- Expose the arguments list of the `execute` function (#154)
+- Fix crash when no permission overrides are present in a guild (#155)
+
 ## 6.0.2
 __Bug fixes__
 - Fixed autocompletion in commands in chat groups
