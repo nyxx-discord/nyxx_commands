@@ -32,5 +32,5 @@ executables:
 dependency_overrides:
   nyxx:
     git:
-      url: git@github.com:nyxx-discord/nyxx.git
+      url: https://github.com/nyxx-discord/nyxx.git
       ref: feature/remove-event-depenency-on-gateway
