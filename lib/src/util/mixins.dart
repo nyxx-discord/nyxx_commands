@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:nyxx/nyxx.dart';
+import 'package:nyxx_commands/src/plugin/HttpInteractions.dart';
 
 import '../checks/checks.dart';
 import '../commands.dart';
@@ -742,8 +743,14 @@ mixin InteractionRespondMixin
       return (_delegate as InteractionInteractiveContext).awaitModal(customId, timeout: timeout);
     }
 
-    Future<ModalSubmitInteraction> event = client.onModalSubmitInteraction
-        .map((e) => e.interaction)
+    var onModalSubmitInteraction = client.onModalSubmitInteraction.map((e) => e.interaction);
+    final httpInteractionsPlugin =
+        client.options.plugins.whereType<HttpInteractionsPlugin>().firstOrNull;
+    if (httpInteractionsPlugin != null) {
+      onModalSubmitInteraction = httpInteractionsPlugin.onModalSubmitInteraction;
+    }
+
+    Future<ModalSubmitInteraction> event = onModalSubmitInteraction
         .where(
           (event) => event.data.customId == customId,
         )

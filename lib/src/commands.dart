@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
+import 'package:nyxx_commands/src/plugin/HttpInteractions.dart';
 
 import 'checks/checks.dart';
 import 'checks/guild.dart';
@@ -170,8 +171,23 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
   Future<void> afterConnect(NyxxGateway client) async {
     _attachedClients.add(client);
 
-    client.onMessageComponentInteraction
-        .map((event) => event.interaction)
+    var onMessageComponentInteraction =
+        client.onMessageComponentInteraction.map((event) => event.interaction);
+    var onApplicationCommandInteraction =
+        client.onApplicationCommandInteraction.map((event) => event.interaction);
+    var onApplicationCommandAutocompleteInteraction =
+        client.onApplicationCommandAutocompleteInteraction.map((event) => event.interaction);
+
+    final httpInteractionsPlugin =
+        client.options.plugins.whereType<HttpInteractionsPlugin>().firstOrNull;
+    if (httpInteractionsPlugin != null) {
+      onMessageComponentInteraction = httpInteractionsPlugin.onMessageComponentInteraction;
+      onApplicationCommandInteraction = httpInteractionsPlugin.onApplicationCommandInteraction;
+      onApplicationCommandAutocompleteInteraction =
+          httpInteractionsPlugin.onApplicationCommandAutocompleteInteraction;
+    }
+
+    onMessageComponentInteraction
         .where((interaction) => interaction.data.type == MessageComponentType.button)
         .listen(
       (interaction) async {
@@ -183,8 +199,7 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
       },
     );
 
-    client.onMessageComponentInteraction
-        .map((event) => event.interaction)
+    onMessageComponentInteraction
         .where((interaction) => interaction.data.type == MessageComponentType.stringSelect)
         .listen(
       (interaction) async {
@@ -196,15 +211,7 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
       },
     );
 
-    client.onMessageCreate.listen((event) async {
-      try {
-        await eventManager.processMessageCreateEvent(event);
-      } on CommandsException catch (e) {
-        _onCommandErrorController.add(e);
-      }
-    });
-
-    client.onApplicationCommandInteraction.map((event) => event.interaction).listen(
+    onApplicationCommandInteraction.listen(
       (interaction) async {
         try {
           final applicationCommand = registeredCommands.singleWhere(
@@ -236,9 +243,7 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
       },
     );
 
-    client.onApplicationCommandAutocompleteInteraction
-        .map((event) => event.interaction)
-        .listen((interaction) async {
+    onApplicationCommandAutocompleteInteraction.listen((interaction) async {
       try {
         final applicationCommand = registeredCommands.singleWhere(
           (command) => command.id == interaction.data.id,
@@ -258,6 +263,14 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
           (focusedParameter.autocompleteOverride ?? converter?.autocompleteCallback)!,
           command,
         );
+      } on CommandsException catch (e) {
+        _onCommandErrorController.add(e);
+      }
+    });
+
+    client.onMessageCreate.listen((event) async {
+      try {
+        await eventManager.processMessageCreateEvent(event);
       } on CommandsException catch (e) {
         _onCommandErrorController.add(e);
       }
