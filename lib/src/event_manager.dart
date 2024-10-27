@@ -156,7 +156,7 @@ class EventManager {
         return;
       }
 
-      if (message.author.id == await event.gateway.client.users.fetchCurrentUser() &&
+      if (message.author.id == await event.client.users.fetchCurrentUser() &&
           !context.command.resolvedOptions.acceptSelfCommands!) {
         return;
       }

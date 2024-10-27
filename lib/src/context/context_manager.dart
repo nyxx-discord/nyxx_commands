@@ -65,7 +65,7 @@ class ContextManager {
       member: member,
       user: user,
       command: command,
-      client: message.manager.client as NyxxGateway,
+      client: message.manager.client,
       prefix: prefix,
       message: message,
       rawArguments: contentView.remaining,
@@ -100,7 +100,7 @@ class ContextManager {
       member: member,
       user: user,
       command: command,
-      client: interaction.manager.client as NyxxGateway,
+      client: interaction.manager.client,
       interaction: interaction,
       rawArguments: rawArguments,
     );
@@ -117,7 +117,7 @@ class ContextManager {
     Member? member = interaction.member;
     User user = member?.user ?? interaction.user!;
 
-    final client = interaction.manager.client as NyxxGateway;
+    final client = interaction.manager.client;
 
     User targetUser = await client.users[interaction.data.targetId!].get();
     Guild? guild = await interaction.guild?.get();
@@ -153,7 +153,7 @@ class ContextManager {
 
     return MessageContext(
       commands: commands,
-      client: interaction.manager.client as NyxxGateway,
+      client: interaction.manager.client,
       interaction: interaction,
       command: command,
       channel: channel,
@@ -194,7 +194,7 @@ class ContextManager {
       member: member,
       user: user,
       command: command,
-      client: interaction.manager.client as NyxxGateway,
+      client: interaction.manager.client,
       interaction: interaction,
       option: focusedOption,
       currentValue: focusedOption.value.toString(),
@@ -216,7 +216,7 @@ class ContextManager {
       guild: await interaction.guild?.get(),
       channel: await interaction.channel!.get() as TextChannel,
       commands: commands,
-      client: interaction.manager.client as NyxxGateway,
+      client: interaction.manager.client,
       interaction: interaction,
     );
   }
@@ -238,7 +238,7 @@ class ContextManager {
       guild: await interaction.guild?.get(),
       channel: await interaction.channel!.get() as TextChannel,
       commands: commands,
-      client: interaction.manager.client as NyxxGateway,
+      client: interaction.manager.client,
       interaction: interaction,
       selected: selected,
     );
@@ -257,7 +257,7 @@ class ContextManager {
       guild: await interaction.guild?.get(),
       channel: await interaction.channel!.get() as TextChannel,
       commands: commands,
-      client: interaction.manager.client as NyxxGateway,
+      client: interaction.manager.client,
       interaction: interaction,
     );
   }

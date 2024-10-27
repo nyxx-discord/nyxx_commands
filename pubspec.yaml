@@ -28,3 +28,9 @@ dev_dependencies:
 
 executables:
   nyxx-compile: compile
+
+dependency_overrides:
+  nyxx:
+    git:
+      url: git@github.com:nyxx-discord/nyxx.git
+      ref: feature/remove-event-depenency-on-gateway

@@ -18,59 +18,61 @@ Future<Member?> snowflakeToMember(Snowflake snowflake, ContextData context) asyn
 Future<Member?> convertMember(StringView view, ContextData context) async {
   String word = view.getQuotedWord();
 
-  if (context.guild != null) {
-    Stream<Member> named = context.client.gateway.listGuildMembers(
-      context.guild!.id,
-      query: word,
-      limit: 100,
-    );
+  if (context.guild == null) {
+    return null;
+  }
 
-    List<Member> usernameExact = [];
-    List<Member> nickExact = [];
+  List<Member> named = context.client is NyxxGateway
+      ? await (context.client.gateway as Gateway)
+          .listGuildMembers(context.guild!.id, query: word, limit: 100)
+          .toList()
+      : await context.guild!.members.search(word, limit: 100);
 
-    List<Member> usernameCaseInsensitive = [];
-    List<Member> nickCaseInsensitive = [];
+  List<Member> usernameExact = [];
+  List<Member> nickExact = [];
 
-    List<Member> usernameStart = [];
-    List<Member> nickStart = [];
+  List<Member> usernameCaseInsensitive = [];
+  List<Member> nickCaseInsensitive = [];
 
-    await for (final member in named) {
-      User user = await context.client.users.get(member.id);
+  List<Member> usernameStart = [];
+  List<Member> nickStart = [];
 
-      if (user.username == word) {
-        usernameExact.add(member);
-      }
-      if (user.username.toLowerCase() == word.toLowerCase()) {
-        usernameCaseInsensitive.add(member);
-      }
-      if (user.username.toLowerCase().startsWith(word.toLowerCase())) {
-        usernameStart.add(member);
-      }
+  for (final member in named) {
+    User user = await context.client.users.get(member.id);
 
-      if (member.nick != null) {
-        if (member.nick! == word) {
-          nickExact.add(member);
-        }
-        if (member.nick!.toLowerCase() == word.toLowerCase()) {
-          nickCaseInsensitive.add(member);
-        }
-        if (member.nick!.toLowerCase().startsWith(word.toLowerCase())) {
-          nickStart.add(member);
-        }
-      }
+    if (user.username == word) {
+      usernameExact.add(member);
+    }
+    if (user.username.toLowerCase() == word.toLowerCase()) {
+      usernameCaseInsensitive.add(member);
+    }
+    if (user.username.toLowerCase().startsWith(word.toLowerCase())) {
+      usernameStart.add(member);
     }
 
-    for (final list in [
-      usernameExact,
-      nickExact,
-      usernameCaseInsensitive,
-      nickCaseInsensitive,
-      usernameStart,
-      nickStart
-    ]) {
-      if (list.length == 1) {
-        return list.first;
+    if (member.nick != null) {
+      if (member.nick! == word) {
+        nickExact.add(member);
       }
+      if (member.nick!.toLowerCase() == word.toLowerCase()) {
+        nickCaseInsensitive.add(member);
+      }
+      if (member.nick!.toLowerCase().startsWith(word.toLowerCase())) {
+        nickStart.add(member);
+      }
+    }
+  }
+
+  for (final list in [
+    usernameExact,
+    nickExact,
+    usernameCaseInsensitive,
+    nickCaseInsensitive,
+    usernameStart,
+    nickStart
+  ]) {
+    if (list.length == 1) {
+      return list.first;
     }
   }
   return null;

@@ -265,8 +265,7 @@ Future<String> Function(MessageCreateEvent) mentionOr(
     RegExpMatch? match = _mentionPattern.firstMatch(event.message.content);
 
     if (match != null) {
-      if (int.parse(match.group(1)!) ==
-          (await event.gateway.client.users.fetchCurrentUser()).id.value) {
+      if (int.parse(match.group(1)!) == (await event.client.users.fetchCurrentUser()).id.value) {
         return match.group(0)!;
       }
     }
