@@ -32,7 +32,7 @@ abstract interface class ContextData {
   CommandsPlugin get commands;
 
   /// The client that emitted the event triggering this context's creation.
-  NyxxGateway get client;
+  NyxxRest get client;
 }
 
 /// Data about a context in which a command was executed.
@@ -406,7 +406,7 @@ class ContextBase implements ContextData {
   @override
   final CommandsPlugin commands;
   @override
-  final NyxxGateway client;
+  final NyxxRest client;
 
   ContextBase({
     required this.user,

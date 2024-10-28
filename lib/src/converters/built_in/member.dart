@@ -19,11 +19,10 @@ Future<Member?> convertMember(StringView view, ContextData context) async {
   String word = view.getQuotedWord();
 
   if (context.guild != null) {
-    Stream<Member> named = context.client.gateway.listGuildMembers(
-      context.guild!.id,
-      query: word,
-      limit: 100,
-    );
+    Stream<Member> named = context.client is NyxxGateway
+        ? (context.client.gateway as Gateway)
+            .listGuildMembers(context.guild!.id, query: word, limit: 100)
+        : Stream.fromIterable(await context.guild!.members.search(word, limit: 100));
 
     List<Member> usernameExact = [];
     List<Member> nickExact = [];

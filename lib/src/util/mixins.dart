@@ -743,11 +743,16 @@ mixin InteractionRespondMixin
       return (_delegate as InteractionInteractiveContext).awaitModal(customId, timeout: timeout);
     }
 
-    var onModalSubmitInteraction = client.onModalSubmitInteraction.map((e) => e.interaction);
+    late Stream<ModalSubmitInteraction> onModalSubmitInteraction;
     final httpInteractionsPlugin =
         client.options.plugins.whereType<HttpInteractionsPlugin>().firstOrNull;
     if (httpInteractionsPlugin != null) {
       onModalSubmitInteraction = httpInteractionsPlugin.onModalSubmitInteraction;
+    } else if (client is NyxxGateway) {
+      onModalSubmitInteraction =
+          (client as NyxxGateway).onModalSubmitInteraction.map((e) => e.interaction);
+    } else {
+      throw ArgumentError(); // TODO:
     }
 
     Future<ModalSubmitInteraction> event = onModalSubmitInteraction
