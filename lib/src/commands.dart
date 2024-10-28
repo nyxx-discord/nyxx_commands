@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/plugin/HttpInteractions.dart';
+import 'package:nyxx_commands/src/plugin/http_interaction.dart';
 
 import 'checks/checks.dart';
 import 'checks/guild.dart';

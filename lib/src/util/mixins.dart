@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:nyxx/nyxx.dart';
-import 'package:nyxx_commands/src/plugin/HttpInteractions.dart';
+import 'package:nyxx_commands/src/plugin/http_interaction.dart';
 
 import '../checks/checks.dart';
 import '../commands.dart';

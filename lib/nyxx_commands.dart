@@ -90,3 +90,5 @@ export 'src/util/util.dart'
         id,
         mentionOr;
 export 'src/util/view.dart' show StringView;
+
+export 'src/plugin/http_interaction.dart' show HttpInteractionsPlugin;
