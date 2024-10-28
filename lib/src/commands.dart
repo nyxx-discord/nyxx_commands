@@ -191,6 +191,14 @@ class CommandsPlugin extends NyxxPlugin<NyxxRest> implements CommandGroup<Comman
           client.onApplicationCommandInteraction.map((event) => event.interaction);
       onApplicationCommandAutocompleteInteraction =
           client.onApplicationCommandAutocompleteInteraction.map((event) => event.interaction);
+
+      client.onMessageCreate.listen((event) async {
+        try {
+          await eventManager.processMessageCreateEvent(event);
+        } on CommandsException catch (e) {
+          _onCommandErrorController.add(e);
+        }
+      });
     } else {
       throw ArgumentError();
     }
@@ -271,14 +279,6 @@ class CommandsPlugin extends NyxxPlugin<NyxxRest> implements CommandGroup<Comman
           (focusedParameter.autocompleteOverride ?? converter?.autocompleteCallback)!,
           command,
         );
-      } on CommandsException catch (e) {
-        _onCommandErrorController.add(e);
-      }
-    });
-
-    (client as NyxxGateway).onMessageCreate.listen((event) async {
-      try {
-        await eventManager.processMessageCreateEvent(event);
       } on CommandsException catch (e) {
         _onCommandErrorController.add(e);
       }
