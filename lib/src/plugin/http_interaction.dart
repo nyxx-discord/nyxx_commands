@@ -2,7 +2,7 @@ import 'package:nyxx/nyxx.dart';
 
 import 'package:nyxx/src/utils/iterable_extension.dart';
 
-abstract class HttpInteractionsPlugin implements NyxxPlugin<NyxxRest> {
+abstract class HttpInteractionsPlugin extends NyxxPlugin<NyxxRest> {
   Stream<Interaction<dynamic>> get onInteractionCreate;
 
   /// A [Stream] of [ApplicationCommandInteraction]s received by this client.
