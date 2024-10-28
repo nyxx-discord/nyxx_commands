@@ -56,7 +56,7 @@ final Logger logger = Logger('Commands');
 /// - [addCommand], for adding commands to your bot;
 /// - [check], for adding checks to your bot;
 /// - [MessageCommand] and [UserCommand], for creating Message and User Commands respectively.
-class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<CommandContext> {
+class CommandsPlugin extends NyxxPlugin<NyxxRest> implements CommandGroup<CommandContext> {
   /// A function called to determine the prefix for a specific message.
   ///
   /// This function should return a [Pattern] that should match the start of the message content if
@@ -150,7 +150,7 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
   /// A list of commands registered by this [CommandsPlugin] to the Discord API.
   final List<ApplicationCommand> registeredCommands = [];
 
-  final Set<NyxxGateway> _attachedClients = {};
+  final Set<NyxxRest> _attachedClients = {};
 
   /// Create a new [CommandsPlugin].
   CommandsPlugin({
@@ -168,23 +168,31 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
   }
 
   @override
-  Future<void> afterConnect(NyxxGateway client) async {
+  Future<void> afterConnect(NyxxRest client) async {
     _attachedClients.add(client);
 
-    var onMessageComponentInteraction =
-        client.onMessageComponentInteraction.map((event) => event.interaction);
-    var onApplicationCommandInteraction =
-        client.onApplicationCommandInteraction.map((event) => event.interaction);
-    var onApplicationCommandAutocompleteInteraction =
-        client.onApplicationCommandAutocompleteInteraction.map((event) => event.interaction);
+    late Stream<MessageComponentInteraction> onMessageComponentInteraction;
+    late Stream<ApplicationCommandInteraction> onApplicationCommandInteraction;
+    late Stream<ApplicationCommandAutocompleteInteraction>
+        onApplicationCommandAutocompleteInteraction;
 
     final httpInteractionsPlugin =
         client.options.plugins.whereType<HttpInteractionsPlugin>().firstOrNull;
+
     if (httpInteractionsPlugin != null) {
       onMessageComponentInteraction = httpInteractionsPlugin.onMessageComponentInteraction;
       onApplicationCommandInteraction = httpInteractionsPlugin.onApplicationCommandInteraction;
       onApplicationCommandAutocompleteInteraction =
           httpInteractionsPlugin.onApplicationCommandAutocompleteInteraction;
+    } else if (client is NyxxGateway) {
+      onMessageComponentInteraction =
+          client.onMessageComponentInteraction.map((event) => event.interaction);
+      onApplicationCommandInteraction =
+          client.onApplicationCommandInteraction.map((event) => event.interaction);
+      onApplicationCommandAutocompleteInteraction =
+          client.onApplicationCommandAutocompleteInteraction.map((event) => event.interaction);
+    } else {
+      throw ArgumentError();
     }
 
     onMessageComponentInteraction
@@ -268,7 +276,7 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
       }
     });
 
-    client.onMessageCreate.listen((event) async {
+    (client as NyxxGateway).onMessageCreate.listen((event) async {
       try {
         await eventManager.processMessageCreateEvent(event);
       } on CommandsException catch (e) {
@@ -301,12 +309,12 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
   }
 
   @override
-  void beforeClose(NyxxGateway client) {
+  void beforeClose(NyxxRest client) {
     registeredCommands.removeWhere((command) => command.manager.client == client);
     _attachedClients.remove(client);
   }
 
-  Future<void> _syncCommands(NyxxGateway client) async {
+  Future<void> _syncCommands(NyxxRest client) async {
     final builders = await _buildCommands();
 
     final commands = await Future.wait(builders.entries.map(
