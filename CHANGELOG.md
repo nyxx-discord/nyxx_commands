@@ -1,3 +1,7 @@
+## 6.0.4
+__Bug fixes__
+- Add support for Components V2.
+
 ## 6.0.3
 __Bug fixes__
 - Expose the arguments list of the `execute` function (#154)

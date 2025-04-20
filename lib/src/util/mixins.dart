@@ -508,7 +508,7 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
           responseContext = this;
         } else {
           // On later iterations, replace the last row with our newly created one.
-          List<ActionRowBuilder> rows = builder.components!;
+          List<MessageComponentBuilder> rows = builder.components!;
 
           rows[rows.length - 1] = row;
 
