@@ -31,7 +31,8 @@ mixin ParentMixin<T extends CommandContext> implements CommandRegisterable<T> {
   }
 }
 
-mixin CheckMixin<T extends CommandContext> on CommandRegisterable<T> implements Checked {
+mixin CheckMixin<T extends CommandContext> on CommandRegisterable<T>
+    implements Checked {
   final List<AbstractCheck> _checks = [];
 
   @override
@@ -51,7 +52,8 @@ mixin CheckMixin<T extends CommandContext> on CommandRegisterable<T> implements 
   }
 }
 
-mixin OptionsMixin<T extends CommandContext> on CommandRegisterable<T> implements Options {
+mixin OptionsMixin<T extends CommandContext> on CommandRegisterable<T>
+    implements Options {
   @override
   CommandOptions get resolvedOptions {
     if (parent == null) {
@@ -64,22 +66,26 @@ mixin OptionsMixin<T extends CommandContext> on CommandRegisterable<T> implement
 
     CommandType? parentType = parentOptions.type;
     if (parent is CommandsPlugin) {
-      if ((parent as CommandsPlugin).prefix == null && parentType == CommandType.all) {
+      if ((parent as CommandsPlugin).prefix == null &&
+          parentType == CommandType.all) {
         parentType = CommandType.slashOnly;
       }
     }
 
     return CommandOptions(
-      autoAcknowledgeInteractions:
-          options.autoAcknowledgeInteractions ?? parentOptions.autoAcknowledgeInteractions,
-      acceptBotCommands: options.acceptBotCommands ?? parentOptions.acceptBotCommands,
-      acceptSelfCommands: options.acceptSelfCommands ?? parentOptions.acceptSelfCommands,
-      defaultResponseLevel: options.defaultResponseLevel ?? parentOptions.defaultResponseLevel,
+      autoAcknowledgeInteractions: options.autoAcknowledgeInteractions ??
+          parentOptions.autoAcknowledgeInteractions,
+      acceptBotCommands:
+          options.acceptBotCommands ?? parentOptions.acceptBotCommands,
+      acceptSelfCommands:
+          options.acceptSelfCommands ?? parentOptions.acceptSelfCommands,
+      defaultResponseLevel:
+          options.defaultResponseLevel ?? parentOptions.defaultResponseLevel,
       type: options.type ?? parentType,
-      autoAcknowledgeDuration:
-          options.autoAcknowledgeDuration ?? parentOptions.autoAcknowledgeDuration,
-      caseInsensitiveCommands:
-          options.caseInsensitiveCommands ?? parentOptions.caseInsensitiveCommands,
+      autoAcknowledgeDuration: options.autoAcknowledgeDuration ??
+          parentOptions.autoAcknowledgeDuration,
+      caseInsensitiveCommands: options.caseInsensitiveCommands ??
+          parentOptions.caseInsensitiveCommands,
     );
   }
 }
@@ -128,13 +134,15 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
   }
 
   @override
-  Future<ButtonComponentContext> awaitButtonPress(ComponentId componentId) async {
+  Future<ButtonComponentContext> awaitButtonPress(
+      ComponentId componentId) async {
     if (delegate != null) {
       return delegate!.awaitButtonPress(componentId);
     }
 
     try {
-      ButtonComponentContext context = await commands.eventManager.nextButtonEvent(componentId);
+      ButtonComponentContext context =
+          await commands.eventManager.nextButtonEvent(componentId);
 
       context._parent = this;
       _delegate = context;
@@ -163,7 +171,8 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
     SelectMenuContext<List<String>> rawContext =
         await commands.eventManager.nextSelectMenuEvent(componentId);
 
-    SelectMenuContext<T> context = await commands.contextManager.createSelectMenuContext(
+    SelectMenuContext<T> context =
+        await commands.contextManager.createSelectMenuContext(
       rawContext.interaction,
       await parse(
         commands,
@@ -194,7 +203,8 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
     SelectMenuContext<List<String>> rawContext =
         await commands.eventManager.nextSelectMenuEvent(componentId);
 
-    SelectMenuContext<List<T>> context = await commands.contextManager.createSelectMenuContext(
+    SelectMenuContext<List<T>> context =
+        await commands.contextManager.createSelectMenuContext(
       rawContext.interaction,
       await Future.wait(rawContext.selected.map(
         (value) => parse(
@@ -219,8 +229,9 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
     }
 
     final componentIds = message.components
-            ?.expand(
-                (component) => component is ActionRowComponent ? component.components : [component])
+            ?.expand((component) => component is ActionRowComponent
+                ? component.components
+                : [component])
             .whereType<ButtonComponent>()
             .where((element) => element.customId != null)
             .map((component) => ComponentId.parse(component.customId!))
@@ -364,8 +375,9 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
     builder.components = activeComponentRows;
     final message = await respond(builder, level: level);
 
-    final listeners =
-        idToValue.keys.map((id) => commands.eventManager.nextButtonEvent(id)).toList();
+    final listeners = idToValue.keys
+        .map((id) => commands.eventManager.nextButtonEvent(id))
+        .toList();
 
     try {
       ButtonComponentContext context = await Future.any(listeners);
@@ -384,7 +396,8 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
         commands.eventManager.stopListeningFor(id);
       }
 
-      await _updateMessage(this, message, MessageUpdateBuilder(components: disabledComponentRows));
+      await _updateMessage(this, message,
+          MessageUpdateBuilder(components: disabledComponentRows));
     }
   }
 
@@ -392,7 +405,10 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
   Future<bool> getConfirmation(
     MessageBuilder builder, {
     Map<bool, String> values = const {true: 'Yes', false: 'No'},
-    Map<bool, ButtonStyle> styles = const {true: ButtonStyle.success, false: ButtonStyle.danger},
+    Map<bool, ButtonStyle> styles = const {
+      true: ButtonStyle.success,
+      false: ButtonStyle.danger
+    },
     bool authorOnly = true,
     ResponseLevel? level,
     Duration? timeout,
@@ -439,7 +455,8 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
     );
 
     toSelectMenuOption ??= converterOverride?.toSelectMenuOption;
-    toSelectMenuOption ??= commands.getConverter(RuntimeType<T>())?.toSelectMenuOption;
+    toSelectMenuOption ??=
+        commands.getConverter(RuntimeType<T>())?.toSelectMenuOption;
 
     if (toSelectMenuOption == null) {
       throw UncaughtCommandsException(
@@ -508,13 +525,15 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
           responseContext = this;
         } else {
           // On later iterations, replace the last row with our newly created one.
-          List<ActionRowBuilder> rows = builder.components!;
+          List<MessageComponentBuilder> rows = builder.components!;
 
           rows[rows.length - 1] = row;
 
           await context.respond(
             builder,
-            level: (level ?? _nearestCommandContext.command.resolvedOptions.defaultResponseLevel)!
+            level: (level ??
+                    _nearestCommandContext
+                        .command.resolvedOptions.defaultResponseLevel)!
                 .copyWith(preserveComponentMessages: false),
           );
           responseContext = context;
@@ -552,7 +571,8 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
     } finally {
       if (menu != null && message != null && responseContext != null) {
         menu.isDisabled = true;
-        await _updateMessage(this, message, MessageCreateUpdateBuilder.fromMessageBuilder(builder));
+        await _updateMessage(this, message,
+            MessageCreateUpdateBuilder.fromMessageBuilder(builder));
       }
     }
   }
@@ -580,7 +600,8 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
     }
 
     toSelectMenuOption ??= converterOverride?.toSelectMenuOption;
-    toSelectMenuOption ??= commands.getConverter(RuntimeType<T>())?.toSelectMenuOption;
+    toSelectMenuOption ??=
+        commands.getConverter(RuntimeType<T>())?.toSelectMenuOption;
 
     if (toSelectMenuOption == null) {
       throw UncaughtCommandsException(
@@ -623,7 +644,8 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
       _delegate = context;
 
       for (final value in context.selected) {
-        final matchingOptionIndex = menu.options!.indexWhere((option) => option.value == value);
+        final matchingOptionIndex =
+            menu.options!.indexWhere((option) => option.value == value);
 
         if (matchingOptionIndex >= 0) {
           menu.options![matchingOptionIndex] = SelectMenuOptionBuilder(
@@ -641,13 +663,17 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
       )..stackTrace = s;
     } finally {
       menu.isDisabled = true;
-      await _updateMessage(this, message, MessageCreateUpdateBuilder.fromMessageBuilder(builder));
+      await _updateMessage(this, message,
+          MessageCreateUpdateBuilder.fromMessageBuilder(builder));
     }
   }
 }
 
 mixin InteractionRespondMixin
-    implements InteractionInteractiveContext, InteractionContextData, InteractiveMixin {
+    implements
+        InteractionInteractiveContext,
+        InteractionContextData,
+        InteractiveMixin {
   @override
   MessageResponse<dynamic> get interaction;
 
@@ -657,7 +683,8 @@ mixin InteractionRespondMixin
   Future<void>? _acknowledgeLock;
 
   @override
-  Future<Message> respond(MessageBuilder builder, {ResponseLevel? level}) async {
+  Future<Message> respond(MessageBuilder builder,
+      {ResponseLevel? level}) async {
     builder = MessageCreateUpdateBuilder.fromMessageBuilder(builder);
 
     await _acknowledgeLock;
@@ -666,16 +693,19 @@ mixin InteractionRespondMixin
       return _delegate!.respond(builder, level: level);
     }
 
-    level ??= _nearestCommandContext.command.resolvedOptions.defaultResponseLevel!;
+    level ??=
+        _nearestCommandContext.command.resolvedOptions.defaultResponseLevel!;
 
     if (_hasResponded) {
       // We've already responded, just send a followup.
-      return interaction.createFollowup(builder, isEphemeral: level.hideInteraction);
+      return interaction.createFollowup(builder,
+          isEphemeral: level.hideInteraction);
     }
 
     _hasResponded = true;
 
-    if (_responseLevel != null && _responseLevel!.hideInteraction != level.hideInteraction) {
+    if (_responseLevel != null &&
+        _responseLevel!.hideInteraction != level.hideInteraction) {
       // We acknowledged the interaction but our original acknowledgement doesn't correspond to
       // what's being requested here.
       // It's a bit ugly, but send an empty response and delete it to match [level].
@@ -683,7 +713,8 @@ mixin InteractionRespondMixin
       await interaction.respond(MessageBuilder(content: '‎'));
       await interaction.deleteOriginalResponse();
 
-      return interaction.createFollowup(builder, isEphemeral: level.hideInteraction);
+      return interaction.createFollowup(builder,
+          isEphemeral: level.hideInteraction);
     }
 
     // Only update the message if we don't want to preserve it and the message's ephemerality
@@ -697,7 +728,8 @@ mixin InteractionRespondMixin
       // expect. Instead, we override them and set the builder to have no components.
       builder.components ??= [];
 
-      await (interaction as MessageComponentInteraction).respond(builder, updateMessage: true);
+      await (interaction as MessageComponentInteraction)
+          .respond(builder, updateMessage: true);
       return interaction.fetchOriginalResponse();
     }
 
@@ -713,8 +745,8 @@ mixin InteractionRespondMixin
     _acknowledgeLock = lockCompleter.future;
 
     try {
-      _responseLevel =
-          level ??= _nearestCommandContext.command.resolvedOptions.defaultResponseLevel!;
+      _responseLevel = level ??=
+          _nearestCommandContext.command.resolvedOptions.defaultResponseLevel!;
       if (interaction is MessageComponentInteraction) {
         await (interaction as MessageComponentInteraction).acknowledge(
           isEphemeral: level.hideInteraction,
@@ -739,7 +771,8 @@ mixin InteractionRespondMixin
         );
       }
 
-      return (_delegate as InteractionInteractiveContext).awaitModal(customId, timeout: timeout);
+      return (_delegate as InteractionInteractiveContext)
+          .awaitModal(customId, timeout: timeout);
     }
 
     Future<ModalSubmitInteraction> event = client.onModalSubmitInteraction
@@ -753,7 +786,8 @@ mixin InteractionRespondMixin
       event = event.timeout(timeout);
     }
 
-    ModalContext context = await commands.contextManager.createModalContext(await event);
+    ModalContext context =
+        await commands.contextManager.createModalContext(await event);
 
     context._parent = this;
     _delegate = context;
@@ -793,7 +827,9 @@ mixin InteractionRespondMixin
     ModalBuilder builder = ModalBuilder(
       customId: ComponentId.generate().toString(),
       title: title,
-      components: components.map((textInput) => ActionRowBuilder(components: [textInput])).toList(),
+      components: components
+          .map((textInput) => ActionRowBuilder(components: [textInput]))
+          .toList(),
     );
 
     await (interaction as ModalResponse).respondModal(builder);
@@ -806,12 +842,14 @@ mixin MessageRespondMixin implements InteractiveMixin {
   Message get message;
 
   @override
-  Future<Message> respond(MessageBuilder builder, {ResponseLevel? level}) async {
+  Future<Message> respond(MessageBuilder builder,
+      {ResponseLevel? level}) async {
     if (_delegate != null) {
       return _delegate!.respond(builder, level: level);
     }
 
-    level ??= _nearestCommandContext.command.resolvedOptions.defaultResponseLevel!;
+    level ??=
+        _nearestCommandContext.command.resolvedOptions.defaultResponseLevel!;
 
     if (level.isDm) {
       final dmChannel = await client.users.createDm(user.id);
@@ -824,8 +862,9 @@ mixin MessageRespondMixin implements InteractiveMixin {
       if (level.mention case final shouldMention?) {
         final allowedMentions = builder.allowedMentions ?? AllowedMentions();
         final replyMentions = AllowedMentions(repliedUser: shouldMention);
-        builder.allowedMentions =
-            shouldMention ? allowedMentions | replyMentions : allowedMentions & replyMentions;
+        builder.allowedMentions = shouldMention
+            ? allowedMentions | replyMentions
+            : allowedMentions & replyMentions;
       }
     }
 
