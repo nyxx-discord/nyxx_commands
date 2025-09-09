@@ -559,6 +559,7 @@ class MessageCreateUpdateBuilder extends MessageBuilder implements MessageUpdate
     super.attachments,
     super.suppressEmbeds,
     super.suppressNotifications,
+    super.flags,
   });
 
   MessageCreateUpdateBuilder.fromMessageBuilder(MessageBuilder builder)
@@ -575,6 +576,7 @@ class MessageCreateUpdateBuilder extends MessageBuilder implements MessageUpdate
           attachments: builder.attachments,
           suppressEmbeds: builder.suppressEmbeds,
           suppressNotifications: builder.suppressNotifications,
+          flags: builder.flags,
         );
 }
 
