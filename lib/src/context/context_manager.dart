@@ -45,8 +45,7 @@ class ContextManager {
     StringView contentView,
     String prefix,
   ) async {
-    ChatCommand command =
-        commands.getCommand(contentView) ?? (throw CommandNotFoundException(contentView));
+    ChatCommand command = commands.getCommand(contentView) ?? (throw CommandNotFoundException(contentView));
 
     TextChannel channel = await message.channel.get() as TextChannel;
     User user = message.author as User;
@@ -184,8 +183,7 @@ class ContextManager {
       }
     }
 
-    final focusedOption = expandOptions(interaction.data.options!)
-        .singleWhere((element) => element.isFocused == true);
+    final focusedOption = expandOptions(interaction.data.options!).singleWhere((element) => element.isFocused == true);
 
     return AutocompleteContext(
       commands: commands,

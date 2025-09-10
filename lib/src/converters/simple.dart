@@ -95,23 +95,22 @@ abstract class SimpleConverter<T> implements Converter<T> {
   }) = _FixedSimpleConverter<T>;
 
   @override
-  Future<Iterable<CommandOptionChoiceBuilder<dynamic>>>? Function(AutocompleteContext)?
-      get autocompleteCallback => (context) async {
-            List<String> choices = (await provider(context)).map(stringify).toList();
+  Future<Iterable<CommandOptionChoiceBuilder<dynamic>>>? Function(AutocompleteContext)? get autocompleteCallback => (context) async {
+        List<String> choices = (await provider(context)).map(stringify).toList();
 
-            if (context.currentValue.isEmpty) {
-              return choices.take(25).map((e) => CommandOptionChoiceBuilder(name: e, value: e));
-            }
+        if (context.currentValue.isEmpty) {
+          return choices.take(25).map((e) => CommandOptionChoiceBuilder(name: e, value: e));
+        }
 
-            return fuzzy
-                .extractTop(
-                  query: context.currentValue,
-                  choices: choices,
-                  limit: 25,
-                  cutoff: sensitivity,
-                )
-                .map((e) => CommandOptionChoiceBuilder(name: e.choice, value: e.choice));
-          };
+        return fuzzy
+            .extractTop(
+              query: context.currentValue,
+              choices: choices,
+              limit: 25,
+              cutoff: sensitivity,
+            )
+            .map((e) => CommandOptionChoiceBuilder(name: e.choice, value: e.choice));
+      };
 
   @override
   Future<T?> Function(StringView view, ContextData context) get convert => (view, context) async {
@@ -137,8 +136,7 @@ abstract class SimpleConverter<T> implements Converter<T> {
       (element) {
         String value = stringify(element);
 
-        return SelectMenuOptionBuilder(
-            label: value, value: value, description: null, emoji: null, isDefault: null);
+        return SelectMenuOptionBuilder(label: value, value: value, description: null, emoji: null, isDefault: null);
       };
 
   @override
@@ -193,15 +191,12 @@ class _FixedSimpleConverter<T> extends SimpleConverter<T> {
   Iterable<T> Function(ContextData) get provider => (_) => elements;
 
   @override
-  Future<Iterable<CommandOptionChoiceBuilder<dynamic>>>? Function(AutocompleteContext)?
-      get autocompleteCallback =>
-          // Don't autocomplete if we have less than 25 elements because we will use choices instead.
-          elements.length > 25 ? super.autocompleteCallback : null;
+  Future<Iterable<CommandOptionChoiceBuilder<dynamic>>>? Function(AutocompleteContext)? get autocompleteCallback =>
+      // Don't autocomplete if we have less than 25 elements because we will use choices instead.
+      elements.length > 25 ? super.autocompleteCallback : null;
 
   @override
   Iterable<CommandOptionChoiceBuilder<dynamic>>? get choices =>
       // Only use choices if we have less than 26 elements (maximum of 25 choices).
-      elements.length <= 25
-          ? elements.map(stringify).map((e) => CommandOptionChoiceBuilder(name: e, value: e))
-          : null;
+      elements.length <= 25 ? elements.map(stringify).map((e) => CommandOptionChoiceBuilder(name: e, value: e)) : null;
 }

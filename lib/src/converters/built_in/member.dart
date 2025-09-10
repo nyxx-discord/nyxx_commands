@@ -60,14 +60,7 @@ Future<Member?> convertMember(StringView view, ContextData context) async {
       }
     }
 
-    for (final list in [
-      usernameExact,
-      nickExact,
-      usernameCaseInsensitive,
-      nickCaseInsensitive,
-      usernameStart,
-      nickStart
-    ]) {
+    for (final list in [usernameExact, nickExact, usernameCaseInsensitive, nickCaseInsensitive, usernameStart, nickStart]) {
       if (list.length == 1) {
         return list.first;
       }

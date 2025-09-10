@@ -105,9 +105,7 @@ class MessageChatContext extends ChatContextBase with MessageRespondMixin {
 /// You might also be interested in:
 /// - [MessageChatContext], a context in which a [ChatCommand] was executed from a text message;
 /// - [ChatContext], the base class for all context representing the execution of a [ChatCommand].
-class InteractionChatContext extends ChatContextBase
-    with InteractionRespondMixin
-    implements InteractionCommandContext {
+class InteractionChatContext extends ChatContextBase with InteractionRespondMixin implements InteractionCommandContext {
   @override
   final ApplicationCommandInteraction interaction;
 

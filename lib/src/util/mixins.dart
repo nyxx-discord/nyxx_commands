@@ -58,9 +58,7 @@ mixin OptionsMixin<T extends CommandContext> on CommandRegisterable<T> implement
       return options;
     }
 
-    CommandOptions parentOptions = parent is CommandRegisterable
-        ? (parent as CommandRegisterable).resolvedOptions
-        : parent!.options;
+    CommandOptions parentOptions = parent is CommandRegisterable ? (parent as CommandRegisterable).resolvedOptions : parent!.options;
 
     CommandType? parentType = parentOptions.type;
     if (parent is CommandsPlugin) {
@@ -70,16 +68,13 @@ mixin OptionsMixin<T extends CommandContext> on CommandRegisterable<T> implement
     }
 
     return CommandOptions(
-      autoAcknowledgeInteractions:
-          options.autoAcknowledgeInteractions ?? parentOptions.autoAcknowledgeInteractions,
+      autoAcknowledgeInteractions: options.autoAcknowledgeInteractions ?? parentOptions.autoAcknowledgeInteractions,
       acceptBotCommands: options.acceptBotCommands ?? parentOptions.acceptBotCommands,
       acceptSelfCommands: options.acceptSelfCommands ?? parentOptions.acceptSelfCommands,
       defaultResponseLevel: options.defaultResponseLevel ?? parentOptions.defaultResponseLevel,
       type: options.type ?? parentType,
-      autoAcknowledgeDuration:
-          options.autoAcknowledgeDuration ?? parentOptions.autoAcknowledgeDuration,
-      caseInsensitiveCommands:
-          options.caseInsensitiveCommands ?? parentOptions.caseInsensitiveCommands,
+      autoAcknowledgeDuration: options.autoAcknowledgeDuration ?? parentOptions.autoAcknowledgeDuration,
+      caseInsensitiveCommands: options.caseInsensitiveCommands ?? parentOptions.caseInsensitiveCommands,
     );
   }
 }
@@ -121,8 +116,7 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
     MessageUpdateBuilder builder,
   ) async {
     return switch (context) {
-      InteractionContextData(:MessageResponse<dynamic> interaction) =>
-        interaction.updateFollowup(message.id, builder),
+      InteractionContextData(:MessageResponse<dynamic> interaction) => interaction.updateFollowup(message.id, builder),
       _ => message.update(builder),
     };
   }
@@ -160,8 +154,7 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
       );
     }
 
-    SelectMenuContext<List<String>> rawContext =
-        await commands.eventManager.nextSelectMenuEvent(componentId);
+    SelectMenuContext<List<String>> rawContext = await commands.eventManager.nextSelectMenuEvent(componentId);
 
     SelectMenuContext<T> context = await commands.contextManager.createSelectMenuContext(
       rawContext.interaction,
@@ -191,8 +184,7 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
       );
     }
 
-    SelectMenuContext<List<String>> rawContext =
-        await commands.eventManager.nextSelectMenuEvent(componentId);
+    SelectMenuContext<List<String>> rawContext = await commands.eventManager.nextSelectMenuEvent(componentId);
 
     SelectMenuContext<List<T>> context = await commands.contextManager.createSelectMenuContext(
       rawContext.interaction,
@@ -219,8 +211,7 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
     }
 
     final componentIds = message.components
-            ?.expand(
-                (component) => component is ActionRowComponent ? component.components : [component])
+            ?.expand((component) => component is ActionRowComponent ? component.components : [component])
             .whereType<ButtonComponent>()
             .where((element) => element.customId != null)
             .map((component) => ComponentId.parse(component.customId!))
@@ -364,8 +355,7 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
     builder.components = activeComponentRows;
     final message = await respond(builder, level: level);
 
-    final listeners =
-        idToValue.keys.map((id) => commands.eventManager.nextButtonEvent(id)).toList();
+    final listeners = idToValue.keys.map((id) => commands.eventManager.nextButtonEvent(id)).toList();
 
     try {
       ButtonComponentContext context = await Future.any(listeners);
@@ -514,8 +504,7 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
 
           await context.respond(
             builder,
-            level: (level ?? _nearestCommandContext.command.resolvedOptions.defaultResponseLevel)!
-                .copyWith(preserveComponentMessages: false),
+            level: (level ?? _nearestCommandContext.command.resolvedOptions.defaultResponseLevel)!.copyWith(preserveComponentMessages: false),
           );
           responseContext = context;
         }
@@ -527,8 +516,7 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
         } else if (context.selected.single == prevPageOption.value) {
           currentOffset -= itemsPerPage;
         }
-      } while (context.selected.single == nextPageOption.value ||
-          context.selected.single == prevPageOption.value);
+      } while (context.selected.single == nextPageOption.value || context.selected.single == prevPageOption.value);
 
       context._parent = this;
       _delegate = context;
@@ -616,8 +604,7 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
     Message message = await respond(builder, level: level);
 
     try {
-      SelectMenuContext<List<String>> context =
-          await commands.eventManager.nextSelectMenuEvent(menuId);
+      SelectMenuContext<List<String>> context = await commands.eventManager.nextSelectMenuEvent(menuId);
 
       context._parent = this;
       _delegate = context;
@@ -646,8 +633,7 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
   }
 }
 
-mixin InteractionRespondMixin
-    implements InteractionInteractiveContext, InteractionContextData, InteractiveMixin {
+mixin InteractionRespondMixin implements InteractionInteractiveContext, InteractionContextData, InteractiveMixin {
   @override
   MessageResponse<dynamic> get interaction;
 
@@ -688,9 +674,7 @@ mixin InteractionRespondMixin
 
     // Only update the message if we don't want to preserve it and the message's ephemerality
     // matches whether we want the response to be ephemeral or not.
-    if (interaction is MessageComponentInteraction &&
-        !level.preserveComponentMessages &&
-        interaction.message?.flags.isEphemeral == level.hideInteraction) {
+    if (interaction is MessageComponentInteraction && !level.preserveComponentMessages && interaction.message?.flags.isEphemeral == level.hideInteraction) {
       // Using interactionEvent.respond is actually the same as editing a message in the case where
       // the interaction is a message component. In those cases, leaving `componentRows` as `null`
       // would leave the existing components on the message - which likely isn't what our users
@@ -713,8 +697,7 @@ mixin InteractionRespondMixin
     _acknowledgeLock = lockCompleter.future;
 
     try {
-      _responseLevel =
-          level ??= _nearestCommandContext.command.resolvedOptions.defaultResponseLevel!;
+      _responseLevel = level ??= _nearestCommandContext.command.resolvedOptions.defaultResponseLevel!;
       if (interaction is MessageComponentInteraction) {
         await (interaction as MessageComponentInteraction).acknowledge(
           isEphemeral: level.hideInteraction,
@@ -824,8 +807,7 @@ mixin MessageRespondMixin implements InteractiveMixin {
       if (level.mention case final shouldMention?) {
         final allowedMentions = builder.allowedMentions ?? AllowedMentions();
         final replyMentions = AllowedMentions(repliedUser: shouldMention);
-        builder.allowedMentions =
-            shouldMention ? allowedMentions | replyMentions : allowedMentions & replyMentions;
+        builder.allowedMentions = shouldMention ? allowedMentions | replyMentions : allowedMentions & replyMentions;
       }
     }
 

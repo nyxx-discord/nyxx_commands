@@ -85,8 +85,7 @@ class Converter<T> {
   /// message in their client.
   ///
   /// This function should return at most 25 results and should not throw.
-  final FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext)?
-      autocompleteCallback;
+  final FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext)? autocompleteCallback;
 
   /// A function called to provide [SelectMenuOptionBuilder]s that can be used to represent an
   /// element converted by this converter.

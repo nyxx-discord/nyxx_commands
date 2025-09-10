@@ -31,15 +31,13 @@ class CombineConverter<R, T> implements Converter<T> {
   final void Function(CommandOptionBuilder)? _customProcessOptionCallback;
 
   @override
-  void Function(CommandOptionBuilder)? get processOptionCallback =>
-      _customProcessOptionCallback ?? converter.processOptionCallback;
+  void Function(CommandOptionBuilder)? get processOptionCallback => _customProcessOptionCallback ?? converter.processOptionCallback;
 
-  final FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext)?
-      _autocompleteCallback;
+  final FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext)? _autocompleteCallback;
 
   @override
-  FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext)?
-      get autocompleteCallback => _autocompleteCallback ?? converter.autocompleteCallback;
+  FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext)? get autocompleteCallback =>
+      _autocompleteCallback ?? converter.autocompleteCallback;
 
   @override
   final FutureOr<SelectMenuOptionBuilder> Function(T)? toSelectMenuOption;
@@ -57,8 +55,7 @@ class CombineConverter<R, T> implements Converter<T> {
     Iterable<CommandOptionChoiceBuilder<dynamic>>? choices,
     CommandOptionType? type,
     void Function(CommandOptionBuilder)? processOptionCallback,
-    FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext)?
-        autocompleteCallback,
+    FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext)? autocompleteCallback,
     this.toSelectMenuOption,
     this.toButton,
   })  : _choices = choices,

@@ -6,11 +6,7 @@ import 'package:nyxx_commands/src/errors.dart';
 import 'package:analyzer/src/dart/element/element.dart';
 
 /// Converts an import path to a valid Dart import prefix that uniquely represents the path.
-String toImportPrefix(String importPath) => importPath
-    .replaceAll(':', '_')
-    .replaceAll('/', '__')
-    .replaceAll(r'\', '__')
-    .replaceAll('.', '___');
+String toImportPrefix(String importPath) => importPath.replaceAll(':', '_').replaceAll('/', '__').replaceAll(r'\', '__').replaceAll('.', '___');
 
 /// Converts a [DartType] to a representation of that same type in source code.
 ///
@@ -356,8 +352,7 @@ List<String>? toExpressionSource(Expression expression) {
           'import "${variable.library.source.uri.toString()}" as $importPrefix;',
         ];
       } else if (referenced.variable is FieldElement) {
-        List<String>? typeData =
-            toTypeSource((referenced.variable.enclosingElement as InterfaceElement).thisType);
+        List<String>? typeData = toTypeSource((referenced.variable.enclosingElement as InterfaceElement).thisType);
 
         if (typeData == null || !referenced.variable.isPublic || !referenced.variable.isStatic) {
           return null;
@@ -391,8 +386,7 @@ List<String>? toExpressionSource(Expression expression) {
         return null; // Cannot handle private functions
       }
     } else if (referenced is MethodElement) {
-      List<String>? typeData =
-          toTypeSource((referenced.enclosingElement as InterfaceElement).thisType);
+      List<String>? typeData = toTypeSource((referenced.enclosingElement as InterfaceElement).thisType);
 
       if (typeData == null || !referenced.isPublic || !referenced.isStatic) {
         return null;

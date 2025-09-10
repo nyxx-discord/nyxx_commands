@@ -30,8 +30,7 @@ Iterable<CompileTimeFunctionData> getFunctionData(
   outerLoop:
   for (final id in ids) {
     if (id.argumentList.arguments.length != 2) {
-      logger.shout(
-          'Unexpected number of arguments ${id.argumentList.arguments.length} in id invocation');
+      logger.shout('Unexpected number of arguments ${id.argumentList.arguments.length} in id invocation');
       continue;
     }
 
@@ -39,8 +38,7 @@ Iterable<CompileTimeFunctionData> getFunctionData(
       throw CommandsError('Functions passed to the `id` function must be function literals');
     }
 
-    FormalParameterList parameterList =
-        (id.argumentList.arguments[1] as FunctionExpression).parameters!;
+    FormalParameterList parameterList = (id.argumentList.arguments[1] as FunctionExpression).parameters!;
 
     List<CompileTimeParameterData> parameterData = [
       // The context parameter
@@ -120,9 +118,7 @@ Iterable<CompileTimeFunctionData> getFunctionData(
       Annotation? autocompleteOverride;
 
       if (nameAnnotations.isNotEmpty) {
-        name = getAnnotationData(nameAnnotations.first.elementAnnotation!)
-            .getField('name')!
-            .toStringValue()!;
+        name = getAnnotationData(nameAnnotations.first.elementAnnotation!).getField('name')!.toStringValue()!;
 
         final nameArgs = nameAnnotations.first.arguments?.arguments;
         if (nameArgs?.length == 2) {
@@ -133,9 +129,7 @@ Iterable<CompileTimeFunctionData> getFunctionData(
       }
 
       if (descriptionAnnotations.isNotEmpty) {
-        description = getAnnotationData(descriptionAnnotations.first.elementAnnotation!)
-            .getField('value')!
-            .toStringValue()!;
+        description = getAnnotationData(descriptionAnnotations.first.elementAnnotation!).getField('value')!.toStringValue()!;
 
         final descArgs = descriptionAnnotations.first.arguments?.arguments;
         if (descArgs?.length == 2) {

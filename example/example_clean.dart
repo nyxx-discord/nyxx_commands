@@ -45,8 +45,7 @@ void main() async {
         id('throw-coin', (ChatContext context) {
           bool heads = Random().nextBool();
 
-          context.respond(
-              MessageBuilder(content: 'The coin landed on its ${heads ? 'head' : 'tail'}!'));
+          context.respond(MessageBuilder(content: 'The coin landed on its ${heads ? 'head' : 'tail'}!'));
         }),
       ),
     ],

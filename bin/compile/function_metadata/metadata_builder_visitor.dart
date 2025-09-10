@@ -29,8 +29,7 @@ class FunctionBuilderVisitor extends EntireAstVisitor {
     Expression function = node.function;
 
     if (function is Identifier &&
-        function.staticElement?.location?.encoding ==
-            'package:nyxx_commands/src/util/util.dart;package:nyxx_commands/src/util/util.dart;id') {
+        function.staticElement?.location?.encoding == 'package:nyxx_commands/src/util/util.dart;package:nyxx_commands/src/util/util.dart;id') {
       ids.add(node);
     }
   }

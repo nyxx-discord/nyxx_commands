@@ -58,8 +58,7 @@ class PermissionsCheck extends Check {
 
               if (context is InteractionCommandContextData) {
                 command = context.commands.registeredCommands.singleWhere(
-                  (element) =>
-                      element.id == (context as InteractionCommandContextData).interaction.data.id,
+                  (element) => element.id == (context as InteractionCommandContextData).interaction.data.id,
                 );
               } else {
                 // If the invocation was not from a slash command, try to find a matching slash
@@ -70,10 +69,8 @@ class PermissionsCheck extends Check {
                   root = root.parent as CommandRegisterable;
                 }
 
-                Iterable<ApplicationCommand> matchingCommands =
-                    context.commands.registeredCommands.where(
-                  (command) =>
-                      command.name == root.name && command.type == ApplicationCommandType.chatInput,
+                Iterable<ApplicationCommand> matchingCommands = context.commands.registeredCommands.where(
+                  (command) => command.name == root.name && command.type == ApplicationCommandType.chatInput,
                 );
 
                 if (matchingCommands.isEmpty) {
@@ -86,9 +83,7 @@ class PermissionsCheck extends Check {
               CommandPermissions overrides = await command.fetchPermissions(context.guild!.id);
 
               if (overrides.permissions.isEmpty) {
-                overrides =
-                    (await context.client.guilds[context.guild!.id].commands.listPermissions())
-                        .singleWhere(
+                overrides = (await context.client.guilds[context.guild!.id].commands.listPermissions()).singleWhere(
                   (overrides) => overrides.command == null,
                   orElse: () => overrides,
                 );
@@ -107,8 +102,7 @@ class PermissionsCheck extends Check {
                   def = override.hasPermission;
                 } else if (override.id == Snowflake(context.guild!.id.value - 1)) {
                   channelDef = override.hasPermission;
-                } else if (override.type == CommandPermissionType.channel &&
-                    override.id == context.channel.id) {
+                } else if (override.type == CommandPermissionType.channel && override.id == context.channel.id) {
                   channel = override.hasPermission;
                 } else if (override.type == CommandPermissionType.role) {
                   int roleIndex = -1;
@@ -127,8 +121,7 @@ class PermissionsCheck extends Check {
                     role = override.hasPermission;
                     highestRoleIndex = roleIndex;
                   }
-                } else if (override.type == CommandPermissionType.user &&
-                    override.id == context.user.id) {
+                } else if (override.type == CommandPermissionType.user && override.id == context.user.id) {
                   user = override.hasPermission;
                   // No need to continue if we found an override for the specific user
                   break;

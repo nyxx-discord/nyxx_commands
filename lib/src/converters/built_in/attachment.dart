@@ -56,8 +56,7 @@ Attachment? convertAttachment(StringView view, ContextData context) {
   return null;
 }
 
-SelectMenuOptionBuilder attachmentToSelectMenuOption(Attachment attachment) =>
-    SelectMenuOptionBuilder(
+SelectMenuOptionBuilder attachmentToSelectMenuOption(Attachment attachment) => SelectMenuOptionBuilder(
       label: attachment.fileName,
       value: attachment.id.toString(),
     );

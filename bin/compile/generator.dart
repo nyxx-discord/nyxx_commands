@@ -43,8 +43,7 @@ Future<void> generate(String path, String outPath, bool formatOutput, bool slow)
   final ContextLocator locator = ContextLocator();
   final ContextBuilder builder = ContextBuilder();
 
-  final AnalysisContext context =
-      builder.createContext(contextRoot: locator.locateRoots(includedPaths: [path]).first);
+  final AnalysisContext context = builder.createContext(contextRoot: locator.locateRoots(includedPaths: [path]).first);
 
   final SomeResolvedLibraryResult result = await context.currentSession.getResolvedLibrary(path);
 
@@ -61,8 +60,7 @@ Future<void> generate(String path, String outPath, bool formatOutput, bool slow)
     throw CommandsException('No entry point was found for file "$path"');
   }
 
-  Iterable<CompileTimeFunctionData> functions =
-      await processFunctions(result.element, context, slow);
+  Iterable<CompileTimeFunctionData> functions = await processFunctions(result.element, context, slow);
 
   String output = generateOutput(
     functions,
@@ -272,8 +270,7 @@ void writeFunctionData(
       String? localizedDescriptionsSource;
 
       if (parameter.localizedDescriptions != null) {
-        List<String>? localizedDescriptionsData =
-            toExpressionSource(parameter.localizedDescriptions!);
+        List<String>? localizedDescriptionsData = toExpressionSource(parameter.localizedDescriptions!);
 
         if (localizedDescriptionsData == null) {
           logger.warning(

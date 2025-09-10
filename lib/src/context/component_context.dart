@@ -32,9 +32,7 @@ abstract class ComponentContext implements ComponentContextData, InteractionInte
 ///
 /// You might also be interested in:
 /// - [ComponentContext], the base class for all component contexts.
-class ButtonComponentContext extends ContextBase
-    with InteractionRespondMixin, InteractiveMixin
-    implements ComponentContext {
+class ButtonComponentContext extends ContextBase with InteractionRespondMixin, InteractiveMixin implements ComponentContext {
   @override
   final MessageComponentInteraction interaction;
 
@@ -60,9 +58,7 @@ class ButtonComponentContext extends ContextBase
 ///
 /// You might also be interested in:
 /// - [ComponentContext], the base class for all component contexts.
-class SelectMenuContext<T> extends ContextBase
-    with InteractionRespondMixin, InteractiveMixin
-    implements ComponentContext {
+class SelectMenuContext<T> extends ContextBase with InteractionRespondMixin, InteractiveMixin implements ComponentContext {
   @override
   final MessageComponentInteraction interaction;
 

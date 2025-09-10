@@ -136,8 +136,7 @@ class Choices {
   const Choices(this.choices);
 
   /// Get the builders that this [Choices] represents.
-  Iterable<CommandOptionChoiceBuilder<dynamic>> get builders => choices.entries
-      .map((entry) => CommandOptionChoiceBuilder(name: entry.key, value: entry.value));
+  Iterable<CommandOptionChoiceBuilder<dynamic>> get builders => choices.entries.map((entry) => CommandOptionChoiceBuilder(name: entry.key, value: entry.value));
 
   @override
   String toString() => 'Choices[choices=$choices]';
@@ -234,8 +233,7 @@ class UseConverter {
 ///   of a given type.
 class Autocomplete {
   /// The autocomplete handler to use.
-  final FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext)
-      callback;
+  final FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext) callback;
 
   /// Create a new [Autocomplete].
   ///
@@ -265,8 +263,7 @@ Future<String> Function(MessageCreateEvent) mentionOr(
     RegExpMatch? match = _mentionPattern.firstMatch(event.message.content);
 
     if (match != null) {
-      if (int.parse(match.group(1)!) ==
-          (await event.gateway.client.users.fetchCurrentUser()).id.value) {
+      if (int.parse(match.group(1)!) == (await event.gateway.client.users.fetchCurrentUser()).id.value) {
         return match.group(0)!;
       }
     }
@@ -288,8 +285,7 @@ Future<String> Function(MessageCreateEvent) mentionOr(
 /// ```
 /// ![](https://user-images.githubusercontent.com/54505189/156937528-df54a2ba-627d-4f54-b0bc-ad7cb6321965.png)
 /// ![](https://user-images.githubusercontent.com/54505189/156937561-9df9e6cf-6595-465d-895a-aaca5d6ff066.png)
-Future<String> Function(MessageCreateEvent) dmOr(
-    FutureOr<String> Function(MessageCreateEvent) defaultPrefix) {
+Future<String> Function(MessageCreateEvent) dmOr(FutureOr<String> Function(MessageCreateEvent) defaultPrefix) {
   return (event) async {
     String found = await defaultPrefix(event);
 
@@ -346,9 +342,7 @@ ChatCommand? getCommandHelper(StringView view, Map<String, ChatCommandComponent>
 
     // If no command further down the tree was found, return the child if it is a chat command
     // that can be invoked from a text message (not slash only).
-    if (commandFromChild == null &&
-        child is ChatCommand &&
-        child.resolvedOptions.type != CommandType.slashOnly) {
+    if (commandFromChild == null && child is ChatCommand && child.resolvedOptions.type != CommandType.slashOnly) {
       return child;
     }
 
@@ -615,8 +609,7 @@ Future<Permissions> computePermissions(
 
     Flags<Permissions> permissions = basePermissions;
 
-    final everyoneOverwrite =
-        channel.permissionOverwrites.where((overwrite) => overwrite.id == guild.id).singleOrNull;
+    final everyoneOverwrite = channel.permissionOverwrites.where((overwrite) => overwrite.id == guild.id).singleOrNull;
     if (everyoneOverwrite != null) {
       permissions &= ~everyoneOverwrite.deny;
       permissions |= everyoneOverwrite.allow;
@@ -626,8 +619,7 @@ Future<Permissions> computePermissions(
     Flags<Permissions> deny = Permissions(0);
 
     for (final roleId in member.roleIds) {
-      final roleOverwrite =
-          channel.permissionOverwrites.where((overwrite) => overwrite.id == roleId).singleOrNull;
+      final roleOverwrite = channel.permissionOverwrites.where((overwrite) => overwrite.id == roleId).singleOrNull;
       if (roleOverwrite != null) {
         allow |= roleOverwrite.allow;
         deny |= roleOverwrite.deny;
@@ -637,8 +629,7 @@ Future<Permissions> computePermissions(
     permissions &= ~deny;
     permissions |= allow;
 
-    final memberOverwrite =
-        channel.permissionOverwrites.where((overwrite) => overwrite.id == member.id).singleOrNull;
+    final memberOverwrite = channel.permissionOverwrites.where((overwrite) => overwrite.id == member.id).singleOrNull;
     if (memberOverwrite != null) {
       permissions &= ~memberOverwrite.deny;
       permissions |= memberOverwrite.allow;

@@ -304,8 +304,7 @@ abstract interface class InteractionCommandContextData implements InteractionCon
 /// You might also be interested in:
 /// - [InteractionCommandContextData], which exposes the data found in this context,
 /// - [CommandContext], the base class for all contexts representing a command execution.
-abstract interface class InteractionCommandContext
-    implements InteractionCommandContextData, CommandContext, InteractionInteractiveContext {}
+abstract interface class InteractionCommandContext implements InteractionCommandContextData, CommandContext, InteractionInteractiveContext {}
 
 /// Information about how a command should respond when using [InteractiveContext.respond].
 ///

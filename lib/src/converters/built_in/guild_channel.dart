@@ -105,12 +105,10 @@ class GuildChannelConverter<T extends GuildChannel> implements Converter<T> {
       };
 
   @override
-  void Function(CommandOptionBuilder) get processOptionCallback =>
-      (builder) => builder.channelTypes = channelTypes;
+  void Function(CommandOptionBuilder) get processOptionCallback => (builder) => builder.channelTypes = channelTypes;
 
   @override
-  FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext)?
-      get autocompleteCallback => null;
+  FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext)? get autocompleteCallback => null;
 
   @override
   RuntimeType<T> get output => RuntimeType<T>();
@@ -119,12 +117,11 @@ class GuildChannelConverter<T extends GuildChannel> implements Converter<T> {
   CommandOptionType get type => CommandOptionType.channel;
 
   @override
-  SelectMenuOptionBuilder Function(T) get toSelectMenuOption =>
-      (channel) => SelectMenuOptionBuilder(
-            label: channel.name,
-            value: channel.id.toString(),
-            description: channel is GuildTextChannel ? channel.topic : null,
-          );
+  SelectMenuOptionBuilder Function(T) get toSelectMenuOption => (channel) => SelectMenuOptionBuilder(
+        label: channel.name,
+        value: channel.id.toString(),
+        description: channel is GuildTextChannel ? channel.topic : null,
+      );
 
   @override
   ButtonBuilder Function(T) get toButton => (channel) => ButtonBuilder(

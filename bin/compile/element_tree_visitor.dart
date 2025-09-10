@@ -112,8 +112,7 @@ class EntireAstVisitor extends RecursiveAstVisitor<void> {
   Future<void> visitUnit(String source) async {
     logger.finer('Getting AST for source "$source"');
 
-    SomeResolvedUnitResult result =
-        _cache[source] ??= await context.currentSession.getResolvedUnit(source);
+    SomeResolvedUnitResult result = _cache[source] ??= await context.currentSession.getResolvedUnit(source);
 
     if (result is! ResolvedUnitResult) {
       throw CommandsError('Got invalid analysis result for source $source');

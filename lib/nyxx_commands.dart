@@ -3,28 +3,14 @@ library nyxx_commands;
 
 export 'src/checks/checks.dart' show AbstractCheck, Check;
 export 'src/checks/context_type.dart'
-    show
-        ChatCommandCheck,
-        InteractionCommandCheck,
-        InteractionChatCommandCheck,
-        MessageChatCommandCheck,
-        MessageCommandCheck,
-        UserCommandCheck;
+    show ChatCommandCheck, InteractionCommandCheck, InteractionChatCommandCheck, MessageChatCommandCheck, MessageCommandCheck, UserCommandCheck;
 export 'src/checks/cooldown.dart' show CooldownCheck, CooldownType;
 export 'src/checks/guild.dart' show GuildCheck;
 export 'src/checks/permissions.dart' show PermissionsCheck;
 export 'src/checks/user.dart' show RoleCheck, UserCheck;
 export 'src/commands.dart' show CommandsPlugin;
 export 'src/commands/chat_command.dart' show ChatCommand, ChatGroup, CommandType;
-export 'src/commands/interfaces.dart'
-    show
-        CallHooked,
-        ChatCommandComponent,
-        Checked,
-        Command,
-        CommandGroup,
-        CommandRegisterable,
-        Options;
+export 'src/commands/interfaces.dart' show CallHooked, ChatCommandComponent, Checked, Command, CommandGroup, CommandRegisterable, Options;
 export 'src/commands/message_command.dart' show MessageCommand;
 export 'src/commands/options.dart' show CommandOptions;
 export 'src/commands/user_command.dart' show UserCommand;
@@ -40,10 +26,8 @@ export 'src/context/base.dart'
         InteractionInteractiveContext,
         InteractiveContext,
         ResponseLevel;
-export 'src/context/chat_context.dart'
-    show ChatContext, ChatContextData, InteractionChatContext, MessageChatContext;
-export 'src/context/component_context.dart'
-    show ComponentContextData, ComponentContext, ButtonComponentContext, SelectMenuContext;
+export 'src/context/chat_context.dart' show ChatContext, ChatContextData, InteractionChatContext, MessageChatContext;
+export 'src/context/component_context.dart' show ComponentContextData, ComponentContext, ButtonComponentContext, SelectMenuContext;
 export 'src/context/context_manager.dart' show ContextManager;
 export 'src/context/message_context.dart' show MessageContext;
 export 'src/context/modal_context.dart' show ModalContext;
@@ -76,17 +60,5 @@ export 'src/event_manager.dart' show EventManager;
 export 'src/mirror_utils/mirror_utils.dart' show RuntimeType;
 export 'src/options.dart' show CommandsOptions;
 export 'src/util/util.dart'
-    show
-        Autocomplete,
-        Choices,
-        ComponentId,
-        ComponentIdStatus,
-        Description,
-        Name,
-        UseConverter,
-        commandNameRegexp,
-        convertToKebabCase,
-        dmOr,
-        id,
-        mentionOr;
+    show Autocomplete, Choices, ComponentId, ComponentIdStatus, Description, Name, UseConverter, commandNameRegexp, convertToKebabCase, dmOr, id, mentionOr;
 export 'src/util/view.dart' show StringView;

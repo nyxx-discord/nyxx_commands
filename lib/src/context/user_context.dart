@@ -8,9 +8,7 @@ import 'base.dart';
 ///
 /// You might also be interested in:
 /// - [InteractionCommandContext], the base class for all commands executed from an interaction.
-class UserContext extends ContextBase
-    with InteractionRespondMixin, InteractiveMixin
-    implements InteractionCommandContext {
+class UserContext extends ContextBase with InteractionRespondMixin, InteractiveMixin implements InteractionCommandContext {
   @override
   final UserCommand command;
 

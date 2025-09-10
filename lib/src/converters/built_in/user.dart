@@ -18,8 +18,7 @@ Future<User?> snowflakeToUser(Snowflake snowflake, ContextData context) async {
   }
 }
 
-FutureOr<User?> memberToUser(Member member, ContextData context) =>
-    member.manager.client.users.get(member.id);
+FutureOr<User?> memberToUser(Member member, ContextData context) => member.manager.client.users.get(member.id);
 
 Future<User?> convertUser(StringView view, ContextData context) async {
   String word = view.getWord();

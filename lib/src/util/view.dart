@@ -264,6 +264,5 @@ class StringView {
   }
 
   @override
-  String toString() =>
-      'StringView[index=$index (current="${eof ? '<eof>' : current}"), end=$end, buffer="$buffer"]';
+  String toString() => 'StringView[index=$index (current="${eof ? '<eof>' : current}"), end=$end, buffer="$buffer"]';
 }

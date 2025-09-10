@@ -186,8 +186,7 @@ class Check extends AbstractCheck {
   /// ```
   ///
   /// ![](https://user-images.githubusercontent.com/54505189/153872224-b8a5f752-3ced-44ab-95f7-e6bb8058ba79.png)
-  static AbstractCheck any(Iterable<AbstractCheck> checks, [String? name]) =>
-      _AnyCheck(checks, name);
+  static AbstractCheck any(Iterable<AbstractCheck> checks, [String? name]) => _AnyCheck(checks, name);
 
   /// Creates a check that succeeds if [check] fails.
   ///
@@ -200,8 +199,7 @@ class Check extends AbstractCheck {
   ///
   /// This can be used to group checks that are commonly used together into a single, reusable
   /// check.
-  static AbstractCheck all(Iterable<AbstractCheck> checks, {String? name}) =>
-      _GroupCheck(checks, name: name);
+  static AbstractCheck all(Iterable<AbstractCheck> checks, {String? name}) => _GroupCheck(checks, name: name);
 
   @override
   FutureOr<bool> check(CommandContext context) => _check(context);
@@ -218,8 +216,7 @@ class _AnyCheck extends AbstractCheck {
 
   final Expando<AbstractCheck> _successfulChecks = Expando();
 
-  _AnyCheck(this.checks, [String? name])
-      : super(name ?? 'Any of [${checks.map((e) => e.name).join(', ')}]') {
+  _AnyCheck(this.checks, [String? name]) : super(name ?? 'Any of [${checks.map((e) => e.name).join(', ')}]') {
     if (checks.isEmpty) {
       throw Exception('Cannot check any of no checks');
     }
@@ -347,18 +344,15 @@ class _GroupCheck extends Check {
             Iterable<Future<bool>> asyncResults = results.whereType<Future<bool>>();
             Iterable<bool> syncResults = results.whereType<bool>();
 
-            return !syncResults.contains(false) &&
-                !(await Future.wait(asyncResults)).contains(false);
+            return !syncResults.contains(false) && !(await Future.wait(asyncResults)).contains(false);
           },
         );
 
   @override
-  Iterable<void Function(CommandContext)> get preCallHooks =>
-      checks.map((e) => e.preCallHooks).expand((_) => _);
+  Iterable<void Function(CommandContext)> get preCallHooks => checks.map((e) => e.preCallHooks).expand((_) => _);
 
   @override
-  Iterable<void Function(CommandContext)> get postCallHooks =>
-      checks.map((e) => e.postCallHooks).expand((_) => _);
+  Iterable<void Function(CommandContext)> get postCallHooks => checks.map((e) => e.postCallHooks).expand((_) => _);
 
   @override
   FutureOr<bool> get allowsDm async {

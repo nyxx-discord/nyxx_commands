@@ -20,8 +20,7 @@ import 'checks.dart';
 /// - [ChatCommandCheck], for checking that the command being invoked is a [ChatCommand].
 class InteractionCommandCheck extends Check {
   /// Create a new [InteractionChatCommandCheck].
-  InteractionCommandCheck({super.name = 'Interaction check'})
-      : super((context) => context is InteractionContextData);
+  InteractionCommandCheck({super.name = 'Interaction check'}) : super((context) => context is InteractionContextData);
 }
 
 /// A check that succeeds if the command being invoked is a [MessageCommand].
@@ -33,8 +32,7 @@ class InteractionCommandCheck extends Check {
 /// - [InteractionCommandCheck], for checking that a command was invoked from an interaction.
 class MessageCommandCheck extends Check {
   /// Create a new [MessageCommandCheck].
-  MessageCommandCheck({super.name = 'Message command check'})
-      : super((context) => context is MessageContext);
+  MessageCommandCheck({super.name = 'Message command check'}) : super((context) => context is MessageContext);
 }
 
 /// A check that succeeds if the command being invoked is a [UserCommand].
@@ -46,8 +44,7 @@ class MessageCommandCheck extends Check {
 /// - [InteractionCommandCheck], for checking that a command was invoked from an interaction.
 class UserCommandCheck extends Check {
   /// Create a new [UserCommandCheck].
-  UserCommandCheck({super.name = 'User command check'})
-      : super((context) => context is UserContext);
+  UserCommandCheck({super.name = 'User command check'}) : super((context) => context is UserContext);
 }
 
 /// A check that succeeds if the command being invoked is a [ChatCommand].
@@ -65,8 +62,7 @@ class UserCommandCheck extends Check {
 /// - [InteractionCommandCheck], for checking that a command was invoked from an interaction.
 class ChatCommandCheck extends Check {
   /// Create a new [ChatCommandCheck].
-  ChatCommandCheck({super.name = 'Chat command check'})
-      : super((context) => context is ChatContext);
+  ChatCommandCheck({super.name = 'Chat command check'}) : super((context) => context is ChatContext);
 }
 
 /// A check that succeeds if the command being invoked is a [ChatCommand] and that the context was
@@ -83,8 +79,7 @@ class ChatCommandCheck extends Check {
 /// - [InteractionCommandCheck], for checking that a command was invoked from an interaction.
 class InteractionChatCommandCheck extends Check {
   /// Create a new [InteractionChatCommandCheck].
-  InteractionChatCommandCheck({super.name = 'Interaction chat command check'})
-      : super((context) => context is InteractionChatContext);
+  InteractionChatCommandCheck({super.name = 'Interaction chat command check'}) : super((context) => context is InteractionChatContext);
 }
 
 /// A check that succeeds if the command being invoked is a [ChatCommand] and that the context was

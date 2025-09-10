@@ -77,8 +77,7 @@ class IntConverter extends NumConverter<int> {
 /// This converter has a Discord Slash Command Argument Type of [CommandOptionType.integer].
 const Converter<int> intConverter = IntConverter();
 
-double? convertDouble(StringView view, ContextData context) =>
-    double.tryParse(view.getQuotedWord());
+double? convertDouble(StringView view, ContextData context) => double.tryParse(view.getQuotedWord());
 
 /// A converter that converts input to [double]s, possibly with a minimum or maximum value.
 ///

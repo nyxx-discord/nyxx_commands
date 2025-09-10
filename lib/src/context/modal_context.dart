@@ -4,9 +4,7 @@ import '../context/base.dart';
 import '../util/mixins.dart';
 
 /// A context in which a user submitted a modal.
-class ModalContext extends ContextBase
-    with InteractionRespondMixin, InteractiveMixin
-    implements InteractionInteractiveContext {
+class ModalContext extends ContextBase with InteractionRespondMixin, InteractiveMixin implements InteractionInteractiveContext {
   @override
   final ModalSubmitInteraction interaction;
 

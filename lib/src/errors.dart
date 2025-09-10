@@ -75,8 +75,7 @@ class UnhandledInteractionException extends CommandsException implements Context
   ComponentIdStatus get reason => componentId.status;
 
   /// Create a new [UnhandledInteractionException].
-  UnhandledInteractionException(this.context, this.componentId)
-      : super('Unhandled interaction: ${componentId.status}');
+  UnhandledInteractionException(this.context, this.componentId) : super('Unhandled interaction: ${componentId.status}');
 }
 
 /// An exception that occurred during the execution of a command.
@@ -186,8 +185,7 @@ class CheckFailedException extends CommandInvocationException {
   final AbstractCheck failed;
 
   /// Create a new [CheckFailedException].
-  CheckFailedException(this.failed, CommandContext context)
-      : super('Check "${failed.name}" failed', context);
+  CheckFailedException(this.failed, CommandContext context) : super('Check "${failed.name}" failed', context);
 }
 
 /// An exception thrown when no [Converter] was found or created for a type.

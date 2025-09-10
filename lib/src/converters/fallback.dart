@@ -24,8 +24,7 @@ class FallbackConverter<T> implements Converter<T> {
   final void Function(CommandOptionBuilder)? processOptionCallback;
 
   @override
-  final FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext)?
-      autocompleteCallback;
+  final FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext)? autocompleteCallback;
 
   final Iterable<CommandOptionChoiceBuilder<dynamic>>? _choices;
   final CommandOptionType? _type;
@@ -67,8 +66,7 @@ class FallbackConverter<T> implements Converter<T> {
       }
 
       for (final choice in converterChoices) {
-        CommandOptionChoiceBuilder<dynamic> existing =
-            allChoices.singleWhere((element) => element.name == choice.name, orElse: () => choice);
+        CommandOptionChoiceBuilder<dynamic> existing = allChoices.singleWhere((element) => element.name == choice.name, orElse: () => choice);
 
         if (existing.value != choice.value) {
           return null;
