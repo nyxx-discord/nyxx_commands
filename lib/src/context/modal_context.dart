@@ -4,9 +4,7 @@ import '../context/base.dart';
 import '../util/mixins.dart';
 
 /// A context in which a user submitted a modal.
-class ModalContext extends ContextBase
-    with InteractionRespondMixin, InteractiveMixin
-    implements InteractionInteractiveContext {
+class ModalContext extends ContextBase with InteractionRespondMixin, InteractiveMixin implements InteractionInteractiveContext {
   @override
   final ModalSubmitInteraction interaction;
 
@@ -21,8 +19,7 @@ class ModalContext extends ContextBase
     required this.interaction,
   });
 
-  Iterable<SubmittedTextInputComponent> _expandComponents(
-      SubmittedComponent component) sync* {
+  Iterable<SubmittedTextInputComponent> _expandComponents(SubmittedComponent component) sync* {
     switch (component) {
       case SubmittedActionRowComponent(:final components):
         yield* components.expand(_expandComponents);
@@ -42,8 +39,5 @@ class ModalContext extends ContextBase
   /// Get the value the user inputted in a text input component based on its [id].
   ///
   /// Throws a [StateError] if no component with the given [id] exist in the modal.
-  String? operator [](String id) => interaction.data.components
-      .expand(_expandComponents)
-      .singleWhere((element) => element.customId == id)
-      .value;
+  String? operator [](String id) => interaction.data.components.expand(_expandComponents).singleWhere((element) => element.customId == id).value;
 }
