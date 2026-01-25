@@ -1,3 +1,7 @@
+## 6.0.6
+__Bug fixes__
+- Fix finding text components in modals.
+
 ## 6.0.5
 __Bug fixes__
 - Correctly send flags when responding to interactions.
