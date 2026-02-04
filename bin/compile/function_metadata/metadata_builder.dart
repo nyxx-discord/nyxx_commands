@@ -28,7 +28,8 @@ FunctionExpression? _findFunction(Expression expression) {
   } else if (expression is SimpleIdentifier) {
     final root = expression.root;
     if (root is! CompilationUnit) return null;
-    return root.declarations.whereType<FunctionDeclaration>().firstWhereOrNull((f) => f.name.stringValue == expression.token.stringValue)?.functionExpression;
+    final allFunctions = root.declarations.whereType<FunctionDeclaration>();
+    return allFunctions.firstWhereOrNull((f) => f.name.lexeme == expression.token.lexeme)?.functionExpression;
   } else {
     return null;
   }

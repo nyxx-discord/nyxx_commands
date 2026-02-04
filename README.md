@@ -45,7 +45,7 @@ final ping = ChatCommand(
 );
 ```
 
-You can also use a named function, provided that function is declared in the same file:
+You can also use a named function, provided that function is a top-level function declared in the same file:
 ```dart
 final ping = ChatCommand(
   'ping',
