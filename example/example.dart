@@ -213,15 +213,19 @@ void main() async {
   //
   // As an example, let's implement a `say` command that simply repeats what the user input.
 
+  // As mentioned earlier, all we need to do to add an argument to our command is add it as a
+  // parameter to our execute function. In this case, we take an argument called `message` and of
+  // type `String`.
+  void sayFunction(ChatContext context, String message) {
+    context.respond(MessageBuilder(content: message));
+  }
+
   ChatCommand say = ChatCommand(
     'say',
     'Make the bot say something',
-    // As mentioned earlier, all we need to do to add an argument to our command is add it as a
-    // parameter to our execute function. In this case, we take an argument called `message` and of
-    // type `String`.
-    id('say', (ChatContext context, String message) {
-      context.respond(MessageBuilder(content: message));
-    }),
+    // Notice how the `id` function can also accept a named function -- make sure the function
+    // is declared in the same file.
+    id('say', sayFunction),
   );
 
   // As usual, we need to register the command to our bot.

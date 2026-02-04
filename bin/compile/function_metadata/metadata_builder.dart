@@ -28,10 +28,7 @@ FunctionExpression? _findFunction(Expression expression) {
   } else if (expression is SimpleIdentifier) {
     final root = expression.root;
     if (root is! CompilationUnit) return null;
-    return root.declarations
-      .whereType<FunctionDeclaration>()
-      .firstWhereOrNull((f) => f.name.stringValue == expression.token.stringValue)
-      ?.functionExpression;
+    return root.declarations.whereType<FunctionDeclaration>().firstWhereOrNull((f) => f.name.stringValue == expression.token.stringValue)?.functionExpression;
   } else {
     return null;
   }
@@ -55,7 +52,7 @@ Iterable<CompileTimeFunctionData> getFunctionData(
     final functionExpression = _findFunction(id.argumentList.arguments[1]);
     if (functionExpression == null) {
       final errorMessage = 'Could not find a function for the command with id=${idToken.toSource()}\n'
-        'The second argument to the `id` function must be a function literal or the name of a function declared in the same file';
+          'The second argument to the `id` function must be a function literal or the name of a function declared in the same file';
       throw CommandsError(errorMessage);
     }
 
