@@ -16,10 +16,26 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/constant/value.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/src/dart/element/element.dart';
+import 'package:collection/collection.dart';
 import 'package:nyxx_commands/nyxx_commands.dart' show CommandsError;
 
 import '../generator.dart';
 import 'compile_time_function_data.dart';
+
+FunctionExpression? _findFunction(Expression expression) {
+  if (expression is FunctionExpression) {
+    return expression;
+  } else if (expression is SimpleIdentifier) {
+    final root = expression.root;
+    if (root is! CompilationUnit) return null;
+    return root.declarations
+      .whereType<FunctionDeclaration>()
+      .firstWhereOrNull((f) => f.name.stringValue == expression.token.stringValue)
+      ?.functionExpression;
+  } else {
+    return null;
+  }
+}
 
 /// Convert [idCreations] into function metadata.
 Iterable<CompileTimeFunctionData> getFunctionData(
@@ -29,16 +45,21 @@ Iterable<CompileTimeFunctionData> getFunctionData(
 
   outerLoop:
   for (final id in ids) {
+    final idToken = id.argumentList.arguments.first;
+
     if (id.argumentList.arguments.length != 2) {
       logger.shout('Unexpected number of arguments ${id.argumentList.arguments.length} in id invocation');
       continue;
     }
 
-    if (id.argumentList.arguments[1] is! FunctionExpression) {
-      throw CommandsError('Functions passed to the `id` function must be function literals');
+    final functionExpression = _findFunction(id.argumentList.arguments[1]);
+    if (functionExpression == null) {
+      final errorMessage = 'Could not find a function for the command with id=${idToken.toSource()}\n'
+        'The second argument to the `id` function must be a function literal or the name of a function declared in the same file';
+      throw CommandsError(errorMessage);
     }
 
-    FormalParameterList parameterList = (id.argumentList.arguments[1] as FunctionExpression).parameters!;
+    FormalParameterList parameterList = functionExpression.parameters!;
 
     List<CompileTimeParameterData> parameterData = [
       // The context parameter
@@ -167,7 +188,7 @@ Iterable<CompileTimeFunctionData> getFunctionData(
       ));
     }
 
-    result.add(CompileTimeFunctionData(id.argumentList.arguments.first, parameterData));
+    result.add(CompileTimeFunctionData(idToken, parameterData));
   }
 
   return result;
