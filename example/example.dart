@@ -123,6 +123,7 @@ void main() async {
 
   // Once we've created our command, we need to add it to our bot:
   commands.addCommand(ping);
+
   // The commands on a bot can be represented with a parent-child tree that looks like this:
   //
   // client
@@ -132,6 +133,15 @@ void main() async {
   // Discord. Executing it should make the bot send `pong!` to the channel the command was executed
   // in.
   // You can also send a text message starting with `!ping` and  you should see a similar result.
+
+  // The `id` command can also accept a top-level function defined in the same file. This example uses
+  // a function defined all the way at the bottom of this file. Its logic is the same as above.
+  final ping2 = ChatCommand(
+    'ping2',
+    'A version of ping that uses a top-level function',
+    id('ping2', _pingFunction),
+  );
+  commands.addCommand(ping2);
 
   // ====================================== //
   // ======= Using a command group ======== //
@@ -212,7 +222,6 @@ void main() async {
   // - Inferring the best Discord slash command argument type to use for that argument
   //
   // As an example, let's implement a `say` command that simply repeats what the user input.
-
   ChatCommand say = ChatCommand(
     'say',
     'Make the bot say something',
@@ -599,4 +608,8 @@ String? filterInput(String input, ContextData context) {
     return input;
   }
   return null;
+}
+
+void _pingFunction(ChatContext context) {
+  context.respond(MessageBuilder(content: 'pong!'));
 }

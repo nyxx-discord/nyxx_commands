@@ -35,6 +35,13 @@ void main() async {
 
   commands.addCommand(ping);
 
+  final ping2 = ChatCommand(
+    'ping2',
+    'A version of ping that uses a top-level function',
+    id('ping2', _pingFunction),
+  );
+  commands.addCommand(ping2);
+
   ChatGroup throwGroup = ChatGroup(
     'throw',
     'Throw an objet',
@@ -221,4 +228,8 @@ String? filterInput(String input, ContextData context) {
     return input;
   }
   return null;
+}
+
+void _pingFunction(ChatContext context) {
+  context.respond(MessageBuilder(content: 'pong!'));
 }

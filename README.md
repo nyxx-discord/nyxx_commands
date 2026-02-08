@@ -45,6 +45,18 @@ final ping = ChatCommand(
 );
 ```
 
+You can also use a named function, provided that function is a top-level function declared in the same file:
+```dart
+final ping = ChatCommand(
+  'ping',
+  'Ping the bot',
+  id('ping', _ping),
+);
+
+void _ping(IChatContext context) =>
+  context.respond(MessageBuilder.content('Pong!'));
+```
+
 If you forget to add the `id` to a function, you'll get an error similar to this one:
 ```
 Error: Command Exception: Couldn't load function data for function Closure: (IChatContext) => Null
