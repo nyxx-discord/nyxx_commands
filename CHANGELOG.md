@@ -1,3 +1,7 @@
+## 6.1.0
+__New features__
+- Allow functions passed to `id` to be named top-level functions.
+
 ## 6.0.6
 __Bug fixes__
 - Fix finding text components in modals.
