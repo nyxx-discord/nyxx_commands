@@ -109,13 +109,13 @@ void main() async {
     // The first parameter to this function must be a `ChatContext`. A `ChatContext` allows you to access
     // various information about how the command was run: the user that executed it, the guild it
     // was ran in and a few other useful pieces of information.
-    // `IChatContext` also has a couple of methods that make it easier to respond to commands.
+    // `ChatContext` also has a couple of methods that make it easier to respond to commands.
     //
     // Since a ping command doesn't have any other arguments, we don't add any other parameters to
     // the function.
     id('ping', (ChatContext context) {
       // For a ping command, all we need to do is respond with `pong`.
-      // To do that, we can use the `IChatContext`'s `respond` method which responds to the command with
+      // To do that, we can use the `ChatContext`'s `respond` method which responds to the command with
       // a message.
       context.respond(MessageBuilder(content: 'pong!'));
     }),
@@ -488,7 +488,7 @@ void main() async {
   //
   // As an example:
   // ```dart
-  // (IChatContext context, [String? a, String? b, String? c]) {}
+  // (ChatContext context, [String? a, String? b, String? c]) {}
   // ```
   // In this case, `b` having a value does not guarantee `a` has a value.
 

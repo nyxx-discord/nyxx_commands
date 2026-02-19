@@ -33,7 +33,7 @@ For example, this chat command:
 final ping = ChatCommand(
   'ping',
   'Ping the bot',
-  (IChatContext context) => context.respond(MessageBuilder.content('Pong!')),
+  (ChatContext context) => context.respond(MessageBuilder.content('Pong!')),
 );
 ```
 must have its callback wrapped with `id` like so:
@@ -41,7 +41,7 @@ must have its callback wrapped with `id` like so:
 final ping = ChatCommand(
   'ping',
   'Ping the bot',
-  id('ping', (IChatContext context) => context.respond(MessageBuilder.content('Pong!'))),
+  id('ping', (ChatContext context) => context.respond(MessageBuilder.content('Pong!'))),
 );
 ```
 
@@ -53,13 +53,13 @@ final ping = ChatCommand(
   id('ping', _ping),
 );
 
-void _ping(IChatContext context) =>
+void _ping(ChatContext context) =>
   context.respond(MessageBuilder.content('Pong!'));
 ```
 
 If you forget to add the `id` to a function, you'll get an error similar to this one:
 ```
-Error: Command Exception: Couldn't load function data for function Closure: (IChatContext) => Null
+Error: Command Exception: Couldn't load function data for function Closure: (ChatContext) => Null
 Stack trace:
 #0      loadFunctionData (package:nyxx_commands/src/mirror_utils/compiled.dart:18)
 #1      ChatCommand._loadArguments (package:nyxx_commands/src/commands/chat_command.dart:354)

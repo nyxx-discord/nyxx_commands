@@ -36,7 +36,7 @@ String convertToKebabCase(String camelCase) {
 /// ChatCommand test = ChatCommand(
 ///   'test',
 ///   'A test command',
-///   (IChatContext context, String message) async {
+///   (ChatContext context, String message) async {
 ///     context.respond(MessageBuilder.content(message));
 ///   },
 /// );
@@ -49,7 +49,7 @@ String convertToKebabCase(String camelCase) {
 ///   'test',
 ///   'A test command',
 ///   (
-///     IChatContext context,
+///     ChatContext context,
 ///     @Description('The message to send') String message,
 ///   ) async {
 ///     context.respond(MessageBuilder.content(message));
@@ -72,7 +72,7 @@ class Description {
   ///  'hi',
   ///  'A test command',
   ///   (
-  ///     IChatContext context,
+  ///     ChatContext context,
   ///     @Description('This is a description', {Locale.german: 'Dies ist eine Beschreibung'})
   ///         String foo,
   ///   ) async {
@@ -106,7 +106,7 @@ class Description {
 ///   'test',
 ///   'A test command',
 ///   (
-///     IChatContext context,
+///     ChatContext context,
 ///     @Choices({'Foo': 'foo', 'Bar': 'bar', 'Baz': 'baz'}) String message,
 ///   ) async {
 ///     context.respond(MessageBuilder.content(message));
@@ -150,7 +150,7 @@ class Choices {
 ///   'test',
 ///   'A test command',
 ///   (
-///     IChatContext context,
+///     ChatContext context,
 ///     @Name('message') String foo,
 ///   ) async {
 ///     context.respond(MessageBuilder.content(foo));
@@ -171,7 +171,7 @@ class Name {
   ///  'hi',
   ///  'A test command',
   ///  (
-  ///   IChatContext context,
+  ///   ChatContext context,
   ///   @Name('message', {Locale.german: 'hallo'}) String foo,
   ///  ) async => context.respond(MessageBuilder.content(foo))
   /// );
@@ -218,7 +218,7 @@ class UseConverter {
 ///   'test',
 ///   'A test command',
 ///   (
-///     IChatContext context,
+///     ChatContext context,
 ///     @Autocomplete(foo) String bar,
 ///   ) async {
 ///     context.respond(MessageBuilder.content(bar));
