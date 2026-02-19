@@ -30,6 +30,7 @@ import 'built_in.dart';
 /// - [textGuildChannelConverter], which converts [GuildTextChannel]s;
 /// - [voiceGuildChannelConverter], which converts [GuildVoiceChannel]s;
 /// - [stageVoiceChannelConverter], which converts [GuildStageChannel]s;
+/// - [categoryGuildChannelConverter], which converts [GuildCategory]s;
 /// - [roleConverter], which converts [Role]s;
 /// - [mentionableConverter], which converts [CommandOptionMentionable]s;
 /// - [attachmentConverter], which converts [Attachment]s.
