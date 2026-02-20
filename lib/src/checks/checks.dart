@@ -104,7 +104,7 @@ abstract class AbstractCheck {
 /// commands.addCommand(ChatCommand(
 ///   'test',
 ///   'A test command',
-///   (IChatContext context) => context.respond(MessageBuilder.content('Hi there!')),
+///   (ChatContext context) => context.respond(MessageBuilder.content('Hi there!')),
 ///   checks: [check],
 /// ));
 ///
@@ -175,7 +175,7 @@ class Check extends AbstractCheck {
   /// commands.addCommand(ChatCommand(
   ///   'test',
   ///   'A test command',
-  ///   (IChatContext context) => context.respond(MessageBuilder.content('Hi there!')),
+  ///   (ChatContext context) => context.respond(MessageBuilder.content('Hi there!')),
   /// ));
   ///
   /// commands.onCommandError.listen((error) {

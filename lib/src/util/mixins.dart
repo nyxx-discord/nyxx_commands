@@ -101,7 +101,7 @@ mixin InteractiveMixin implements InteractiveContext, ContextData {
     if (parent == null) {
       // This generally happens when a context is created directly from the plugin's context manager
       // and not from an existing context inside a command, which messes with functionality like
-      // parsing which requires an ICommandContext to invoke converters.
+      // parsing which requires an CommandContext to invoke converters.
       throw CommandsError(
         'Cannot use command functionality in a context created outside of a command',
       );

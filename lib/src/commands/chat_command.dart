@@ -21,7 +21,7 @@ import 'options.dart';
 /// ChatCommand test = ChatCommand.slashOnly(
 ///   'test',
 ///   'A test command',
-///   (IChatContext context) async {
+///   (ChatContext context) async {
 ///     context.respond(MessageBuilder.content('Hi there!'));
 ///   },
 /// );
@@ -204,7 +204,7 @@ class ChatGroup with ChatGroupMixin, ParentMixin<ChatContext>, CheckMixin<ChatCo
 /// ChatCommand test = ChatCommand(
 ///   'test',
 ///   'A test command',
-///   (IChatContext context) async {
+///   (ChatContext context) async {
 ///     context.respond(MessageBuilder.content('Hi there!'));
 ///   },
 /// );

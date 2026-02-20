@@ -92,7 +92,7 @@ abstract class CommandRegisterable<T extends CommandContext> implements CallHook
   ///  'hi',
   ///  'A test command',
   ///  (
-  ///   IChatContext context,
+  ///   ChatContext context,
   ///   @Name('message', {Locale.german: 'hallo'}) String foo,
   ///  ) async => context.respond(MessageBuilder.content(foo))
   /// );
@@ -189,7 +189,7 @@ abstract class ChatCommandComponent implements CommandRegisterable<ChatContext>,
   /// ChatCommand test = ChatCommand(
   ///   'test',
   ///   'A test command',
-  ///   (IChatContext context) async {
+  ///   (ChatContext context) async {
   ///     context.respond(MessageBuilder.content('Hi there!'));
   ///   },
   ///   aliases: ['t'],
@@ -213,7 +213,7 @@ abstract class ChatCommandComponent implements CommandRegisterable<ChatContext>,
   ///  'hi',
   ///  'A test command',
   ///   (
-  ///     IChatContext context,
+  ///     ChatContext context,
   ///     @Description('This is a description', {Locale.german: 'Dies ist eine Beschreibung'})
   ///         String foo,
   ///   ) async {
